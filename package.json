@@ -16,6 +16,10 @@
     "contributes": {
         "commands": [
             {
+                "command": "verseAutoImports.showStatusMenu",
+                "title": "Verse: Show Quick Menu"
+            },
+            {
                 "command": "verseAutoImports.optimizeImports",
                 "title": "Verse: Optimize Imports"
             },

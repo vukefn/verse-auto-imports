@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { DiagnosticsHandler } from "./handlers/diagnosticsHandler";
 import { ImportHandler } from "./handlers/importHandler";
 import { CommandsHandler } from "./handlers/commandsHandler";
+import { StatusBarHandler } from "./handlers/statusBarHandler";
 import { setupLogging } from "./utils/logging";
 import { ImportCodeActionProvider } from "./providers/importCodeActionProvider";
 
@@ -32,6 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     const importHandler = new ImportHandler(outputChannel);
     const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
     const commandsHandler = new CommandsHandler(outputChannel, importHandler);
+    const statusBarHandler = new StatusBarHandler(outputChannel, importHandler);
 
     const delayMs = config.get<number>("diagnosticDelay", 1000);
     diagnosticsHandler.setDelay(delayMs);
@@ -73,6 +75,13 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        statusBarHandler.getStatusBarItem(),
+        vscode.commands.registerCommand(
+            "verseAutoImports.showStatusMenu",
+            () => {
+                statusBarHandler.showMenu();
+            }
+        ),
         vscode.commands.registerCommand(
             "verseAutoImports.optimizeImports",
             () => {
