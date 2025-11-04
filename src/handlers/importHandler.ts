@@ -69,7 +69,7 @@ export class ImportHandler {
 
     private selectBestOption(options: string[]): string {
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const strategy = config.get<string>("multiOptionStrategy", "auto_shortest");
+        const strategy = config.get<string>("behavior.multiOptionStrategy", "auto_shortest");
 
         switch (strategy) {
             case "auto_shortest":
@@ -102,8 +102,8 @@ export class ImportHandler {
 
     private async lookupIdentifierInDigest(identifier: string): Promise<ImportSuggestion[]> {
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const useDigestFiles = config.get<boolean>("useDigestFiles", false);
-        const preferDotSyntax = config.get<string>("importSyntax", "curly") === "dot";
+        const useDigestFiles = config.get<boolean>("experimental.useDigestFiles", false);
+        const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
 
         if (!useDigestFiles) {
             return [];
@@ -169,7 +169,7 @@ export class ImportHandler {
         }
 
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const preferDotSyntax = config.get<string>("importSyntax", "curly") === "dot";
+        const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
         const ambiguousImportMappings = config.get<Record<string, string>>("ambiguousImports", {});
 
         // Check for multi-option "Did you mean any of" pattern first
@@ -307,8 +307,8 @@ export class ImportHandler {
         log(this.outputChannel, `Adding ${importStatements.length} import statements to document`);
 
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const preferDotSyntax = config.get<string>("importSyntax", "curly") === "dot";
-        const preserveImportLocations = config.get<boolean>("preserveImportLocations", false);
+        const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
+        const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", false);
 
         log(
             this.outputChannel,

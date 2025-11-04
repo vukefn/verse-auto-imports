@@ -17,8 +17,8 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
     ): Promise<vscode.CodeAction[] | undefined> {
         const codeActions: vscode.CodeAction[] = [];
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const quickFixOrdering = config.get<string>("quickFixOrdering", "confidence");
-        const showDescriptions = config.get<boolean>("showQuickFixDescriptions", true);
+        const quickFixOrdering = config.get<string>("quickFix.ordering", "confidence");
+        const showDescriptions = config.get<boolean>("quickFix.showDescriptions", true);
 
         for (const diagnostic of context.diagnostics) {
             const suggestions = await this.importHandler.extractImportSuggestions(diagnostic.message);

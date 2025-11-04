@@ -52,8 +52,8 @@ export class DiagnosticsHandler {
                 );
 
                 const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const autoImportEnabled = config.get<boolean>("autoImport", true);
-                const multiOptionStrategy = config.get<string>("multiOptionStrategy", "quickfix");
+                const autoImportEnabled = config.get<boolean>("general.autoImport", true);
+                const multiOptionStrategy = config.get<string>("behavior.multiOptionStrategy", "quickfix");
 
                 const autoImportSuggestions = new Set<string>();
                 let hasMultiOptionSuggestions = false;
