@@ -2,7 +2,7 @@
     "name": "verse-auto-imports",
     "displayName": "Verse Auto Imports",
     "description": "Automatically adds missing using statements in Verse files",
-    "version": "0.5.3",
+    "version": "0.6.0",
     "engines": {
         "vscode": "^1.85.0"
     },
@@ -14,6 +14,15 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "icons": {
+            "verse-imports-icon": {
+                "description": "Verse Auto Imports icon",
+                "default": {
+                    "fontPath": "media/icon.woff",
+                    "fontCharacter": "\\e800"
+                }
+            }
+        },
         "commands": [
             {
                 "command": "verseAutoImports.showStatusMenu",
@@ -26,45 +35,94 @@
             {
                 "command": "verseAutoImports.addSingleImport",
                 "title": "Verse: Add Import"
+            },
+            {
+                "command": "verseAutoImports.toggleAutoImport",
+                "title": "Verse: Toggle Auto Import"
+            },
+            {
+                "command": "verseAutoImports.togglePreserveLocations",
+                "title": "Verse: Toggle Preserve Import Locations"
+            },
+            {
+                "command": "verseAutoImports.toggleImportSyntax",
+                "title": "Verse: Toggle Import Syntax"
+            },
+            {
+                "command": "verseAutoImports.toggleDigestFiles",
+                "title": "Verse: Toggle Digest Files"
+            },
+            {
+                "command": "verseAutoImports.toggleFullPathCodeLens",
+                "title": "Verse: Toggle Path Conversion Helper"
+            },
+            {
+                "command": "verseAutoImports.snoozeAutoImport",
+                "title": "Verse: Snooze Auto Import"
+            },
+            {
+                "command": "verseAutoImports.cancelSnooze",
+                "title": "Verse: Cancel Snooze"
+            },
+            {
+                "command": "verseAutoImports.convertToFullPath",
+                "title": "Verse: Use Absolute Path"
+            },
+            {
+                "command": "verseAutoImports.convertAllToFullPath",
+                "title": "Verse: Use Absolute Paths for All"
+            },
+            {
+                "command": "verseAutoImports.convertToRelativePath",
+                "title": "Verse: Use Relative Path"
+            },
+            {
+                "command": "verseAutoImports.convertAllToRelativePath",
+                "title": "Verse: Use Relative Paths for All"
             }
         ],
         "configuration": {
             "title": "Verse Auto Imports",
             "properties": {
-                "verseAutoImports.autoImport": {
+                "verseAutoImports.general.autoImport": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Automatically add missing imports when errors are detected"
+                    "description": "Automatically add missing imports when errors are detected",
+                    "order": 1
                 },
-                "verseAutoImports.diagnosticDelay": {
+                "verseAutoImports.general.diagnosticDelay": {
                     "type": "number",
                     "default": 1000,
-                    "description": "Delay in milliseconds before processing diagnostics to reduce frequency of updates"
+                    "description": "Delay in milliseconds before processing diagnostics to reduce frequency of updates",
+                    "order": 2
                 },
-                "verseAutoImports.importSyntax": {
+                "verseAutoImports.behavior.importSyntax": {
                     "type": "string",
                     "enum": [
                         "curly",
                         "dot"
                     ],
                     "default": "curly",
-                    "description": "Preferred import syntax: 'curly' for 'using { /Path }' or 'dot' for 'using. /Path'"
+                    "description": "Preferred import syntax: 'curly' for 'using { /Path }' or 'dot' for 'using. /Path'",
+                    "order": 10
                 },
-                "verseAutoImports.preserveImportLocations": {
+                "verseAutoImports.behavior.preserveImportLocations": {
                     "type": "boolean",
                     "default": false,
-                    "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file."
+                    "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file.",
+                    "order": 11
                 },
-                "verseAutoImports.ambiguousImports": {
+                "verseAutoImports.behavior.ambiguousImports": {
                     "type": "object",
                     "default": {
                         "vector3": "/UnrealEngine.com/Temporary/SpatialMath",
                         "vector2": "/UnrealEngine.com/Temporary/SpatialMath",
                         "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
                     },
-                    "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}"
+                    "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}",
+                    "order": 12
                 },
-                "verseAutoImports.multiOptionStrategy": {
+                "verseAutoImports.behavior.multiOptionStrategy": {
                     "type": "string",
                     "enum": [
                         "quickfix",
@@ -73,24 +131,10 @@
                         "disabled"
                     ],
                     "default": "quickfix",
-                    "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios"
+                    "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
+                    "order": 13
                 },
-                "verseAutoImports.useDigestFiles": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Enable lookup of unknown identifiers in Verse digest files for intelligent import suggestions (experimental)"
-                },
-                "verseAutoImports.unknownIdentifierResolution": {
-                    "type": "string",
-                    "enum": [
-                        "digest_only",
-                        "digest_and_inference",
-                        "disabled"
-                    ],
-                    "default": "disabled",
-                    "description": "Strategy for resolving unknown identifiers: 'digest_only' uses only digest files, 'digest_and_inference' adds pattern-based guessing, 'disabled' turns off unknown identifier resolution"
-                },
-                "verseAutoImports.quickFixOrdering": {
+                "verseAutoImports.quickFix.ordering": {
                     "type": "string",
                     "enum": [
                         "confidence",
@@ -98,12 +142,43 @@
                         "module_priority"
                     ],
                     "default": "confidence",
-                    "description": "How to order multiple quick fix options: 'confidence' by suggestion confidence, 'alphabetical' by import statement, 'module_priority' by configured module priorities"
+                    "description": "How to order multiple quick fix options: 'confidence' by suggestion confidence, 'alphabetical' by import statement, 'module_priority' by configured module priorities",
+                    "order": 20
                 },
-                "verseAutoImports.showQuickFixDescriptions": {
+                "verseAutoImports.quickFix.showDescriptions": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Show descriptive text in quick fix menu items (e.g., 'class from /Fortnite.com/Devices')"
+                    "description": "Show descriptive text in quick fix menu items (e.g., 'class from /Fortnite.com/Devices')",
+                    "order": 21
+                },
+                "verseAutoImports.pathConversion.enableCodeLens": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show CodeLens actions above import statements when hovering to convert between absolute and relative paths",
+                    "order": 30
+                },
+                "verseAutoImports.pathConversion.scanDepth": {
+                    "type": "number",
+                    "default": 5,
+                    "description": "Maximum directory depth to scan when searching for module locations (used for ambiguity detection)",
+                    "order": 31
+                },
+                "verseAutoImports.experimental.useDigestFiles": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "⚠️ Enable lookup of unknown identifiers in Verse digest files for intelligent import suggestions",
+                    "order": 40
+                },
+                "verseAutoImports.experimental.unknownIdentifierResolution": {
+                    "type": "string",
+                    "enum": [
+                        "digest_only",
+                        "digest_and_inference",
+                        "disabled"
+                    ],
+                    "default": "disabled",
+                    "description": "⚠️ Strategy for resolving unknown identifiers: 'digest_only' uses only digest files, 'digest_and_inference' adds pattern-based guessing, 'disabled' turns off unknown identifier resolution",
+                    "order": 41
                 }
             }
         }
