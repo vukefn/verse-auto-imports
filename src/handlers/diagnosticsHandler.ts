@@ -28,7 +28,7 @@ export class DiagnosticsHandler {
         if (this.processingDocuments.has(documentKey)) {
             log(
                 this.outputChannel,
-                `⚠️ Already processing ${documentKey}, skipping`
+                `Already processing ${documentKey}, skipping`
             );
             return;
         }
@@ -37,7 +37,7 @@ export class DiagnosticsHandler {
 
         log(
             this.outputChannel,
-            `⏱️ Waiting ${this.delayMs}ms before processing diagnostics for ${documentKey}`
+            `Waiting ${this.delayMs}ms before processing diagnostics for ${documentKey}`
         );
 
         setTimeout(async () => {
@@ -135,13 +135,13 @@ export class DiagnosticsHandler {
             } catch (error) {
                 log(
                     this.outputChannel,
-                    `❌ Error processing diagnostics: ${error}`
+                    `Error processing diagnostics: ${error}`
                 );
             } finally {
                 this.processingDocuments.delete(documentKey);
                 log(
                     this.outputChannel,
-                    `🔄 Finished processing ${documentKey}`
+                    `Finished processing ${documentKey}`
                 );
             }
         }, this.delayMs);
@@ -169,7 +169,7 @@ export class DiagnosticsHandler {
         this.delayMs = delayMs;
         log(
             this.outputChannel,
-            `⚙️ Diagnostic processing delay set to ${delayMs}ms`
+            `Diagnostic processing delay set to ${delayMs}ms`
         );
     }
 }

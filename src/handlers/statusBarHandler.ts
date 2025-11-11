@@ -215,6 +215,7 @@ export class StatusBarHandler {
         const useDigestFiles = config.get<boolean>("experimental.useDigestFiles", false);
         const importSyntax = config.get<string>("behavior.importSyntax", "curly");
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
+        const sortImports = config.get<boolean>("behavior.sortImportsAlphabetically", true);
 
         const items: QuickPickItemWithAction[] = [];
 
@@ -272,6 +273,16 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Path conversion CodeLens toggled: ${!showCodeLens}`);
+            }
+        });
+
+        // Sort Imports Alphabetically checkbox
+        items.push({
+            label: sortImports ? "$(check) Sort Imports Alphabetically" : "$(blank) Sort Imports Alphabetically",
+            description: sortImports ? "Sorted A-Z" : "Original order preserved",
+            action: async () => {
+                await config.update("behavior.sortImportsAlphabetically", !sortImports, vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, `Sort imports alphabetically toggled: ${!sortImports}`);
             }
         });
 
