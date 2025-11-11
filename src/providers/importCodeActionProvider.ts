@@ -17,7 +17,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
     ): Promise<vscode.CodeAction[] | undefined> {
         const codeActions: vscode.CodeAction[] = [];
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const quickFixOrdering = config.get<string>("quickFix.ordering", "confidence");
+        const sortAlphabetically = config.get<boolean>("quickFix.sortAlphabetically", false);
         const showDescriptions = config.get<boolean>("quickFix.showDescriptions", true);
 
         for (const diagnostic of context.diagnostics) {
@@ -28,7 +28,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
             }
 
             // Sort suggestions based on user preference
-            const sortedSuggestions = this.sortSuggestions(suggestions, quickFixOrdering);
+            const sortedSuggestions = this.sortSuggestions(suggestions, sortAlphabetically);
 
             log(
                 this.outputChannel,
@@ -51,29 +51,14 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
         return codeActions.length > 0 ? codeActions : undefined;
     }
 
-    private sortSuggestions(suggestions: ImportSuggestion[], ordering: string): ImportSuggestion[] {
+    private sortSuggestions(suggestions: ImportSuggestion[], sortAlphabetically: boolean): ImportSuggestion[] {
         const sorted = [...suggestions]; // Create a copy
 
-        switch (ordering) {
-            case "confidence":
-                // Sort by confidence (high, medium, low) then by length
-                const confidenceOrder = { 'high': 0, 'medium': 1, 'low': 2 };
-                sorted.sort((a, b) => {
-                    const confDiff = confidenceOrder[a.confidence] - confidenceOrder[b.confidence];
-                    if (confDiff !== 0) return confDiff;
-                    return a.importStatement.length - b.importStatement.length;
-                });
-                break;
-            case "alphabetical":
-                sorted.sort((a, b) => a.importStatement.localeCompare(b.importStatement));
-                break;
-            case "module_priority":
-                // Could implement module priority here based on configuration
-                // For now, fall back to confidence ordering
-                return this.sortSuggestions(suggestions, "confidence");
-            default:
-                return sorted; // No sorting
+        if (sortAlphabetically) {
+            // Sort alphabetically by import statement
+            sorted.sort((a, b) => a.importStatement.localeCompare(b.importStatement));
         }
+        // If not sorting alphabetically, preserve the original order
 
         return sorted;
     }

@@ -112,6 +112,12 @@
                     "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file.",
                     "order": 11
                 },
+                "verseAutoImports.behavior.sortImportsAlphabetically": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When true, sorts imports alphabetically. When false, preserves the original order.",
+                    "order": 12
+                },
                 "verseAutoImports.behavior.ambiguousImports": {
                     "type": "object",
                     "default": {
@@ -120,7 +126,7 @@
                         "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
                     },
                     "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}",
-                    "order": 12
+                    "order": 13
                 },
                 "verseAutoImports.behavior.multiOptionStrategy": {
                     "type": "string",
@@ -132,17 +138,12 @@
                     ],
                     "default": "quickfix",
                     "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
-                    "order": 13
+                    "order": 14
                 },
-                "verseAutoImports.quickFix.ordering": {
-                    "type": "string",
-                    "enum": [
-                        "confidence",
-                        "alphabetical",
-                        "module_priority"
-                    ],
-                    "default": "confidence",
-                    "description": "How to order multiple quick fix options: 'confidence' by suggestion confidence, 'alphabetical' by import statement, 'module_priority' by configured module priorities",
+                "verseAutoImports.quickFix.sortAlphabetically": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, sorts quick fix options alphabetically. When false, preserves original order.",
                     "order": 20
                 },
                 "verseAutoImports.quickFix.showDescriptions": {
