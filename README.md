@@ -23,7 +23,7 @@ Stop manually managing imports in your Verse code. This extension automatically 
 
 
 
-![Demo of auto-importing](https://i.postimg.cc/wjgcS0cF/demo.gif)
+![Demo of auto-importing](./media/demo.gif)
 
 ## Key Features
 

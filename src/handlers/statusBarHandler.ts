@@ -41,14 +41,14 @@ export class StatusBarHandler {
         if (this.snoozeEndTime !== null) {
             // Snooze is active - show text with countdown
             const remaining = this.getRemainingTime();
-            this.statusBarItem.text = `Auto Imports (${remaining})`;
+            this.statusBarItem.text = `Verse Auto Imports (${remaining})`;
         } else {
             // Normal state - just show text
-            this.statusBarItem.text = "Auto Imports";
+            this.statusBarItem.text = "Verse Auto Imports";
         }
 
         // Update tooltip with rich markdown
-        this.updateTooltip();
+        // this.updateTooltip();
     }
 
     private updateTooltip(): void {
