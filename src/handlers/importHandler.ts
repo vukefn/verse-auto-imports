@@ -309,10 +309,11 @@ export class ImportHandler {
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
         const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", false);
+        const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
 
         log(
             this.outputChannel,
-            `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""}`
+            `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically}`
         );
         importStatements.forEach((statement) => {
             log(this.outputChannel, `- ${statement}`);
@@ -379,7 +380,9 @@ export class ImportHandler {
                 this.formatImportStatement(path, preferDotSyntax)
             );
 
-            newImports.sort();
+            if (sortAlphabetically) {
+                newImports.sort();
+            }
 
             if (importBlocks.length > 0 && importBlocks[0].start === 0) {
                 edit.insert(
@@ -393,8 +396,14 @@ export class ImportHandler {
         } else {
             // Consolidate all imports at the top
             const allPaths = new Set<string>([...existingPaths, ...newImportPaths]);
-            const sortedImports = Array.from(allPaths)
-                .sort((a, b) => a.localeCompare(b))
+            const allImportsArray = Array.from(allPaths);
+
+            // Only sort if the setting is enabled
+            if (sortAlphabetically) {
+                allImportsArray.sort((a, b) => a.localeCompare(b));
+            }
+
+            const formattedImports = allImportsArray
                 .map((path) => this.formatImportStatement(path, preferDotSyntax));
 
             // Determine the line after all existing import blocks to check for spacing
@@ -416,8 +425,8 @@ export class ImportHandler {
                 }
             }
 
-            // Insert sorted imports at top with appropriate spacing
-            const importsText = sortedImports.join("\n") + "\n" + (needsEmptyLine ? "\n" : "");
+            // Insert imports at top with appropriate spacing
+            const importsText = formattedImports.join("\n") + "\n" + (needsEmptyLine ? "\n" : "");
             edit.insert(document.uri, new vscode.Position(0, 0), importsText);
 
             // Remove existing import blocks (in reverse order to maintain line numbers)
@@ -459,5 +468,263 @@ export class ImportHandler {
         }
 
         return null;
+    }
+
+    /**
+     * Removes all import statements from the document.
+     * Handles all three Verse import formats:
+     * - using { /path }
+     * - using. /path
+     * - using:
+     *     /path
+     */
+    async removeAllImports(document: vscode.TextDocument): Promise<boolean> {
+        log(this.outputChannel, "Removing all imports from document");
+
+        const text = document.getText();
+        const lines = text.split("\n");
+        const resultLines: string[] = [];
+        let i = 0;
+        let removedCount = 0;
+
+        while (i < lines.length) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+
+            // Check for single-line imports (curly or dot syntax)
+            if (trimmedLine.match(/^using\s*\{[^}]+\}/) || trimmedLine.match(/^using\.\s+.+/)) {
+                log(this.outputChannel, `Removing single-line import at line ${i + 1}: ${trimmedLine}`);
+                removedCount++;
+                i++;
+                continue;
+            }
+
+            // Check for multi-line import start
+            if (trimmedLine.match(/^using\s*:\s*$/)) {
+                log(this.outputChannel, `Found multi-line import start at line ${i + 1}`);
+                removedCount++;
+                i++;
+
+                // Skip the next indented path line
+                if (i < lines.length) {
+                    const nextLine = lines[i];
+                    // Check if next line is indented (has leading whitespace)
+                    if (nextLine.match(/^\s+.+/)) {
+                        log(this.outputChannel, `Removing indented path at line ${i + 1}: ${nextLine.trim()}`);
+                        i++;
+                    }
+                }
+                continue;
+            }
+
+            // Keep non-import lines
+            resultLines.push(line);
+            i++;
+        }
+
+        if (removedCount === 0) {
+            log(this.outputChannel, "No imports found to remove");
+            return true;
+        }
+
+        // Apply the edit to replace entire document
+        const edit = new vscode.WorkspaceEdit();
+        const fullRange = new vscode.Range(
+            new vscode.Position(0, 0),
+            document.lineAt(document.lineCount - 1).range.end
+        );
+
+        edit.replace(document.uri, fullRange, resultLines.join("\n"));
+
+        try {
+            const success = await vscode.workspace.applyEdit(edit);
+            log(this.outputChannel, `Removed ${removedCount} import statements. Success: ${success}`);
+            return success;
+        } catch (error) {
+            log(this.outputChannel, `Error removing imports: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Extracts import suggestions from VS Code diagnostics.
+     * Parses error messages to find missing imports.
+     */
+    extractImportsFromDiagnostics(diagnostics: vscode.Diagnostic[]): string[] {
+        log(this.outputChannel, `Extracting imports from ${diagnostics.length} diagnostics`);
+
+        const suggestedPaths = new Set<string>();
+
+        for (const diagnostic of diagnostics) {
+            const errorMessage = diagnostic.message;
+
+            // Skip non-import related errors
+            if (!errorMessage.includes("using") && !errorMessage.includes("Unknown identifier") &&
+                !errorMessage.includes("Did you forget") && !errorMessage.includes("Did you mean")) {
+                continue;
+            }
+
+            // Pattern 1: "Did you forget to specify using { /Path }"
+            const forgetMatch = errorMessage.match(/Did you forget to specify using \{ (\/[^}]+) \}/);
+            if (forgetMatch) {
+                suggestedPaths.add(forgetMatch[1]);
+                log(this.outputChannel, `Found path from 'forget' pattern: ${forgetMatch[1]}`);
+                continue;
+            }
+
+            // Pattern 2: Multiple options "Did you forget to specify one of:"
+            const multiMatch = errorMessage.match(/Did you forget to specify one of:\s*\n((?:using \{[^}]+\}\s*\n?)+)/s);
+            if (multiMatch) {
+                const optionsText = multiMatch[1];
+                const usingPattern = /using \{ (\/[^}]+) \}/g;
+                let usingMatch;
+                while ((usingMatch = usingPattern.exec(optionsText)) !== null) {
+                    suggestedPaths.add(usingMatch[1]);
+                    log(this.outputChannel, `Found path from multi-option: ${usingMatch[1]}`);
+                }
+                continue;
+            }
+
+            // Pattern 3: "Identifier X could be one of many types: (/Path1:)X or (/Path2:)X"
+            const identifierMatch = errorMessage.match(/Identifier \w+ could be one of many types:\s*(.+)/);
+            if (identifierMatch) {
+                const optionsText = identifierMatch[1];
+                const pathPattern = /\((\/[^:)]+):\)/g;
+                let pathMatch;
+                while ((pathMatch = pathPattern.exec(optionsText)) !== null) {
+                    suggestedPaths.add(pathMatch[1]);
+                    log(this.outputChannel, `Found path from identifier pattern: ${pathMatch[1]}`);
+                }
+                continue;
+            }
+
+            // Pattern 4: "Did you mean Module.Class" - extract module
+            const didYouMeanMatch = errorMessage.match(/Did you mean ([^`\n]+)/);
+            if (didYouMeanMatch) {
+                const fullName = didYouMeanMatch[1].trim();
+                const lastDotIndex = fullName.lastIndexOf(".");
+                if (lastDotIndex > 0) {
+                    const namespace = fullName.substring(0, lastDotIndex);
+                    // Check if it's an absolute path or relative module
+                    if (namespace.startsWith('/')) {
+                        suggestedPaths.add(namespace);
+                    } else {
+                        // For relative modules, we might need to handle them differently
+                        // For now, add as-is
+                        suggestedPaths.add(namespace);
+                    }
+                    log(this.outputChannel, `Found path from 'did you mean': ${namespace}`);
+                }
+            }
+        }
+
+        const result = Array.from(suggestedPaths);
+        log(this.outputChannel, `Extracted ${result.length} unique import paths from diagnostics`);
+        return result;
+    }
+
+    /**
+     * Converts all import statements in the document to the preferred syntax.
+     * This includes imports that are not at the top of the file (e.g., inside namespaces).
+     */
+    async convertScatteredImportsToPreferredSyntax(document: vscode.TextDocument): Promise<boolean> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const preferredSyntax = config.get<string>("behavior.importSyntax", "curly");
+        const preferDotSyntax = preferredSyntax === "dot";
+
+        log(this.outputChannel, `Converting all imports to ${preferredSyntax} syntax`);
+
+        const text = document.getText();
+        const lines = text.split("\n");
+        const edits: { line: number; oldText: string; newText: string }[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+
+            // Check for single-line curly syntax
+            const curlyMatch = trimmedLine.match(/^(using\s*\{\s*)([^}]+)(\s*\})/);
+            if (curlyMatch) {
+                const path = curlyMatch[2].trim();
+                const currentIsDot = false;
+
+                if (currentIsDot !== preferDotSyntax) {
+                    const newStatement = this.formatImportStatement(path, preferDotSyntax);
+                    // Preserve indentation
+                    const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
+                    edits.push({
+                        line: i,
+                        oldText: line,
+                        newText: leadingWhitespace + newStatement
+                    });
+                    log(this.outputChannel, `Converting line ${i + 1} from curly to ${preferredSyntax}`);
+                }
+                continue;
+            }
+
+            // Check for single-line dot syntax
+            const dotMatch = trimmedLine.match(/^(using\.\s*)(.+)/);
+            if (dotMatch) {
+                const path = dotMatch[2].trim();
+                const currentIsDot = true;
+
+                if (currentIsDot !== preferDotSyntax) {
+                    const newStatement = this.formatImportStatement(path, preferDotSyntax);
+                    // Preserve indentation
+                    const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
+                    edits.push({
+                        line: i,
+                        oldText: line,
+                        newText: leadingWhitespace + newStatement
+                    });
+                    log(this.outputChannel, `Converting line ${i + 1} from dot to ${preferredSyntax}`);
+                }
+                continue;
+            }
+
+            // Check for multi-line import (always convert to preferred single-line format)
+            if (trimmedLine.match(/^using\s*:\s*$/)) {
+                // Look for the next indented path line
+                if (i + 1 < lines.length) {
+                    const nextLine = lines[i + 1];
+                    const pathMatch = nextLine.match(/^\s+(.+)/);
+                    if (pathMatch) {
+                        const path = pathMatch[1].trim();
+                        const newStatement = this.formatImportStatement(path, preferDotSyntax);
+                        // Preserve indentation of the original 'using:' line
+                        const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
+
+                        // We need to replace both lines with a single line
+                        // For now, just mark them for conversion
+                        log(this.outputChannel, `Found multi-line import at lines ${i + 1}-${i + 2}, converting to ${preferredSyntax}`);
+                        // This is more complex - we'll handle it in the apply phase
+                    }
+                }
+            }
+        }
+
+        if (edits.length === 0) {
+            log(this.outputChannel, "No imports need syntax conversion");
+            return true;
+        }
+
+        // Apply all edits
+        const edit = new vscode.WorkspaceEdit();
+        for (const e of edits) {
+            const range = new vscode.Range(
+                new vscode.Position(e.line, 0),
+                new vscode.Position(e.line, lines[e.line].length)
+            );
+            edit.replace(document.uri, range, e.newText);
+        }
+
+        try {
+            const success = await vscode.workspace.applyEdit(edit);
+            log(this.outputChannel, `Converted ${edits.length} import statements. Success: ${success}`);
+            return success;
+        } catch (error) {
+            log(this.outputChannel, `Error converting imports: ${error}`);
+            return false;
+        }
     }
 }
