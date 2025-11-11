@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
             ) {
                 const newConfig =
                     vscode.workspace.getConfiguration("verseAutoImports");
-                const newDelay = newConfig.get<number>("diagnosticDelay", 1000);
+                const newDelay = newConfig.get<number>("general.diagnosticDelay", 1000);
                 diagnosticsHandler.setDelay(newDelay);
             }
         })
@@ -388,7 +388,7 @@ export function activate(context: vscode.ExtensionContext) {
                                 "verseAutoImports"
                             );
                         const autoImportEnabled = config.get<boolean>(
-                            "autoImport",
+                            "general.autoImport",
                             true
                         );
 
