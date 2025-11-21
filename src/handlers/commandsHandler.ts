@@ -3,10 +3,7 @@ import { log } from "../utils/logging";
 import { ImportHandler } from "./importHandler";
 
 export class CommandsHandler {
-    constructor(
-        private outputChannel: vscode.OutputChannel,
-        private importHandler: ImportHandler
-    ) {}
+    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}
 
     async optimizeImports() {
         log(this.outputChannel, "Optimizing imports command triggered");
@@ -14,17 +11,13 @@ export class CommandsHandler {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             log(this.outputChannel, "No active editor found");
-            vscode.window.showWarningMessage(
-                "Please open a file to optimize imports"
-            );
+            vscode.window.showWarningMessage("Please open a file to optimize imports");
             return;
         }
 
         if (editor.document.languageId !== "verse") {
             log(this.outputChannel, "Active file is not a Verse file");
-            vscode.window.showWarningMessage(
-                "Optimize imports only works with Verse files"
-            );
+            vscode.window.showWarningMessage("Optimize imports only works with Verse files");
             return;
         }
 
@@ -34,7 +27,7 @@ export class CommandsHandler {
             const autoImportEnabled = config.get<boolean>("general.autoImport", true);
             const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
 
-            log(this.outputChannel, `Auto-import: ${autoImportEnabled}, Preferred syntax: ${preferDotSyntax ? 'dot' : 'curly'}`);
+            log(this.outputChannel, `Auto-import: ${autoImportEnabled}, Preferred syntax: ${preferDotSyntax ? "dot" : "curly"}`);
 
             // Step 1: Remove all imports from the document
             log(this.outputChannel, "Step 1: Removing all imports");
@@ -46,7 +39,7 @@ export class CommandsHandler {
 
             // Step 3: Wait a moment for diagnostics to update
             log(this.outputChannel, "Step 3: Waiting for diagnostics to update");
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise((resolve) => setTimeout(resolve, 200));
 
             // Step 4: Get diagnostics for the document
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
@@ -57,7 +50,7 @@ export class CommandsHandler {
                 log(this.outputChannel, "Step 5a: Auto-import is enabled, waiting for automatic imports");
 
                 // Give auto-import time to work
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, 500));
 
                 // Convert any scattered imports to preferred syntax
                 log(this.outputChannel, "Step 6: Converting scattered imports to preferred syntax");
@@ -73,7 +66,7 @@ export class CommandsHandler {
                     log(this.outputChannel, `Found ${missingImportPaths.length} missing imports to add`);
 
                     // Format import statements with preferred syntax
-                    const importStatements = missingImportPaths.map(path => {
+                    const importStatements = missingImportPaths.map((path) => {
                         const statement = preferDotSyntax ? `using. ${path}` : `using { ${path} }`;
                         log(this.outputChannel, `Formatting import: ${statement}`);
                         return statement;
@@ -92,9 +85,7 @@ export class CommandsHandler {
             await document.save();
 
             log(this.outputChannel, "Successfully optimized imports");
-            vscode.window.showInformationMessage(
-                "Imports optimized successfully"
-            );
+            vscode.window.showInformationMessage("Imports optimized successfully");
         } catch (error) {
             log(this.outputChannel, `Error optimizing imports: ${error}`);
             vscode.window.showErrorMessage(`Failed to optimize imports: ${error}`);

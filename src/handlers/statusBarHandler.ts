@@ -11,14 +11,8 @@ export class StatusBarHandler {
     private snoozeEndTime: number | null = null;
     private snoozeInterval: NodeJS.Timeout | null = null;
 
-    constructor(
-        private outputChannel: vscode.OutputChannel,
-        private importHandler: ImportHandler
-    ) {
-        this.statusBarItem = vscode.window.createStatusBarItem(
-            vscode.StatusBarAlignment.Right,
-            100
-        );
+    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {
+        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
         this.statusBarItem.command = "verseAutoImports.showStatusMenu";
         this.statusBarItem.name = "Verse Auto Imports";
 
@@ -73,112 +67,114 @@ export class StatusBarHandler {
 
         // Quick Actions Section
         md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown('<strong>Quick Actions:</strong><br>');
+        md.appendMarkdown("<strong>Quick Actions:</strong><br>");
         md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;">');
 
         // Optimize Imports
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.optimizeImports">$(file-code) Optimize Imports</a>');
-        md.appendMarkdown('</td>');
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</td>");
+        md.appendMarkdown("</tr>");
 
         // Snooze controls
         if (this.snoozeEndTime !== null) {
             const remaining = this.getRemainingTime();
-            md.appendMarkdown('<tr>');
+            md.appendMarkdown("<tr>");
             md.appendMarkdown('<td style="padding:6px 8px 6px 0;">$(clock) Snoozed</td>');
-            md.appendMarkdown(`<td style="padding:6px 0;"><span style="background-color:var(--vscode-editorWarning-background);color:var(--vscode-editorWarning-foreground);">&nbsp;&nbsp;${remaining}&nbsp;&nbsp;</span></td>`);
-            md.appendMarkdown('</tr>');
+            md.appendMarkdown(
+                `<td style="padding:6px 0;"><span style="background-color:var(--vscode-editorWarning-background);color:var(--vscode-editorWarning-foreground);">&nbsp;&nbsp;${remaining}&nbsp;&nbsp;</span></td>`
+            );
+            md.appendMarkdown("</tr>");
 
-            md.appendMarkdown('<tr>');
+            md.appendMarkdown("<tr>");
             md.appendMarkdown('<td colspan="2" style="padding:4px 0 2px 12px;">');
             md.appendMarkdown('<a href="command:verseAutoImports.snoozeAutoImport">$(add) Add 5 Minutes</a>');
-            md.appendMarkdown('</td>');
-            md.appendMarkdown('</tr>');
+            md.appendMarkdown("</td>");
+            md.appendMarkdown("</tr>");
 
-            md.appendMarkdown('<tr>');
+            md.appendMarkdown("<tr>");
             md.appendMarkdown('<td colspan="2" style="padding:2px 0 4px 12px;">');
             md.appendMarkdown('<a href="command:verseAutoImports.cancelSnooze">$(close) Cancel Snooze</a>');
-            md.appendMarkdown('</td>');
-            md.appendMarkdown('</tr>');
+            md.appendMarkdown("</td>");
+            md.appendMarkdown("</tr>");
         } else {
-            md.appendMarkdown('<tr>');
+            md.appendMarkdown("<tr>");
             md.appendMarkdown('<td style="padding:8px 0;">');
             md.appendMarkdown('<a href="command:verseAutoImports.snoozeAutoImport">$(clock) Snooze</a>');
-            md.appendMarkdown('</td>');
-            md.appendMarkdown('</tr>');
+            md.appendMarkdown("</td>");
+            md.appendMarkdown("</tr>");
         }
 
-        md.appendMarkdown('</table>');
-        md.appendMarkdown('</div>');
+        md.appendMarkdown("</table>");
+        md.appendMarkdown("</div>");
 
         md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
 
         // Settings Section
         md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown('<strong>Settings:</strong><br>');
+        md.appendMarkdown("<strong>Settings:</strong><br>");
         md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;width:100%;">');
 
         // Auto Import
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.toggleAutoImport">Toggle</a>');
-        md.appendMarkdown('</td>');
+        md.appendMarkdown("</td>");
         md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Auto Import</td>');
         md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${autoImportEnabled ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</tr>");
 
         // Preserve Locations
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.togglePreserveLocations">Toggle</a>');
-        md.appendMarkdown('</td>');
+        md.appendMarkdown("</td>");
         md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Preserve Locations</td>');
         md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${preserveLocations ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</tr>");
 
         // Import Syntax
         const syntaxDisplay = importSyntax === "curly" ? "using { }" : "using.";
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.toggleImportSyntax">Switch</a>');
-        md.appendMarkdown('</td>');
+        md.appendMarkdown("</td>");
         md.appendMarkdown(`<td style="padding:2px 8px;width:100%;">Import Syntax: <code>${syntaxDisplay}</code></td>`);
         md.appendMarkdown('<td style="padding:2px 0;"></td>');
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</tr>");
 
         // Path Conversion Helper
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.toggleFullPathCodeLens">Toggle</a>');
-        md.appendMarkdown('</td>');
+        md.appendMarkdown("</td>");
         md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Path Conversion Helper</td>');
         md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${showCodeLens ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</tr>");
 
-        md.appendMarkdown('</table>');
-        md.appendMarkdown('</div>');
+        md.appendMarkdown("</table>");
+        md.appendMarkdown("</div>");
 
         md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
 
         // Experimental Section
         md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown('<strong>Experimental:</strong><br>');
+        md.appendMarkdown("<strong>Experimental:</strong><br>");
         md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;width:100%;">');
 
         // Use Digest Files
-        md.appendMarkdown('<tr>');
+        md.appendMarkdown("<tr>");
         md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
         md.appendMarkdown('<a href="command:verseAutoImports.toggleDigestFiles">Toggle</a>');
-        md.appendMarkdown('</td>');
+        md.appendMarkdown("</td>");
         md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Use Digest Files</td>');
         md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${useDigestFiles ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown('</tr>');
+        md.appendMarkdown("</tr>");
 
-        md.appendMarkdown('</table>');
-        md.appendMarkdown('</div>');
+        md.appendMarkdown("</table>");
+        md.appendMarkdown("</div>");
 
         md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
 
@@ -186,9 +182,9 @@ export class StatusBarHandler {
         md.appendMarkdown('<div style="margin-top:8px;">');
         md.appendMarkdown('<a href="command:verseAutoImports.showStatusMenu">$(settings-gear) Open Full Menu</a> | ');
         md.appendMarkdown('<a href="command:workbench.action.output.toggleOutput">$(output) View Logs</a>');
-        md.appendMarkdown('</div>');
+        md.appendMarkdown("</div>");
 
-        md.appendMarkdown('</div>');
+        md.appendMarkdown("</div>");
 
         this.statusBarItem.tooltip = md;
     }
@@ -205,7 +201,7 @@ export class StatusBarHandler {
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
 
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
 
     async showMenu(): Promise<void> {
@@ -216,6 +212,7 @@ export class StatusBarHandler {
         const importSyntax = config.get<string>("behavior.importSyntax", "curly");
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
         const sortImports = config.get<boolean>("behavior.sortImportsAlphabetically", true);
+        const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
         const items: QuickPickItemWithAction[] = [];
 
@@ -225,13 +222,13 @@ export class StatusBarHandler {
             description: "Sort and organize imports in current file",
             action: async () => {
                 await vscode.commands.executeCommand("verseAutoImports.optimizeImports");
-            }
+            },
         });
 
         // Separator
         items.push({
             label: "",
-            kind: vscode.QuickPickItemKind.Separator
+            kind: vscode.QuickPickItemKind.Separator,
         });
 
         // Auto Import checkbox
@@ -241,7 +238,7 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("general.autoImport", !autoImportEnabled, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Auto import toggled: ${!autoImportEnabled}`);
-            }
+            },
         });
 
         // Preserve Import Locations checkbox
@@ -251,7 +248,7 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("behavior.preserveImportLocations", !preserveLocations, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Preserve import locations toggled: ${!preserveLocations}`);
-            }
+            },
         });
 
         // Import Syntax checkbox
@@ -263,7 +260,7 @@ export class StatusBarHandler {
                 const newSyntax = isDotSyntax ? "curly" : "dot";
                 await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Import syntax changed to: ${newSyntax}`);
-            }
+            },
         });
 
         // Show Path Conversion CodeLens checkbox
@@ -273,7 +270,7 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Path conversion CodeLens toggled: ${!showCodeLens}`);
-            }
+            },
         });
 
         // Sort Imports Alphabetically checkbox
@@ -283,7 +280,34 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("behavior.sortImportsAlphabetically", !sortImports, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Sort imports alphabetically toggled: ${!sortImports}`);
-            }
+            },
+        });
+
+        // Import Grouping option
+        let groupingLabel = "";
+        let groupingDescription = "";
+
+        switch (importGrouping) {
+            case "none":
+                groupingLabel = "$(list-unordered) Import Grouping: None";
+                groupingDescription = "No grouping";
+                break;
+            case "digestFirst":
+                groupingLabel = "$(list-ordered) Import Grouping: Digest First";
+                groupingDescription = "Digest imports, then local";
+                break;
+            case "localFirst":
+                groupingLabel = "$(list-ordered) Import Grouping: Local First";
+                groupingDescription = "Local imports, then digest";
+                break;
+        }
+
+        items.push({
+            label: `${groupingLabel} $(chevron-right)`,
+            description: groupingDescription,
+            action: async () => {
+                await this.showImportGroupingMenu();
+            },
         });
 
         // Use Digest Files checkbox (experimental)
@@ -293,13 +317,13 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("experimental.useDigestFiles", !useDigestFiles, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Use digest files toggled: ${!useDigestFiles}`);
-            }
+            },
         });
 
         // Separator
         items.push({
             label: "",
-            kind: vscode.QuickPickItemKind.Separator
+            kind: vscode.QuickPickItemKind.Separator,
         });
 
         // Snooze section
@@ -312,7 +336,7 @@ export class StatusBarHandler {
                 description: `${remaining} remaining`,
                 action: () => {
                     this.extendSnooze(5);
-                }
+                },
             });
 
             items.push({
@@ -320,7 +344,7 @@ export class StatusBarHandler {
                 description: "Resume auto imports immediately",
                 action: () => {
                     this.cancelSnooze();
-                }
+                },
             });
         } else {
             // Snooze is not active - show snooze button
@@ -329,14 +353,14 @@ export class StatusBarHandler {
                 description: "Turn off auto imports for 5 mins",
                 action: () => {
                     this.startSnooze(5);
-                }
+                },
             });
         }
 
         // Separator
         items.push({
             label: "",
-            kind: vscode.QuickPickItemKind.Separator
+            kind: vscode.QuickPickItemKind.Separator,
         });
 
         // Utility actions
@@ -345,7 +369,7 @@ export class StatusBarHandler {
             description: "Open extension output channel",
             action: () => {
                 this.outputChannel.show();
-            }
+            },
         });
 
         items.push({
@@ -353,13 +377,13 @@ export class StatusBarHandler {
             description: "View all Verse Auto Imports settings",
             action: async () => {
                 await vscode.commands.executeCommand("workbench.action.openSettings", "verseAutoImports");
-            }
+            },
         });
 
         // Show the menu
         const selected = await vscode.window.showQuickPick(items, {
             placeHolder: "Verse Auto Imports - Quick Actions",
-            matchOnDescription: true
+            matchOnDescription: true,
         });
 
         // Execute the action if an item was selected
@@ -370,11 +394,77 @@ export class StatusBarHandler {
         }
     }
 
+    async showImportGroupingMenu(): Promise<void> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const currentGrouping = config.get<string>("behavior.importGrouping", "none");
+
+        const items: QuickPickItemWithAction[] = [];
+
+        // Add back option
+        items.push({
+            label: "$(arrow-left) Back to main menu",
+            description: "",
+            action: async () => {
+                await this.showMenu();
+            },
+        });
+
+        // Separator
+        items.push({
+            label: "",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
+        // None option
+        items.push({
+            label: `${currentGrouping === "none" ? "$(check) " : "$(blank) "}No Grouping`,
+            description: "All imports mixed together (default)",
+            action: async () => {
+                await config.update("behavior.importGrouping", "none", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: none");
+                vscode.window.showInformationMessage("Import grouping disabled");
+            },
+        });
+
+        // Digest First option
+        items.push({
+            label: `${currentGrouping === "digestFirst" ? "$(check) " : "$(blank) "}Digest First`,
+            description: "Digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com), then local imports",
+            action: async () => {
+                await config.update("behavior.importGrouping", "digestFirst", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: digestFirst");
+                vscode.window.showInformationMessage("Import grouping: Digest imports first");
+            },
+        });
+
+        // Local First option
+        items.push({
+            label: `${currentGrouping === "localFirst" ? "$(check) " : "$(blank) "}Local First`,
+            description: "Local imports, then digest imports",
+            action: async () => {
+                await config.update("behavior.importGrouping", "localFirst", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: localFirst");
+                vscode.window.showInformationMessage("Import grouping: Local imports first");
+            },
+        });
+
+        // Show the submenu
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select Import Grouping Option",
+            matchOnDescription: true,
+        });
+
+        // Execute the action if an item was selected
+        if (selected?.action) {
+            await selected.action();
+        }
+    }
+
     startSnooze(minutes: number): void {
         log(this.outputChannel, `Starting snooze for ${minutes} minutes`);
 
         // Set snooze end time
-        this.snoozeEndTime = Date.now() + (minutes * 60 * 1000);
+        this.snoozeEndTime = Date.now() + minutes * 60 * 1000;
 
         // Disable auto imports
         const config = vscode.workspace.getConfiguration("verseAutoImports");
@@ -392,9 +482,7 @@ export class StatusBarHandler {
         // Update immediately
         this.updateStatusBarDisplay();
 
-        vscode.window.showInformationMessage(
-            `Auto imports snoozed for ${minutes} minutes`
-        );
+        vscode.window.showInformationMessage(`Auto imports snoozed for ${minutes} minutes`);
     }
 
     private extendSnooze(minutes: number): void {
@@ -404,9 +492,7 @@ export class StatusBarHandler {
         this.snoozeEndTime += minutes * 60 * 1000;
         this.updateStatusBarDisplay();
 
-        vscode.window.showInformationMessage(
-            `Snooze extended by ${minutes} minutes`
-        );
+        vscode.window.showInformationMessage(`Snooze extended by ${minutes} minutes`);
     }
 
     cancelSnooze(): void {

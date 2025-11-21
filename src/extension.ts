@@ -14,10 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel.appendLine("Verse Auto Imports is now active");
 
     const config = vscode.workspace.getConfiguration("verseAutoImports");
-    const existingMappings = config.get<Record<string, string>>(
-        "ambiguousImports",
-        {}
-    );
+    const existingMappings = config.get<Record<string, string>>("ambiguousImports", {});
 
     if (Object.keys(existingMappings).length === 0) {
         outputChannel.appendLine("Setting default ambiguous import mappings");
@@ -49,49 +46,25 @@ export function activate(context: vscode.ExtensionContext) {
     diagnosticsHandler.setDelay(delayMs);
     outputChannel.appendLine(`Initial debounce delay set to ${delayMs}ms`);
 
-    context.subscriptions.push(
-        vscode.languages.registerCodeActionsProvider(
-            { language: "verse" },
-            new ImportCodeActionProvider(outputChannel, importHandler)
-        )
-    );
+    context.subscriptions.push(vscode.languages.registerCodeActionsProvider({ language: "verse" }, new ImportCodeActionProvider(outputChannel, importHandler)));
 
     // Register CodeLens provider for full path conversion
-    context.subscriptions.push(
-        vscode.languages.registerCodeLensProvider(
-            { language: "verse" },
-            importCodeLensProvider
-        )
-    );
+    context.subscriptions.push(vscode.languages.registerCodeLensProvider({ language: "verse" }, importCodeLensProvider));
 
     // Set up file watcher for project file changes
-    context.subscriptions.push(
-        projectPathHandler.setupFileWatcher()
-    );
+    context.subscriptions.push(projectPathHandler.setupFileWatcher());
 
     context.subscriptions.push(
-        vscode.commands.registerCommand(
-            "verseAutoImports.addSingleImport",
-            async (document: vscode.TextDocument, importStatement: string) => {
-                await importHandler.addImportsToDocument(document, [
-                    importStatement,
-                ]);
-                vscode.window.setStatusBarMessage(
-                    `Added import: ${importStatement}`,
-                    3000
-                );
-            }
-        )
+        vscode.commands.registerCommand("verseAutoImports.addSingleImport", async (document: vscode.TextDocument, importStatement: string) => {
+            await importHandler.addImportsToDocument(document, [importStatement]);
+            vscode.window.setStatusBarMessage(`Added import: ${importStatement}`, 3000);
+        })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (
-                event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") ||
-                event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")
-            ) {
-                const newConfig =
-                    vscode.workspace.getConfiguration("verseAutoImports");
+            if (event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") || event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")) {
+                const newConfig = vscode.workspace.getConfiguration("verseAutoImports");
                 // Handle backward compatibility
                 const legacyDelay = newConfig.get<number | undefined>("general.diagnosticDelay", undefined);
                 const autoImportDebounceDelay = newConfig.get<number>("general.autoImportDebounceDelay", 3000);
@@ -105,245 +78,193 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         statusBarHandler.getStatusBarItem(),
-        vscode.commands.registerCommand(
-            "verseAutoImports.showStatusMenu",
-            () => {
-                statusBarHandler.showMenu();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.optimizeImports",
-            () => {
-                commandsHandler.optimizeImports();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.toggleAutoImport",
-            async () => {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const current = config.get<boolean>("general.autoImport", true);
-                await config.update("general.autoImport", !current, vscode.ConfigurationTarget.Global);
-                statusBarHandler.updateDisplay();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.togglePreserveLocations",
-            async () => {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const current = config.get<boolean>("behavior.preserveImportLocations", false);
-                await config.update("behavior.preserveImportLocations", !current, vscode.ConfigurationTarget.Global);
-                statusBarHandler.updateDisplay();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.toggleImportSyntax",
-            async () => {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const current = config.get<string>("behavior.importSyntax", "curly");
-                const newSyntax = current === "curly" ? "dot" : "curly";
-                await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
-                statusBarHandler.updateDisplay();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.toggleDigestFiles",
-            async () => {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const current = config.get<boolean>("experimental.useDigestFiles", false);
-                await config.update("experimental.useDigestFiles", !current, vscode.ConfigurationTarget.Global);
-                statusBarHandler.updateDisplay();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.toggleFullPathCodeLens",
-            async () => {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                const current = config.get<boolean>("pathConversion.enableCodeLens", true);
-                await config.update("pathConversion.enableCodeLens", !current, vscode.ConfigurationTarget.Global);
-                statusBarHandler.updateDisplay();
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.snoozeAutoImport",
-            () => {
-                statusBarHandler.startSnooze(5);
-            }
-        ),
-        vscode.commands.registerCommand(
-            "verseAutoImports.cancelSnooze",
-            () => {
-                statusBarHandler.cancelSnooze();
-            }
-        ),
+        vscode.commands.registerCommand("verseAutoImports.showStatusMenu", () => {
+            statusBarHandler.showMenu();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.optimizeImports", () => {
+            commandsHandler.optimizeImports();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.toggleAutoImport", async () => {
+            const config = vscode.workspace.getConfiguration("verseAutoImports");
+            const current = config.get<boolean>("general.autoImport", true);
+            await config.update("general.autoImport", !current, vscode.ConfigurationTarget.Global);
+            statusBarHandler.updateDisplay();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.togglePreserveLocations", async () => {
+            const config = vscode.workspace.getConfiguration("verseAutoImports");
+            const current = config.get<boolean>("behavior.preserveImportLocations", false);
+            await config.update("behavior.preserveImportLocations", !current, vscode.ConfigurationTarget.Global);
+            statusBarHandler.updateDisplay();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.toggleImportSyntax", async () => {
+            const config = vscode.workspace.getConfiguration("verseAutoImports");
+            const current = config.get<string>("behavior.importSyntax", "curly");
+            const newSyntax = current === "curly" ? "dot" : "curly";
+            await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
+            statusBarHandler.updateDisplay();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.toggleDigestFiles", async () => {
+            const config = vscode.workspace.getConfiguration("verseAutoImports");
+            const current = config.get<boolean>("experimental.useDigestFiles", false);
+            await config.update("experimental.useDigestFiles", !current, vscode.ConfigurationTarget.Global);
+            statusBarHandler.updateDisplay();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.toggleFullPathCodeLens", async () => {
+            const config = vscode.workspace.getConfiguration("verseAutoImports");
+            const current = config.get<boolean>("pathConversion.enableCodeLens", true);
+            await config.update("pathConversion.enableCodeLens", !current, vscode.ConfigurationTarget.Global);
+            statusBarHandler.updateDisplay();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.snoozeAutoImport", () => {
+            statusBarHandler.startSnooze(5);
+        }),
+        vscode.commands.registerCommand("verseAutoImports.cancelSnooze", () => {
+            statusBarHandler.cancelSnooze();
+        }),
         // Command to convert a single import to absolute path
-        vscode.commands.registerCommand(
-            "verseAutoImports.convertToFullPath",
-            async (document: vscode.TextDocument, importStatement: string, lineNumber: number) => {
-                // Keep hover state active and refresh immediately for responsiveness
-                const documentUri = document.uri.toString();
-                importCodeLensProvider.keepHoverStateActive(documentUri);
+        vscode.commands.registerCommand("verseAutoImports.convertToFullPath", async (document: vscode.TextDocument, importStatement: string, lineNumber: number) => {
+            // Keep hover state active and refresh immediately for responsiveness
+            const documentUri = document.uri.toString();
+            importCodeLensProvider.keepHoverStateActive(documentUri);
 
-                const result = await importPathConverter.convertToFullPath(importStatement, document.uri);
+            const result = await importPathConverter.convertToFullPath(importStatement, document.uri);
 
-                if (!result) {
-                    vscode.window.showInformationMessage("Import is already in absolute path format or could not be converted.");
-                    return;
-                }
+            if (!result) {
+                vscode.window.showInformationMessage("Import is already in absolute path format or could not be converted.");
+                return;
+            }
 
-                if (result.isAmbiguous && result.possiblePaths) {
-                    // Show quick pick for ambiguous imports
-                    const items = result.possiblePaths.map(path => ({
-                        label: path,
-                        description: `Absolute path for ${result.moduleName}`,
-                        path: path
-                    }));
+            if (result.isAmbiguous && result.possiblePaths) {
+                // Show quick pick for ambiguous imports
+                const items = result.possiblePaths.map((path) => ({
+                    label: path,
+                    description: `Absolute path for ${result.moduleName}`,
+                    path: path,
+                }));
 
-                    const selected = await vscode.window.showQuickPick(items, {
-                        placeHolder: `Select the absolute path for '${result.moduleName}'`,
-                        title: "Multiple locations found"
-                    });
+                const selected = await vscode.window.showQuickPick(items, {
+                    placeHolder: `Select the absolute path for '${result.moduleName}'`,
+                    title: "Multiple locations found",
+                });
 
-                    if (selected) {
-                        await importPathConverter.applyConversion(document, result, selected.path);
-                        vscode.window.setStatusBarMessage(
-                            `Using absolute path: ${selected.path}`,
-                            3000
-                        );
-                        // Force immediate refresh after conversion
-                        importCodeLensProvider.forceRefreshAfterConversion(documentUri);
-                    }
-                } else {
-                    // Apply conversion directly for non-ambiguous imports
-                    await importPathConverter.applyConversion(document, result);
-                    vscode.window.setStatusBarMessage(
-                        `Using absolute path: ${result.fullPathImport}`,
-                        3000
-                    );
+                if (selected) {
+                    await importPathConverter.applyConversion(document, result, selected.path);
+                    vscode.window.setStatusBarMessage(`Using absolute path: ${selected.path}`, 3000);
                     // Force immediate refresh after conversion
                     importCodeLensProvider.forceRefreshAfterConversion(documentUri);
                 }
-            }
-        ),
-        // Command to convert all imports to absolute paths
-        vscode.commands.registerCommand(
-            "verseAutoImports.convertAllToFullPath",
-            async (document: vscode.TextDocument) => {
-                // Keep hover state active and refresh immediately for responsiveness
-                const documentUri = document.uri.toString();
-                importCodeLensProvider.keepHoverStateActive(documentUri);
-
-                const results = await importPathConverter.convertAllImportsInDocument(document);
-
-                if (results.length === 0) {
-                    vscode.window.showInformationMessage("No relative imports found to convert.");
-                    return;
-                }
-
-                let convertedCount = 0;
-                const ambiguousImports: typeof results = [];
-
-                // First, handle non-ambiguous imports
-                for (const result of results) {
-                    if (!result.isAmbiguous) {
-                        const success = await importPathConverter.applyConversion(document, result);
-                        if (success) {
-                            convertedCount++;
-                        }
-                    } else {
-                        ambiguousImports.push(result);
-                    }
-                }
-
-                // Then handle ambiguous imports one by one
-                for (const result of ambiguousImports) {
-                    if (result.possiblePaths) {
-                        const items = result.possiblePaths.map(path => ({
-                            label: path,
-                            description: `Absolute path for ${result.moduleName}`,
-                            path: path
-                        }));
-
-                        const selected = await vscode.window.showQuickPick(items, {
-                            placeHolder: `Select the absolute path for '${result.moduleName}'`,
-                            title: `Multiple locations found for ${result.moduleName}`
-                        });
-
-                        if (selected) {
-                            const success = await importPathConverter.applyConversion(document, result, selected.path);
-                            if (success) {
-                                convertedCount++;
-                            }
-                        }
-                    }
-                }
-
-                vscode.window.showInformationMessage(
-                    `Using absolute paths for ${convertedCount} import${convertedCount !== 1 ? 's' : ''}.`
-                );
-
-                // Force immediate refresh after all conversions
-                importCodeLensProvider.forceRefreshAfterConversion(documentUri);
-            }
-        ),
-        // Command to convert a single import to relative path
-        vscode.commands.registerCommand(
-            "verseAutoImports.convertToRelativePath",
-            async (document: vscode.TextDocument, importStatement: string, lineNumber: number) => {
-                // Keep hover state active and refresh immediately for responsiveness
-                const documentUri = document.uri.toString();
-                importCodeLensProvider.keepHoverStateActive(documentUri);
-
-                const result = await importPathConverter.convertFromFullPath(importStatement, document.uri);
-
-                if (!result) {
-                    vscode.window.showInformationMessage("Import cannot be converted to relative path.");
-                    return;
-                }
-
-                // Apply conversion directly
+            } else {
+                // Apply conversion directly for non-ambiguous imports
                 await importPathConverter.applyConversion(document, result);
-                vscode.window.setStatusBarMessage(
-                    `Using relative path: ${result.fullPathImport}`,
-                    3000
-                );
-
+                vscode.window.setStatusBarMessage(`Using absolute path: ${result.fullPathImport}`, 3000);
                 // Force immediate refresh after conversion
                 importCodeLensProvider.forceRefreshAfterConversion(documentUri);
             }
-        ),
-        // Command to convert all imports to relative paths
-        vscode.commands.registerCommand(
-            "verseAutoImports.convertAllToRelativePath",
-            async (document: vscode.TextDocument) => {
-                // Keep hover state active and refresh immediately for responsiveness
-                const documentUri = document.uri.toString();
-                importCodeLensProvider.keepHoverStateActive(documentUri);
+        }),
+        // Command to convert all imports to absolute paths
+        vscode.commands.registerCommand("verseAutoImports.convertAllToFullPath", async (document: vscode.TextDocument) => {
+            // Keep hover state active and refresh immediately for responsiveness
+            const documentUri = document.uri.toString();
+            importCodeLensProvider.keepHoverStateActive(documentUri);
 
-                const results = await importPathConverter.convertAllImportsFromFullPath(document);
+            const results = await importPathConverter.convertAllImportsInDocument(document);
 
-                if (results.length === 0) {
-                    vscode.window.showInformationMessage("No absolute path imports found to convert.");
-                    return;
-                }
+            if (results.length === 0) {
+                vscode.window.showInformationMessage("No relative imports found to convert.");
+                return;
+            }
 
-                let convertedCount = 0;
+            let convertedCount = 0;
+            const ambiguousImports: typeof results = [];
 
-                // Convert all absolute path imports to relative
-                for (const result of results) {
+            // First, handle non-ambiguous imports
+            for (const result of results) {
+                if (!result.isAmbiguous) {
                     const success = await importPathConverter.applyConversion(document, result);
                     if (success) {
                         convertedCount++;
                     }
+                } else {
+                    ambiguousImports.push(result);
                 }
-
-                vscode.window.showInformationMessage(
-                    `Using relative paths for ${convertedCount} import${convertedCount !== 1 ? 's' : ''}.`
-                );
-
-                // Force immediate refresh after all conversions
-                importCodeLensProvider.forceRefreshAfterConversion(documentUri);
             }
-        ),
+
+            // Then handle ambiguous imports one by one
+            for (const result of ambiguousImports) {
+                if (result.possiblePaths) {
+                    const items = result.possiblePaths.map((path) => ({
+                        label: path,
+                        description: `Absolute path for ${result.moduleName}`,
+                        path: path,
+                    }));
+
+                    const selected = await vscode.window.showQuickPick(items, {
+                        placeHolder: `Select the absolute path for '${result.moduleName}'`,
+                        title: `Multiple locations found for ${result.moduleName}`,
+                    });
+
+                    if (selected) {
+                        const success = await importPathConverter.applyConversion(document, result, selected.path);
+                        if (success) {
+                            convertedCount++;
+                        }
+                    }
+                }
+            }
+
+            vscode.window.showInformationMessage(`Using absolute paths for ${convertedCount} import${convertedCount !== 1 ? "s" : ""}.`);
+
+            // Force immediate refresh after all conversions
+            importCodeLensProvider.forceRefreshAfterConversion(documentUri);
+        }),
+        // Command to convert a single import to relative path
+        vscode.commands.registerCommand("verseAutoImports.convertToRelativePath", async (document: vscode.TextDocument, importStatement: string, lineNumber: number) => {
+            // Keep hover state active and refresh immediately for responsiveness
+            const documentUri = document.uri.toString();
+            importCodeLensProvider.keepHoverStateActive(documentUri);
+
+            const result = await importPathConverter.convertFromFullPath(importStatement, document.uri);
+
+            if (!result) {
+                vscode.window.showInformationMessage("Import cannot be converted to relative path.");
+                return;
+            }
+
+            // Apply conversion directly
+            await importPathConverter.applyConversion(document, result);
+            vscode.window.setStatusBarMessage(`Using relative path: ${result.fullPathImport}`, 3000);
+
+            // Force immediate refresh after conversion
+            importCodeLensProvider.forceRefreshAfterConversion(documentUri);
+        }),
+        // Command to convert all imports to relative paths
+        vscode.commands.registerCommand("verseAutoImports.convertAllToRelativePath", async (document: vscode.TextDocument) => {
+            // Keep hover state active and refresh immediately for responsiveness
+            const documentUri = document.uri.toString();
+            importCodeLensProvider.keepHoverStateActive(documentUri);
+
+            const results = await importPathConverter.convertAllImportsFromFullPath(document);
+
+            if (results.length === 0) {
+                vscode.window.showInformationMessage("No absolute path imports found to convert.");
+                return;
+            }
+
+            let convertedCount = 0;
+
+            // Convert all absolute path imports to relative
+            for (const result of results) {
+                const success = await importPathConverter.applyConversion(document, result);
+                if (success) {
+                    convertedCount++;
+                }
+            }
+
+            vscode.window.showInformationMessage(`Using relative paths for ${convertedCount} import${convertedCount !== 1 ? "s" : ""}.`);
+
+            // Force immediate refresh after all conversions
+            importCodeLensProvider.forceRefreshAfterConversion(documentUri);
+        }),
         // Register hover provider to track when hovering over imports
         vscode.languages.registerHoverProvider(
             { language: "verse" },
@@ -361,26 +282,19 @@ export function activate(context: vscode.ExtensionContext) {
                     const text = line.text.trim();
 
                     // Check if hovering over an import line
-                    if (text.startsWith('using')) {
+                    if (text.startsWith("using")) {
                         // Set hover state to show CodeLens
-                        importCodeLensProvider.setHoverState(
-                            document.uri.toString(),
-                            true,
-                            position.line
-                        );
+                        importCodeLensProvider.setHoverState(document.uri.toString(), true, position.line);
 
                         // Return null - we don't need to show hover content
                         return null;
                     } else {
                         // Not hovering over import - start timeout to hide CodeLens
-                        importCodeLensProvider.setHoverState(
-                            document.uri.toString(),
-                            false
-                        );
+                        importCodeLensProvider.setHoverState(document.uri.toString(), false);
                     }
 
                     return null;
-                }
+                },
             }
         ),
         vscode.languages.onDidChangeDiagnostics(async (e) => {
@@ -388,36 +302,24 @@ export function activate(context: vscode.ExtensionContext) {
                 const diagnostics = vscode.languages.getDiagnostics(uri);
 
                 try {
-                    const document = await vscode.workspace.openTextDocument(
-                        uri
-                    );
+                    const document = await vscode.workspace.openTextDocument(uri);
 
                     if (document.languageId === "verse") {
-                        const config =
-                            vscode.workspace.getConfiguration(
-                                "verseAutoImports"
-                            );
-                        const autoImportEnabled = config.get<boolean>(
-                            "general.autoImport",
-                            true
-                        );
+                        const config = vscode.workspace.getConfiguration("verseAutoImports");
+                        const autoImportEnabled = config.get<boolean>("general.autoImport", true);
 
                         if (autoImportEnabled) {
                             await diagnosticsHandler.handle(document);
                         }
                     }
                 } catch (error) {
-                    outputChannel.appendLine(
-                        `Error opening document ${uri.toString()}: ${error}`
-                    );
+                    outputChannel.appendLine(`Error opening document ${uri.toString()}: ${error}`);
                 }
             }
         })
     );
 
-    outputChannel.appendLine(
-        "Verse Auto Imports extension activated successfully"
-    );
+    outputChannel.appendLine("Verse Auto Imports extension activated successfully");
 }
 
 export function deactivate() {}

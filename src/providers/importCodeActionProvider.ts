@@ -4,17 +4,9 @@ import { log } from "../utils/logging";
 import { ImportSuggestion } from "../types/moduleInfo";
 
 export class ImportCodeActionProvider implements vscode.CodeActionProvider {
-    constructor(
-        private outputChannel: vscode.OutputChannel,
-        private importHandler: ImportHandler
-    ) {}
+    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}
 
-    async provideCodeActions(
-        document: vscode.TextDocument,
-        range: vscode.Range,
-        context: vscode.CodeActionContext,
-        token: vscode.CancellationToken
-    ): Promise<vscode.CodeAction[] | undefined> {
+    async provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): Promise<vscode.CodeAction[] | undefined> {
         const codeActions: vscode.CodeAction[] = [];
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const sortAlphabetically = config.get<boolean>("quickFix.sortAlphabetically", false);
@@ -30,10 +22,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
             // Sort suggestions based on user preference
             const sortedSuggestions = this.sortSuggestions(suggestions, sortAlphabetically);
 
-            log(
-                this.outputChannel,
-                `Creating ${sortedSuggestions.length} quick fix action(s) for diagnostic`
-            );
+            log(this.outputChannel, `Creating ${sortedSuggestions.length} quick fix action(s) for diagnostic`);
 
             // Create quick fix actions for each suggestion
             sortedSuggestions.forEach((suggestion, index) => {
@@ -63,13 +52,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
         return sorted;
     }
 
-    private createQuickFixAction(
-        suggestion: ImportSuggestion,
-        diagnostic: vscode.Diagnostic,
-        document: vscode.TextDocument,
-        isPreferred: boolean,
-        showDescriptions: boolean
-    ): vscode.CodeAction {
+    private createQuickFixAction(suggestion: ImportSuggestion, diagnostic: vscode.Diagnostic, document: vscode.TextDocument, isPreferred: boolean, showDescriptions: boolean): vscode.CodeAction {
         // Create descriptive title
         let title = `✓ Add import: ${suggestion.importStatement}`;
         if (showDescriptions && suggestion.description) {
@@ -77,8 +60,8 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
         }
 
         // Add confidence indicator for multiple options
-        if (showDescriptions && suggestion.confidence !== 'high') {
-            const indicator = suggestion.confidence === 'medium' ? '⚠' : '❓';
+        if (showDescriptions && suggestion.confidence !== "high") {
+            const indicator = suggestion.confidence === "medium" ? "⚠" : "❓";
             title = `${indicator} ${title}`;
         }
 

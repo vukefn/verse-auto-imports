@@ -6,7 +6,7 @@ import { log } from "./logging";
 export interface DigestEntry {
     identifier: string;
     modulePath: string;
-    type: 'class' | 'function' | 'variable' | 'module' | 'unknown';
+    type: "class" | "function" | "variable" | "module" | "unknown";
     description?: string;
     isPublic: boolean;
 }
@@ -20,7 +20,7 @@ export class DigestParser {
 
     async getDigestIndex(): Promise<Map<string, DigestEntry>> {
         const now = Date.now();
-        if (this.digestCache.size > 0 && (now - this.lastParsed) < this.CACHE_DURATION) {
+        if (this.digestCache.size > 0 && now - this.lastParsed < this.CACHE_DURATION) {
             log(this.outputChannel, "Using cached digest index");
             return this.digestCache;
         }
@@ -56,19 +56,15 @@ export class DigestParser {
         this.digestCache.clear();
 
         try {
-            const digestFiles = [
-                'Fortnite.digest.verse',
-                'UnrealEngine.digest.verse',
-                'Verse.digest.verse'
-            ];
+            const digestFiles = ["Fortnite.digest.verse", "UnrealEngine.digest.verse", "Verse.digest.verse"];
 
-            const extensionPath = vscode.extensions.getExtension('vukefn.verse-auto-imports')?.extensionPath;
+            const extensionPath = vscode.extensions.getExtension("vukefn.verse-auto-imports")?.extensionPath;
             if (!extensionPath) {
                 log(this.outputChannel, "Extension path not found, using relative path");
                 return;
             }
 
-            const utilsPath = path.join(extensionPath, 'src', 'utils');
+            const utilsPath = path.join(extensionPath, "src", "utils");
 
             for (const fileName of digestFiles) {
                 const filePath = path.join(utilsPath, fileName);
@@ -88,17 +84,17 @@ export class DigestParser {
 
     private async parseDigestFile(filePath: string): Promise<void> {
         try {
-            const content = fs.readFileSync(filePath, 'utf8');
-            const lines = content.split('\n');
+            const content = fs.readFileSync(filePath, "utf8");
+            const lines = content.split("\n");
 
-            let currentModulePath = '';
+            let currentModulePath = "";
             let moduleStack: string[] = [];
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
                 // Skip comments and empty lines
-                if (line.startsWith('#') || line === '') {
+                if (line.startsWith("#") || line === "") {
                     // Check for module import path comments
                     const modulePathMatch = line.match(/# Module import path: (.+)/);
                     if (modulePathMatch) {
@@ -108,7 +104,7 @@ export class DigestParser {
                 }
 
                 // Skip using statements
-                if (line.startsWith('using {')) {
+                if (line.startsWith("using {")) {
                     continue;
                 }
 
@@ -121,7 +117,7 @@ export class DigestParser {
                     } else {
                         moduleStack.push(`/${moduleName}`);
                     }
-                    this.addToCache(moduleName, moduleStack[moduleStack.length - 1], 'module', true);
+                    this.addToCache(moduleName, moduleStack[moduleStack.length - 1], "module", true);
                     continue;
                 }
 
@@ -130,7 +126,7 @@ export class DigestParser {
                 if (classMatch) {
                     const className = classMatch[1];
                     const modulePath = moduleStack.length > 0 ? moduleStack[moduleStack.length - 1] : currentModulePath;
-                    this.addToCache(className, modulePath, 'class', true);
+                    this.addToCache(className, modulePath, "class", true);
                     continue;
                 }
 
@@ -141,9 +137,9 @@ export class DigestParser {
                     const modulePath = moduleStack.length > 0 ? moduleStack[moduleStack.length - 1] : currentModulePath;
 
                     // Determine type based on line content
-                    let type: 'function' | 'variable' = 'variable';
-                    if (line.includes('(') && line.includes(')')) {
-                        type = 'function';
+                    let type: "function" | "variable" = "variable";
+                    if (line.includes("(") && line.includes(")")) {
+                        type = "function";
                     }
 
                     this.addToCache(identifier, modulePath, type, true);
@@ -151,16 +147,16 @@ export class DigestParser {
                 }
 
                 // Handle nested structures and indentation
-                if (line && !line.includes('<public>') && !line.includes(':=')) {
+                if (line && !line.includes("<public>") && !line.includes(":=")) {
                     // This might be a function or property within a class/module
                     const nestedMatch = line.match(/^(\w+)<(?:native\s*)?<public>/);
                     if (nestedMatch) {
                         const identifier = nestedMatch[1];
                         const modulePath = moduleStack.length > 0 ? moduleStack[moduleStack.length - 1] : currentModulePath;
 
-                        let type: 'function' | 'variable' = 'variable';
-                        if (line.includes('(') && line.includes(')')) {
-                            type = 'function';
+                        let type: "function" | "variable" = "variable";
+                        if (line.includes("(") && line.includes(")")) {
+                            type = "function";
                         }
 
                         this.addToCache(identifier, modulePath, type, true);
@@ -172,12 +168,7 @@ export class DigestParser {
         }
     }
 
-    private addToCache(
-        identifier: string,
-        modulePath: string,
-        type: 'class' | 'function' | 'variable' | 'module' | 'unknown',
-        isPublic: boolean
-    ): void {
+    private addToCache(identifier: string, modulePath: string, type: "class" | "function" | "variable" | "module" | "unknown", isPublic: boolean): void {
         // Only add public identifiers
         if (!isPublic) {
             return;
@@ -192,7 +183,7 @@ export class DigestParser {
             identifier,
             modulePath,
             type,
-            isPublic
+            isPublic,
         };
 
         this.digestCache.set(identifier, entry);

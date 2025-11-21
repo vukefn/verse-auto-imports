@@ -18,11 +18,11 @@ export class ImportHandler {
         if (match1) {
             const optionsText = match1[1];
             const options = optionsText
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
+                .split("\n")
+                .map((line) => line.trim())
+                .filter((line) => line.length > 0);
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 1): ${options.join(', ')}`);
+            log(this.outputChannel, `Found ${options.length} multi-options (pattern 1): ${options.join(", ")}`);
             return options;
         }
 
@@ -41,7 +41,7 @@ export class ImportHandler {
                 options.push(usingMatch[1]);
             }
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 2): ${options.join(', ')}`);
+            log(this.outputChannel, `Found ${options.length} multi-options (pattern 2): ${options.join(", ")}`);
             return options;
         }
 
@@ -60,7 +60,7 @@ export class ImportHandler {
                 options.push(pathMatch[1]);
             }
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 3): ${options.join(', ')}`);
+            log(this.outputChannel, `Found ${options.length} multi-options (pattern 3): ${options.join(", ")}`);
             return options;
         }
 
@@ -74,9 +74,7 @@ export class ImportHandler {
         switch (strategy) {
             case "auto_shortest":
                 // Return the option with the shortest path
-                return options.reduce((shortest, current) =>
-                    current.length < shortest.length ? current : shortest
-                );
+                return options.reduce((shortest, current) => (current.length < shortest.length ? current : shortest));
             case "auto_first":
                 return options[0];
             default:
@@ -84,19 +82,14 @@ export class ImportHandler {
         }
     }
 
-    private createImportSuggestion(
-        importStatement: string,
-        source: ImportSuggestionSource,
-        confidence: ImportConfidence,
-        description?: string
-    ): ImportSuggestion {
+    private createImportSuggestion(importStatement: string, source: ImportSuggestionSource, confidence: ImportConfidence, description?: string): ImportSuggestion {
         const modulePath = this.extractPathFromImport(importStatement);
         return {
             importStatement,
             source,
             confidence,
             description,
-            modulePath: modulePath || undefined
+            modulePath: modulePath || undefined,
         };
     }
 
@@ -119,15 +112,10 @@ export class ImportHandler {
                 }
 
                 const importStatement = this.formatImportStatement(entry.modulePath, preferDotSyntax);
-                const confidence: ImportConfidence = entry.identifier === identifier ? 'high' : 'medium';
+                const confidence: ImportConfidence = entry.identifier === identifier ? "high" : "medium";
                 const description = `${entry.type} from ${entry.modulePath}`;
 
-                suggestions.push(this.createImportSuggestion(
-                    importStatement,
-                    'digest_lookup',
-                    confidence,
-                    description
-                ));
+                suggestions.push(this.createImportSuggestion(importStatement, "digest_lookup", confidence, description));
             }
 
             if (suggestions.length > 0) {
@@ -180,19 +168,14 @@ export class ImportHandler {
 
             for (const option of multiOptions) {
                 // Check if option is a module path (starts with /)
-                if (option.startsWith('/')) {
+                if (option.startsWith("/")) {
                     // Direct module path from "using { /Path }" format
                     const importStatement = this.formatImportStatement(option, preferDotSyntax);
-                    const moduleName = option.split('/').pop() || option;
+                    const moduleName = option.split("/").pop() || option;
 
                     log(this.outputChannel, `Multi-option (module path): ${option}`);
 
-                    suggestions.push(this.createImportSuggestion(
-                        importStatement,
-                        'error_message',
-                        'high',
-                        `Import from ${option}`
-                    ));
+                    suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `Import from ${option}`));
                 } else {
                     // Fully qualified class name (e.g., "Module.ClassName")
                     const lastDotIndex = option.lastIndexOf(".");
@@ -203,23 +186,13 @@ export class ImportHandler {
 
                         log(this.outputChannel, `Multi-option: ${option} -> namespace: ${namespace}, class: ${className}`);
 
-                        suggestions.push(this.createImportSuggestion(
-                            importStatement,
-                            'error_message',
-                            'high',
-                            `${className} from ${namespace}`
-                        ));
+                        suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `${className} from ${namespace}`));
                     } else {
                         // No namespace detected, treat as simple reference
                         const importStatement = this.formatImportStatement(option, preferDotSyntax);
                         log(this.outputChannel, `Multi-option (no namespace): ${option}`);
 
-                        suggestions.push(this.createImportSuggestion(
-                            importStatement,
-                            'error_message',
-                            'medium',
-                            `Import ${option}`
-                        ));
+                        suggestions.push(this.createImportSuggestion(importStatement, "error_message", "medium", `Import ${option}`));
                     }
                 }
             }
@@ -239,12 +212,7 @@ export class ImportHandler {
                 const path = specificSuggestionMatch[1];
                 const importStatement = this.formatImportStatement(path, preferDotSyntax);
                 log(this.outputChannel, `Found specific import suggestion for unknown identifier ${className}: ${importStatement}`);
-                return [this.createImportSuggestion(
-                    importStatement,
-                    'error_message',
-                    'high',
-                    `Import ${className} from ${path}`
-                )];
+                return [this.createImportSuggestion(importStatement, "error_message", "high", `Import ${className} from ${path}`)];
             }
 
             // First check configured ambiguous mappings
@@ -253,12 +221,7 @@ export class ImportHandler {
                 const importStatement = this.formatImportStatement(preferredPath, preferDotSyntax);
 
                 log(this.outputChannel, `Using configured path for ambiguous class ${className}: ${importStatement}`);
-                return [this.createImportSuggestion(
-                    importStatement,
-                    'error_message',
-                    'high',
-                    `Configured import for ${className}`
-                )];
+                return [this.createImportSuggestion(importStatement, "error_message", "high", `Configured import for ${className}`)];
             }
 
             // Try digest-based lookup for unknown identifier
@@ -276,12 +239,7 @@ export class ImportHandler {
             if (path) {
                 const importStatement = this.formatImportStatement(path, preferDotSyntax);
                 log(this.outputChannel, `Found import statement: ${importStatement}`);
-                return [this.createImportSuggestion(
-                    importStatement,
-                    'error_message',
-                    'high',
-                    `Standard import for ${path}`
-                )];
+                return [this.createImportSuggestion(importStatement, "error_message", "high", `Standard import for ${path}`)];
             }
         }
 
@@ -295,12 +253,7 @@ export class ImportHandler {
                 const namespace = fullName.substring(0, lastDotIndex);
                 const importStatement = this.formatImportStatement(namespace, preferDotSyntax);
                 log(this.outputChannel, `Inferred import statement: ${importStatement}`);
-                return [this.createImportSuggestion(
-                    importStatement,
-                    'error_message',
-                    'high',
-                    `Inferred import for ${fullName}`
-                )];
+                return [this.createImportSuggestion(importStatement, "error_message", "high", `Inferred import for ${fullName}`)];
             }
         }
 
@@ -325,11 +278,9 @@ export class ImportHandler {
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
         const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", false);
         const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
+        const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
-        log(
-            this.outputChannel,
-            `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically}`
-        );
+        log(this.outputChannel, `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically} Grouping: ${importGrouping}`);
         importStatements.forEach((statement) => {
             log(this.outputChannel, `- ${statement}`);
         });
@@ -350,10 +301,12 @@ export class ImportHandler {
 
                 if (!currentBlock) {
                     currentBlock = { start: i, end: i, imports: [line] };
-                } else if (i === currentBlock.end + 1 || (i === currentBlock.end + 2 && lines[i - 1].trim() === "")) {
+                } else if (i === currentBlock.end + 1) {
+                    // Only extend block if import immediately follows (no gap)
                     currentBlock.end = i;
                     currentBlock.imports.push(line);
                 } else {
+                    // Any gap creates a new block
                     importBlocks.push(currentBlock);
                     currentBlock = { start: i, end: i, imports: [line] };
                 }
@@ -391,40 +344,140 @@ export class ImportHandler {
         const edit = new vscode.WorkspaceEdit();
 
         if (preserveImportLocations) {
-            const newImports = Array.from(newImportPaths).map((path) =>
-                this.formatImportStatement(path, preferDotSyntax)
-            );
+            // Check if existing imports are grouped (2+ blocks with gap between them)
+            const hasGrouping =
+                importGrouping !== "none" &&
+                importBlocks.length >= 2 &&
+                importBlocks.some((block, i) => {
+                    if (i === 0) return false;
+                    // Check if there's a gap between this block and the previous one
+                    return block.start > importBlocks[i - 1].end + 1;
+                });
 
-            if (sortAlphabetically) {
-                newImports.sort();
-            }
+            if (hasGrouping && importBlocks.length >= 2) {
+                // Analyze existing blocks to determine which is digest and which is local
+                let digestBlockIndex = -1;
+                let localBlockIndex = -1;
 
-            if (importBlocks.length > 0 && importBlocks[0].start === 0) {
-                edit.insert(
-                    document.uri,
-                    new vscode.Position(importBlocks[0].end + 1, 0),
-                    newImports.join("\n") + "\n"
-                );
+                importBlocks.forEach((block, index) => {
+                    const blockPaths = block.imports.map((imp) => this.extractPathFromImport(imp)).filter((p) => p);
+                    const hasDigest = blockPaths.some((path) => this.isDigestImport(path));
+                    const hasLocal = blockPaths.some((path) => !this.isDigestImport(path));
+
+                    // Determine block type based on majority
+                    if (hasDigest && !hasLocal) {
+                        digestBlockIndex = index;
+                    } else if (hasLocal && !hasDigest) {
+                        localBlockIndex = index;
+                    }
+                });
+
+                // Separate new imports into digest and local
+                const newDigestPaths: string[] = [];
+                const newLocalPaths: string[] = [];
+
+                for (const path of newImportPaths) {
+                    if (this.isDigestImport(path)) {
+                        newDigestPaths.push(path);
+                    } else {
+                        newLocalPaths.push(path);
+                    }
+                }
+
+                // Add digest imports to digest block
+                if (newDigestPaths.length > 0 && digestBlockIndex >= 0) {
+                    const block = importBlocks[digestBlockIndex];
+                    // Get existing paths in this block for combined sorting
+                    const existingBlockPaths = block.imports.map((imp) => this.extractPathFromImport(imp)).filter((p) => p) as string[];
+
+                    const combinedPaths = [...existingBlockPaths, ...newDigestPaths];
+                    if (sortAlphabetically) {
+                        combinedPaths.sort((a, b) => a.localeCompare(b));
+                    }
+
+                    // Format all imports for this block
+                    const formattedImports = combinedPaths.map((path) => this.formatImportStatement(path, preferDotSyntax));
+
+                    // Replace the entire block
+                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                }
+
+                // Add local imports to local block
+                if (newLocalPaths.length > 0 && localBlockIndex >= 0) {
+                    const block = importBlocks[localBlockIndex];
+                    // Get existing paths in this block for combined sorting
+                    const existingBlockPaths = block.imports.map((imp) => this.extractPathFromImport(imp)).filter((p) => p) as string[];
+
+                    const combinedPaths = [...existingBlockPaths, ...newLocalPaths];
+                    if (sortAlphabetically) {
+                        combinedPaths.sort((a, b) => a.localeCompare(b));
+                    }
+
+                    // Format all imports for this block
+                    const formattedImports = combinedPaths.map((path) => this.formatImportStatement(path, preferDotSyntax));
+
+                    // Replace the entire block
+                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                }
+
+                // Handle imports that don't have a matching block
+                const unhandledDigest = digestBlockIndex < 0 ? newDigestPaths : [];
+                const unhandledLocal = localBlockIndex < 0 ? newLocalPaths : [];
+                const unhandledPaths = [...unhandledDigest, ...unhandledLocal];
+
+                if (unhandledPaths.length > 0) {
+                    const unhandledImports = this.groupAndFormatImports(unhandledPaths, preferDotSyntax, sortAlphabetically, importGrouping);
+
+                    // Add unhandled imports at the appropriate position
+                    if (importBlocks.length > 0) {
+                        edit.insert(document.uri, new vscode.Position(importBlocks[importBlocks.length - 1].end + 1, 0), unhandledImports.join("\n") + "\n");
+                    } else {
+                        edit.insert(document.uri, new vscode.Position(0, 0), unhandledImports.join("\n") + "\n\n");
+                    }
+                }
             } else {
-                edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                // Either no existing grouping or need to create initial groups
+                if (importGrouping !== "none" && existingPaths.size > 0) {
+                    // We have existing imports but no grouping - reorganize everything into groups
+                    const allPaths = new Set<string>([...existingPaths, ...newImportPaths]);
+                    const allImportsArray = Array.from(allPaths);
+                    const groupedImports = this.groupAndFormatImports(allImportsArray, preferDotSyntax, sortAlphabetically, importGrouping);
+
+                    // Replace all existing imports with grouped version
+                    if (importBlocks.length > 0) {
+                        // Delete all existing import blocks
+                        for (let i = importBlocks.length - 1; i >= 0; i--) {
+                            const block = importBlocks[i];
+                            edit.delete(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)));
+                        }
+                    }
+
+                    // Insert grouped imports at the top
+                    edit.insert(document.uri, new vscode.Position(0, 0), groupedImports.join("\n") + "\n\n");
+                } else {
+                    // No grouping or no existing imports - use original behavior
+                    const newImportPathsArray = Array.from(newImportPaths);
+                    const newImports = this.groupAndFormatImports(newImportPathsArray, preferDotSyntax, sortAlphabetically, importGrouping);
+
+                    if (importBlocks.length > 0 && importBlocks[0].start === 0) {
+                        edit.insert(document.uri, new vscode.Position(importBlocks[0].end + 1, 0), newImports.join("\n") + "\n");
+                    } else {
+                        edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                    }
+                }
             }
         } else {
             // Consolidate all imports at the top
             const allPaths = new Set<string>([...existingPaths, ...newImportPaths]);
             const allImportsArray = Array.from(allPaths);
 
-            // Only sort if the setting is enabled
-            if (sortAlphabetically) {
-                allImportsArray.sort((a, b) => a.localeCompare(b));
-            }
-
-            const formattedImports = allImportsArray
-                .map((path) => this.formatImportStatement(path, preferDotSyntax));
+            // Use the new grouping method for all imports
+            const formattedImports = this.groupAndFormatImports(allImportsArray, preferDotSyntax, sortAlphabetically, importGrouping);
 
             // Determine the line after all existing import blocks to check for spacing
             let lineAfterImports = 0;
             if (importBlocks.length > 0) {
-                lineAfterImports = Math.max(...importBlocks.map(block => block.end)) + 1;
+                lineAfterImports = Math.max(...importBlocks.map((block) => block.end)) + 1;
             }
 
             // Check if there's already an empty line after imports
@@ -447,19 +500,13 @@ export class ImportHandler {
             // Remove existing import blocks (in reverse order to maintain line numbers)
             for (let i = importBlocks.length - 1; i >= 0; i--) {
                 const block = importBlocks[i];
-                edit.delete(
-                    document.uri,
-                    new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0))
-                );
+                edit.delete(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)));
             }
         }
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            log(
-                this.outputChannel,
-                success ? "Successfully updated imports in document" : "Failed to update imports in document"
-            );
+            log(this.outputChannel, success ? "Successfully updated imports in document" : "Failed to update imports in document");
             return success;
         } catch (error) {
             log(this.outputChannel, `Error updating imports: ${error}`);
@@ -483,6 +530,80 @@ export class ImportHandler {
         }
 
         return null;
+    }
+
+    /**
+     * Determines if an import is a digest import (from Verse.org, Fortnite.com, or UnrealEngine.com)
+     * @param importPath The import path or statement to check
+     * @returns true if the import is from a digest source, false otherwise
+     */
+    private isDigestImport(importPath: string): boolean {
+        // Extract the path if this is a full import statement
+        let path = importPath;
+        if (importPath.includes("using")) {
+            path = this.extractPathFromImport(importPath) || importPath;
+        }
+
+        // Check if it's a digest import
+        return path.startsWith("/Verse.org/") || path.startsWith("/Fortnite.com/") || path.startsWith("/UnrealEngine.com/");
+    }
+
+    /**
+     * Groups and formats imports based on the configuration settings
+     * @param importPaths Array of import paths to group and format
+     * @param preferDotSyntax Whether to use dot syntax for imports
+     * @param sortAlphabetically Whether to sort imports alphabetically
+     * @param importGrouping The grouping strategy ('none', 'digestFirst', or 'localFirst')
+     * @returns Array of formatted import statements with potential empty lines for grouping
+     */
+    private groupAndFormatImports(importPaths: string[], preferDotSyntax: boolean, sortAlphabetically: boolean, importGrouping: string): string[] {
+        if (importGrouping === "none") {
+            // Legacy behavior: simple alphabetical sort if enabled
+            const sortedPaths = sortAlphabetically ? [...importPaths].sort((a, b) => a.localeCompare(b)) : importPaths;
+            return sortedPaths.map((path) => this.formatImportStatement(path, preferDotSyntax));
+        }
+
+        // New grouping behavior: separate digest and local imports
+        const digestImports: string[] = [];
+        const localImports: string[] = [];
+
+        for (const path of importPaths) {
+            if (this.isDigestImport(path)) {
+                digestImports.push(path);
+            } else {
+                localImports.push(path);
+            }
+        }
+
+        // Sort within groups if enabled
+        if (sortAlphabetically) {
+            digestImports.sort((a, b) => a.localeCompare(b));
+            localImports.sort((a, b) => a.localeCompare(b));
+        }
+
+        // Format the imports
+        const formattedDigestImports = digestImports.map((path) => this.formatImportStatement(path, preferDotSyntax));
+        const formattedLocalImports = localImports.map((path) => this.formatImportStatement(path, preferDotSyntax));
+
+        // Combine based on configuration
+        let formattedImports: string[] = [];
+        if (importGrouping === "digestFirst") {
+            formattedImports = [...formattedDigestImports];
+            // Add spacing between groups if both have imports
+            if (formattedDigestImports.length > 0 && formattedLocalImports.length > 0) {
+                formattedImports.push(""); // Empty line between groups
+            }
+            formattedImports.push(...formattedLocalImports);
+        } else if (importGrouping === "localFirst") {
+            formattedImports = [...formattedLocalImports];
+            // Add spacing between groups if both have imports
+            if (formattedLocalImports.length > 0 && formattedDigestImports.length > 0) {
+                formattedImports.push(""); // Empty line between groups
+            }
+            formattedImports.push(...formattedDigestImports);
+        }
+
+        return formattedImports;
     }
 
     /**
@@ -544,10 +665,7 @@ export class ImportHandler {
 
         // Apply the edit to replace entire document
         const edit = new vscode.WorkspaceEdit();
-        const fullRange = new vscode.Range(
-            new vscode.Position(0, 0),
-            document.lineAt(document.lineCount - 1).range.end
-        );
+        const fullRange = new vscode.Range(new vscode.Position(0, 0), document.lineAt(document.lineCount - 1).range.end);
 
         edit.replace(document.uri, fullRange, resultLines.join("\n"));
 
@@ -574,8 +692,7 @@ export class ImportHandler {
             const errorMessage = diagnostic.message;
 
             // Skip non-import related errors
-            if (!errorMessage.includes("using") && !errorMessage.includes("Unknown identifier") &&
-                !errorMessage.includes("Did you forget") && !errorMessage.includes("Did you mean")) {
+            if (!errorMessage.includes("using") && !errorMessage.includes("Unknown identifier") && !errorMessage.includes("Did you forget") && !errorMessage.includes("Did you mean")) {
                 continue;
             }
 
@@ -629,7 +746,7 @@ export class ImportHandler {
                 if (lastDotIndex > 0) {
                     const namespace = fullName.substring(0, lastDotIndex);
                     // Check if it's an absolute path or relative module
-                    if (namespace.startsWith('/')) {
+                    if (namespace.startsWith("/")) {
                         suggestedPaths.add(namespace);
                     } else {
                         // For relative modules, we might need to handle them differently
@@ -678,7 +795,7 @@ export class ImportHandler {
                     edits.push({
                         line: i,
                         oldText: line,
-                        newText: leadingWhitespace + newStatement
+                        newText: leadingWhitespace + newStatement,
                     });
                     log(this.outputChannel, `Converting line ${i + 1} from curly to ${preferredSyntax}`);
                 }
@@ -698,7 +815,7 @@ export class ImportHandler {
                     edits.push({
                         line: i,
                         oldText: line,
-                        newText: leadingWhitespace + newStatement
+                        newText: leadingWhitespace + newStatement,
                     });
                     log(this.outputChannel, `Converting line ${i + 1} from dot to ${preferredSyntax}`);
                 }
@@ -734,10 +851,7 @@ export class ImportHandler {
         // Apply all edits
         const edit = new vscode.WorkspaceEdit();
         for (const e of edits) {
-            const range = new vscode.Range(
-                new vscode.Position(e.line, 0),
-                new vscode.Position(e.line, lines[e.line].length)
-            );
+            const range = new vscode.Range(new vscode.Position(e.line, 0), new vscode.Position(e.line, lines[e.line].length));
             edit.replace(document.uri, range, e.newText);
         }
 
