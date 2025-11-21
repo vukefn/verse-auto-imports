@@ -41,9 +41,13 @@ export function activate(context: vscode.ExtensionContext) {
     const importPathConverter = new ImportPathConverter(outputChannel);
     const importCodeLensProvider = new ImportCodeLensProvider(outputChannel);
 
-    const delayMs = config.get<number>("general.diagnosticDelay", 1000);
+    // Handle backward compatibility: use legacy setting if configured, otherwise use new setting
+    const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
+    const newDelay = config.get<number>("general.autoImportDebounceDelay", 3000);
+    const delayMs = legacyDelay !== undefined ? legacyDelay : newDelay;
+
     diagnosticsHandler.setDelay(delayMs);
-    outputChannel.appendLine(`Initial delay set to ${delayMs}ms`);
+    outputChannel.appendLine(`Initial debounce delay set to ${delayMs}ms`);
 
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
@@ -83,12 +87,18 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (
-                event.affectsConfiguration("verseAutoImports.general.diagnosticDelay")
+                event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") ||
+                event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")
             ) {
                 const newConfig =
                     vscode.workspace.getConfiguration("verseAutoImports");
-                const newDelay = newConfig.get<number>("general.diagnosticDelay", 1000);
-                diagnosticsHandler.setDelay(newDelay);
+                // Handle backward compatibility
+                const legacyDelay = newConfig.get<number | undefined>("general.diagnosticDelay", undefined);
+                const autoImportDebounceDelay = newConfig.get<number>("general.autoImportDebounceDelay", 3000);
+                const finalDelay = legacyDelay !== undefined ? legacyDelay : autoImportDebounceDelay;
+
+                diagnosticsHandler.setDelay(finalDelay);
+                outputChannel.appendLine(`Debounce delay updated to ${finalDelay}ms`);
             }
         })
     );

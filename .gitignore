@@ -15,7 +15,7 @@ releases/
 dev-notes/
 
 # Testing
-tests/
+test/
 
 # Logs
 npm-debug.log*

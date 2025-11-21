@@ -9,6 +9,7 @@ export class DiagnosticsHandler {
     private importHandler: ImportHandler;
     // private moduleHandler: ModuleHandler;
     private processingDocuments: Set<string> = new Set();
+    private pendingTimers: Map<string, NodeJS.Timeout> = new Map();
     private delayMs: number = 1000;
 
     constructor(private outputChannel: vscode.OutputChannel) {
@@ -25,22 +26,38 @@ export class DiagnosticsHandler {
 
         log(this.outputChannel, `Received diagnostics for ${documentKey}`);
 
+        // Cancel any pending timer for this document
+        const existingTimer = this.pendingTimers.get(documentKey);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+            this.pendingTimers.delete(documentKey);
+            log(
+                this.outputChannel,
+                `Cancelled pending timer for ${documentKey} (debouncing)`
+            );
+        }
+
+        // If already processing this document, don't start a new timer
         if (this.processingDocuments.has(documentKey)) {
             log(
                 this.outputChannel,
-                `Already processing ${documentKey}, skipping`
+                `Already processing ${documentKey}, skipping new timer`
             );
             return;
         }
 
-        this.processingDocuments.add(documentKey);
-
         log(
             this.outputChannel,
-            `Waiting ${this.delayMs}ms before processing diagnostics for ${documentKey}`
+            `Starting debounce timer (${this.delayMs}ms) for ${documentKey}`
         );
 
-        setTimeout(async () => {
+        // Create new timer with proper debouncing
+        const timer = setTimeout(async () => {
+            // Remove from pending timers
+            this.pendingTimers.delete(documentKey);
+
+            // Mark as processing
+            this.processingDocuments.add(documentKey);
             try {
                 const currentDiagnostics = vscode.languages.getDiagnostics(
                     document.uri
@@ -145,6 +162,9 @@ export class DiagnosticsHandler {
                 );
             }
         }, this.delayMs);
+
+        // Store the timer so it can be cancelled if needed
+        this.pendingTimers.set(documentKey, timer);
     }
 
     private selectBestSuggestion(suggestions: ImportSuggestion[], strategy: string): ImportSuggestion | null {

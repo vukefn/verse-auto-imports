@@ -2,7 +2,7 @@
     "name": "verse-auto-imports",
     "displayName": "Verse Auto Imports",
     "description": "Automatically adds missing using statements in Verse files",
-    "version": "0.6.2",
+    "version": "0.6.3",
     "engines": {
         "vscode": "^1.85.0"
     },
@@ -93,8 +93,14 @@
                 "verseAutoImports.general.diagnosticDelay": {
                     "type": "number",
                     "default": 1000,
-                    "description": "Delay in milliseconds before processing diagnostics to reduce frequency of updates",
+                    "description": "[DEPRECATED - Use autoImportDebounceDelay instead] Delay in milliseconds before processing diagnostics",
                     "order": 2
+                },
+                "verseAutoImports.general.autoImportDebounceDelay": {
+                    "type": "number",
+                    "default": 3000,
+                    "description": "Debounce delay in milliseconds before auto-importing. Waits for this duration after the last diagnostic change before triggering auto-imports (while you're typing).",
+                    "order": 3
                 },
                 "verseAutoImports.behavior.importSyntax": {
                     "type": "string",
@@ -108,7 +114,7 @@
                 },
                 "verseAutoImports.behavior.preserveImportLocations": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file.",
                     "order": 11
                 },
@@ -148,7 +154,7 @@
                 },
                 "verseAutoImports.quickFix.showDescriptions": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Show descriptive text in quick fix menu items (e.g., 'class from /Fortnite.com/Devices')",
                     "order": 21
                 },

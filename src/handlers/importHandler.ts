@@ -232,6 +232,21 @@ export class ImportHandler {
         if (classNameMatch) {
             const className = classNameMatch[1];
 
+            // Check if this unknown identifier error also includes a specific import suggestion
+            // Pattern: "Unknown identifier `editable`. Did you forget to specify using { /Verse.org/Simulation }"
+            const specificSuggestionMatch = errorMessage.match(/Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s);
+            if (specificSuggestionMatch) {
+                const path = specificSuggestionMatch[1];
+                const importStatement = this.formatImportStatement(path, preferDotSyntax);
+                log(this.outputChannel, `Found specific import suggestion for unknown identifier ${className}: ${importStatement}`);
+                return [this.createImportSuggestion(
+                    importStatement,
+                    'error_message',
+                    'high',
+                    `Import ${className} from ${path}`
+                )];
+            }
+
             // First check configured ambiguous mappings
             if (ambiguousImportMappings[className]) {
                 const preferredPath = ambiguousImportMappings[className];
@@ -561,6 +576,14 @@ export class ImportHandler {
             // Skip non-import related errors
             if (!errorMessage.includes("using") && !errorMessage.includes("Unknown identifier") &&
                 !errorMessage.includes("Did you forget") && !errorMessage.includes("Did you mean")) {
+                continue;
+            }
+
+            // Pattern 0: "Unknown identifier `x`. Did you forget to specify using { /Path }" (combined pattern)
+            const unknownWithSuggestionMatch = errorMessage.match(/Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s);
+            if (unknownWithSuggestionMatch) {
+                suggestedPaths.add(unknownWithSuggestionMatch[1]);
+                log(this.outputChannel, `Found path from unknown identifier with suggestion: ${unknownWithSuggestionMatch[1]}`);
                 continue;
             }
 

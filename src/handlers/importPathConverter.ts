@@ -276,12 +276,16 @@ export class ImportPathConverter {
                     }
 
                     // Remove the module path itself from the end
-                    const modulePathNormalized = modulePath.replace(/\//g, path.sep);
+                    // First convert relativePath to forward slashes for consistent comparison
+                    relativePath = relativePath.replace(/\\/g, '/');
+                    const modulePathNormalized = modulePath; // Keep forward slashes to match relativePath
                     if (relativePath.endsWith(modulePathNormalized)) {
                         relativePath = relativePath.substring(0, relativePath.length - modulePathNormalized.length);
+                        // Remove any trailing slashes after stripping the module path
+                        if (relativePath.endsWith('/')) {
+                            relativePath = relativePath.substring(0, relativePath.length - 1);
+                        }
                     }
-
-                    relativePath = relativePath.replace(/\\/g, '/');
 
                     // Remove 'Content' prefix
                     if (relativePath.startsWith('Content/')) {
