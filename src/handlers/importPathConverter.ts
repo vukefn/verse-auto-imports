@@ -44,10 +44,10 @@ export class ImportPathConverter {
         // Extract the path from the import statement
         const curlyMatch = importStatement.match(/using\s*\{\s*([^}]+)\s*\}/);
         const dotMatch = importStatement.match(/using\.\s*(.+)/);
-        const path = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : '';
+        const path = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : "";
 
         // Check if it starts with / (full path)
-        if (path.startsWith('/')) {
+        if (path.startsWith("/")) {
             return true;
         }
 
@@ -67,12 +67,10 @@ export class ImportPathConverter {
         const curlyMatch = importStatement.match(/using\s*\{\s*([^}]+)\s*\}/);
         const dotMatch = importStatement.match(/using\.\s*(.+)/);
 
-        const path = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : '';
+        const path = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : "";
 
         // Check if it's a built-in module path
-        return path.startsWith('/Fortnite.com/') ||
-               path.startsWith('/UnrealEngine.com/') ||
-               path.startsWith('/Verse.org/');
+        return path.startsWith("/Fortnite.com/") || path.startsWith("/UnrealEngine.com/") || path.startsWith("/Verse.org/");
     }
 
     /**
@@ -92,19 +90,17 @@ export class ImportPathConverter {
         }
 
         // If it's already a full path (starts with /), extract the last segment
-        if (pathStr.startsWith('/')) {
+        if (pathStr.startsWith("/")) {
             // Official pattern: /[A-Za-z0-9_][A-Za-z0-9_\-.]*(@[A-Za-z0-9_][A-Za-z0-9_\-.]*)?
-            const segments = pathStr.split('/').filter(s => s);
+            const segments = pathStr.split("/").filter((s) => s);
             const lastSegment = segments[segments.length - 1];
 
             // Extract module name from potential creator@domain format
-            const moduleName = lastSegment.includes('@')
-                ? lastSegment.split('@')[0]
-                : lastSegment;
+            const moduleName = lastSegment.includes("@") ? lastSegment.split("@")[0] : lastSegment;
 
             return {
                 fullPath: pathStr,
-                moduleName
+                moduleName,
             };
         }
 
@@ -115,28 +111,31 @@ export class ImportPathConverter {
         let match;
 
         // Parse identifiers that may include apostrophe-escaped parts
-        const tempPath = pathStr.replace(/\s+/g, '');
+        const tempPath = pathStr.replace(/\s+/g, "");
         while ((match = identPattern.exec(tempPath)) !== null) {
             dotSegments.push(match[0]);
         }
 
         if (dotSegments.length === 0) {
             // Fallback to simple split if pattern doesn't match
-            const simpleSplit = pathStr.split('.').map(s => s.trim()).filter(s => s);
+            const simpleSplit = pathStr
+                .split(".")
+                .map((s) => s.trim())
+                .filter((s) => s);
             if (simpleSplit.length === 0) {
                 return null;
             }
             const moduleName = simpleSplit[simpleSplit.length - 1];
-            const fullPath = simpleSplit.join('/');
+            const fullPath = simpleSplit.join("/");
             return { fullPath, moduleName };
         }
 
         const moduleName = dotSegments[dotSegments.length - 1];
-        const fullPath = dotSegments.join('/');
+        const fullPath = dotSegments.join("/");
 
         return {
             fullPath,
-            moduleName
+            moduleName,
         };
     }
 
@@ -158,7 +157,7 @@ export class ImportPathConverter {
         const pathStr = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : null;
 
         // If it's a relative import (not starting with /), return the full path as-is for display
-        if (pathStr && !pathStr.startsWith('/')) {
+        if (pathStr && !pathStr.startsWith("/")) {
             return pathStr;
         }
 
@@ -192,11 +191,7 @@ export class ImportPathConverter {
      * @param currentFileUri Optional URI of the current file for location-aware searching
      * @param maxDepth Maximum directory depth to scan
      */
-    async findModuleLocations(
-        modulePath: string,
-        currentFileUri?: vscode.Uri,
-        maxDepth: number = 5
-    ): Promise<string[]> {
+    async findModuleLocations(modulePath: string, currentFileUri?: vscode.Uri, maxDepth: number = 5): Promise<string[]> {
         const locations: string[] = [];
         const workspaceFolders = vscode.workspace.workspaceFolders;
 
@@ -205,7 +200,7 @@ export class ImportPathConverter {
         }
 
         // Split the module path to get individual segments
-        const pathSegments = modulePath.split('/').filter(s => s);
+        const pathSegments = modulePath.split("/").filter((s) => s);
         const moduleName = pathSegments[pathSegments.length - 1];
 
         // Phase 1: Search for folders (implicit modules) - ONLY in Content folder
@@ -215,37 +210,33 @@ export class ImportPathConverter {
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(currentFileUri);
                 if (workspaceFolder) {
                     const currentFilePath = path.relative(workspaceFolder.uri.fsPath, currentFileUri.fsPath);
-                    const currentFileDir = path.dirname(currentFilePath).replace(/\\/g, '/');
+                    const currentFileDir = path.dirname(currentFilePath).replace(/\\/g, "/");
 
                     // Only proceed if current file is in Content folder
-                    if (currentFileDir.startsWith('Content/') || currentFileDir === 'Content') {
+                    if (currentFileDir.startsWith("Content/") || currentFileDir === "Content") {
                         // Try ascending directory traversal (parent directories)
-                        const dirSegments = currentFileDir.split('/');
+                        const dirSegments = currentFileDir.split("/");
 
                         // Start from parent directory and go up
                         for (let i = dirSegments.length - 1; i >= 0; i--) {
-                            const checkPath = dirSegments.slice(0, i + 1).join('/');
+                            const checkPath = dirSegments.slice(0, i + 1).join("/");
                             const testPattern = `${checkPath}/${modulePath}`;
 
                             // Only search if still within Content folder
-                            if (testPattern.startsWith('Content/')) {
-                                const testFolders = await vscode.workspace.findFiles(
-                                    testPattern + '/*.verse',
-                                    '**/node_modules/**',
-                                    1
-                                );
+                            if (testPattern.startsWith("Content/")) {
+                                const testFolders = await vscode.workspace.findFiles(testPattern + "/*.verse", "**/node_modules/**", 1);
 
                                 if (testFolders.length > 0) {
                                     // Found in a parent directory
-                                    let relativePath = checkPath.replace('Content', '');
-                                    if (relativePath.startsWith('/')) {
+                                    let relativePath = checkPath.replace("Content", "");
+                                    if (relativePath.startsWith("/")) {
                                         relativePath = relativePath.substring(1);
                                     }
-                                    if (!relativePath.startsWith('/') && relativePath !== '') {
-                                        relativePath = '/' + relativePath;
+                                    if (!relativePath.startsWith("/") && relativePath !== "") {
+                                        relativePath = "/" + relativePath;
                                     }
-                                    if (relativePath === '/') {
-                                        relativePath = '';
+                                    if (relativePath === "/") {
+                                        relativePath = "";
                                     }
 
                                     if (!locations.includes(relativePath)) {
@@ -261,7 +252,7 @@ export class ImportPathConverter {
 
             // Search for the module as a folder (implicit module) - ONLY in Content folder
             const folderPattern = `Content/**/${modulePath}`;
-            const folders = await vscode.workspace.findFiles(folderPattern + '/*.verse', '**/node_modules/**', 10);
+            const folders = await vscode.workspace.findFiles(folderPattern + "/*.verse", "**/node_modules/**", 10);
 
             // Process all found folders
             for (const folder of folders) {
@@ -271,32 +262,32 @@ export class ImportPathConverter {
                     relativePath = path.dirname(relativePath);
 
                     // Ensure we're within Content folder
-                    if (!relativePath.startsWith('Content')) {
+                    if (!relativePath.startsWith("Content")) {
                         continue;
                     }
 
                     // Remove the module path itself from the end
                     // First convert relativePath to forward slashes for consistent comparison
-                    relativePath = relativePath.replace(/\\/g, '/');
+                    relativePath = relativePath.replace(/\\/g, "/");
                     const modulePathNormalized = modulePath; // Keep forward slashes to match relativePath
                     if (relativePath.endsWith(modulePathNormalized)) {
                         relativePath = relativePath.substring(0, relativePath.length - modulePathNormalized.length);
                         // Remove any trailing slashes after stripping the module path
-                        if (relativePath.endsWith('/')) {
+                        if (relativePath.endsWith("/")) {
                             relativePath = relativePath.substring(0, relativePath.length - 1);
                         }
                     }
 
                     // Remove 'Content' prefix
-                    if (relativePath.startsWith('Content/')) {
-                        relativePath = relativePath.substring('Content/'.length);
-                    } else if (relativePath === 'Content') {
-                        relativePath = '';
+                    if (relativePath.startsWith("Content/")) {
+                        relativePath = relativePath.substring("Content/".length);
+                    } else if (relativePath === "Content") {
+                        relativePath = "";
                     }
 
                     // Ensure proper formatting
-                    if (!relativePath.startsWith('/') && relativePath !== '') {
-                        relativePath = '/' + relativePath;
+                    if (!relativePath.startsWith("/") && relativePath !== "") {
+                        relativePath = "/" + relativePath;
                     }
 
                     if (!locations.includes(relativePath)) {
@@ -313,24 +304,21 @@ export class ImportPathConverter {
         if (locations.length === 0) {
             try {
                 // Look for pattern like "ModuleName := module" in .verse files - ONLY in Content folder
-                const verseFiles = await vscode.workspace.findFiles('Content/**/*.verse', '**/node_modules/**', 100);
+                const verseFiles = await vscode.workspace.findFiles("Content/**/*.verse", "**/node_modules/**", 100);
 
                 for (const file of verseFiles) {
-                const content = await vscode.workspace.fs.readFile(file).then(
-                    buffer => Buffer.from(buffer).toString('utf8'),
-                    () => null
-                );
+                    const content = await vscode.workspace.fs.readFile(file).then(
+                        (buffer) => Buffer.from(buffer).toString("utf8"),
+                        () => null
+                    );
 
                     if (content) {
                         // Pattern to match explicit module definitions (aligned with official Verse syntax)
                         // Supports: ModuleName<access> := module: or ModuleName := module:
                         // Where access can be public, private, internal, etc.
                         // Also supports apostrophe-escaped identifiers
-                        const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const modulePattern = new RegExp(
-                            `\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`,
-                            'gm'
-                        );
+                        const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                        const modulePattern = new RegExp(`\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`, "gm");
 
                         if (modulePattern.test(content)) {
                             const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
@@ -339,25 +327,25 @@ export class ImportPathConverter {
                                 relativePath = path.dirname(relativePath);
 
                                 // Convert to forward slashes
-                                relativePath = relativePath.replace(/\\/g, '/');
+                                relativePath = relativePath.replace(/\\/g, "/");
 
                                 // Ensure we're within Content folder
-                                if (!relativePath.startsWith('Content')) {
+                                if (!relativePath.startsWith("Content")) {
                                     continue;
                                 }
 
                                 // Remove 'Content' prefix
-                                if (relativePath.startsWith('Content/')) {
-                                    relativePath = relativePath.substring('Content/'.length);
-                                } else if (relativePath === 'Content') {
-                                    relativePath = '';
+                                if (relativePath.startsWith("Content/")) {
+                                    relativePath = relativePath.substring("Content/".length);
+                                } else if (relativePath === "Content") {
+                                    relativePath = "";
                                 }
 
                                 // Build the full module path based on parent folders
                                 // If we're looking for HUD/Textures and found Textures module in HUD folder, it's a match
                                 if (pathSegments.length > 1) {
                                     // Check if the parent path matches
-                                    const parentPath = pathSegments.slice(0, -1).join('/');
+                                    const parentPath = pathSegments.slice(0, -1).join("/");
                                     if (!relativePath.endsWith(parentPath)) {
                                         continue; // Skip if parent path doesn't match
                                     }
@@ -365,15 +353,15 @@ export class ImportPathConverter {
                                     // Remove the parent path from the relative path
                                     if (relativePath.endsWith(parentPath)) {
                                         relativePath = relativePath.substring(0, relativePath.length - parentPath.length);
-                                        if (relativePath.endsWith('/')) {
+                                        if (relativePath.endsWith("/")) {
                                             relativePath = relativePath.substring(0, relativePath.length - 1);
                                         }
                                     }
                                 }
 
                                 // Ensure proper formatting
-                                if (!relativePath.startsWith('/') && relativePath !== '') {
-                                    relativePath = '/' + relativePath;
+                                if (!relativePath.startsWith("/") && relativePath !== "") {
+                                    relativePath = "/" + relativePath;
                                 }
 
                                 if (!locations.includes(relativePath)) {
@@ -389,7 +377,7 @@ export class ImportPathConverter {
         }
 
         log(this.outputChannel, `Found ${locations.length} possible locations for module '${modulePath}'`);
-        locations.forEach(loc => log(this.outputChannel, `  - ${loc}`));
+        locations.forEach((loc) => log(this.outputChannel, `  - ${loc}`));
 
         return locations;
     }
@@ -397,10 +385,7 @@ export class ImportPathConverter {
     /**
      * Converts a full path import to a relative import
      */
-    async convertFromFullPath(
-        importStatement: string,
-        documentUri: vscode.Uri
-    ): Promise<ImportConversionResult | null> {
+    async convertFromFullPath(importStatement: string, documentUri: vscode.Uri): Promise<ImportConversionResult | null> {
         // Check if it's a built-in module (should not be converted)
         if (this.isBuiltinModule(importStatement)) {
             log(this.outputChannel, "Cannot convert built-in module to relative path");
@@ -418,7 +403,7 @@ export class ImportPathConverter {
         const dotMatch = importStatement.match(/using\.\s*(.+)/);
         const fullPath = curlyMatch ? curlyMatch[1].trim() : dotMatch ? dotMatch[1].trim() : null;
 
-        if (!fullPath || !fullPath.startsWith('/')) {
+        if (!fullPath || !fullPath.startsWith("/")) {
             return null;
         }
 
@@ -432,17 +417,17 @@ export class ImportPathConverter {
         let relativePath = fullPath;
 
         // Remove project path prefix (e.g., /vuke@fortnite.com/Project/)
-        if (fullPath.startsWith(projectVersePath + '/')) {
+        if (fullPath.startsWith(projectVersePath + "/")) {
             relativePath = fullPath.substring(projectVersePath.length + 1);
         } else if (fullPath === projectVersePath) {
             // Root module
-            relativePath = '';
+            relativePath = "";
         }
 
         // Convert path segments to dot notation if applicable
         // e.g., UI/Components/Button becomes UI.Components.Button
-        const modulePathSegments = relativePath.split('/').filter(s => s);
-        const relativeImportPath = modulePathSegments.join('.');
+        const modulePathSegments = relativePath.split("/").filter((s) => s);
+        const relativeImportPath = modulePathSegments.join(".");
 
         if (!relativeImportPath) {
             log(this.outputChannel, "Could not extract relative path from full path");
@@ -450,36 +435,32 @@ export class ImportPathConverter {
         }
 
         // Determine if import was using curly braces or dot notation
-        const usesCurlyBraces = importStatement.includes('{');
+        const usesCurlyBraces = importStatement.includes("{");
 
         // Create the relative import statement
-        const relativeImport = usesCurlyBraces
-            ? `using { ${relativeImportPath} }`
-            : `using. ${relativeImportPath}`;
+        const relativeImport = usesCurlyBraces ? `using { ${relativeImportPath} }` : `using. ${relativeImportPath}`;
 
         return {
             originalImport: importStatement,
             fullPathImport: relativeImport, // In this case, it's actually the relative import
             moduleName: modulePathSegments[modulePathSegments.length - 1] || relativeImportPath,
-            isAmbiguous: false
+            isAmbiguous: false,
         };
     }
 
     /**
      * Converts all full path imports in a document to relative imports
      */
-    async convertAllImportsFromFullPath(
-        document: vscode.TextDocument
-    ): Promise<ImportConversionResult[]> {
+    async convertAllImportsFromFullPath(document: vscode.TextDocument): Promise<ImportConversionResult[]> {
         const results: ImportConversionResult[] = [];
         const text = document.getText();
-        const lines = text.split('\n');
+        const lines = text.split("\n");
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
 
-            if (trimmedLine.startsWith('using')) {
+            if (trimmedLine.startsWith("using")) {
                 // Only convert non-builtin full path imports
                 if (this.isFullPathImport(trimmedLine) && !this.isBuiltinModule(trimmedLine)) {
                     const result = await this.convertFromFullPath(trimmedLine, document.uri);
@@ -496,10 +477,7 @@ export class ImportPathConverter {
     /**
      * Converts a relative import to a full path import
      */
-    async convertToFullPath(
-        importStatement: string,
-        documentUri: vscode.Uri
-    ): Promise<ImportConversionResult | null> {
+    async convertToFullPath(importStatement: string, documentUri: vscode.Uri): Promise<ImportConversionResult | null> {
         // Check if already full path
         if (this.isFullPathImport(importStatement)) {
             if (this.isBuiltinModule(importStatement)) {
@@ -522,9 +500,7 @@ export class ImportPathConverter {
         // Get project verse path
         const projectVersePath = await this.projectPathHandler.getProjectVersePath();
         if (!projectVersePath) {
-            vscode.window.showWarningMessage(
-                "Could not find .uefnproject file in workspace. Please ensure you have a valid UEFN project."
-            );
+            vscode.window.showWarningMessage("Could not find .uefnproject file in workspace. Please ensure you have a valid UEFN project.");
             return null;
         }
 
@@ -532,44 +508,36 @@ export class ImportPathConverter {
         const possibleLocations = await this.findModuleLocations(modulePath, documentUri);
 
         // Determine if import is using curly braces or dot notation
-        const usesCurlyBraces = importStatement.includes('{');
+        const usesCurlyBraces = importStatement.includes("{");
 
         if (possibleLocations.length === 0) {
             // No specific location found, use the module path directly
             const fullPath = `${projectVersePath}/${modulePath}`;
-            const fullPathImport = usesCurlyBraces
-                ? `using { ${fullPath} }`
-                : `using. ${fullPath}`;
+            const fullPathImport = usesCurlyBraces ? `using { ${fullPath} }` : `using. ${fullPath}`;
 
             return {
                 originalImport: importStatement,
                 fullPathImport,
                 moduleName,
-                isAmbiguous: false
+                isAmbiguous: false,
             };
         } else if (possibleLocations.length === 1) {
             // Single location found
             const location = possibleLocations[0];
-            const fullPath = location === '/' || location === ''
-                ? `${projectVersePath}/${modulePath}`
-                : `${projectVersePath}${location}/${modulePath}`;
+            const fullPath = location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
 
-            const fullPathImport = usesCurlyBraces
-                ? `using { ${fullPath} }`
-                : `using. ${fullPath}`;
+            const fullPathImport = usesCurlyBraces ? `using { ${fullPath} }` : `using. ${fullPath}`;
 
             return {
                 originalImport: importStatement,
                 fullPathImport,
                 moduleName,
-                isAmbiguous: false
+                isAmbiguous: false,
             };
         } else {
             // Multiple locations found - ambiguous
-            const possiblePaths = possibleLocations.map(location => {
-                return location === '/' || location === ''
-                    ? `${projectVersePath}/${modulePath}`
-                    : `${projectVersePath}${location}/${modulePath}`;
+            const possiblePaths = possibleLocations.map((location) => {
+                return location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
             });
 
             // Return with all possible paths
@@ -578,7 +546,7 @@ export class ImportPathConverter {
                 fullPathImport: "", // Will be determined by user selection
                 moduleName,
                 isAmbiguous: true,
-                possiblePaths
+                possiblePaths,
             };
         }
     }
@@ -586,16 +554,14 @@ export class ImportPathConverter {
     /**
      * Converts all relative imports in a document to full path imports
      */
-    async convertAllImportsInDocument(
-        document: vscode.TextDocument
-    ): Promise<ImportConversionResult[]> {
+    async convertAllImportsInDocument(document: vscode.TextDocument): Promise<ImportConversionResult[]> {
         const results: ImportConversionResult[] = [];
         const text = document.getText();
-        const lines = text.split('\n');
+        const lines = text.split("\n");
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (line.trim().startsWith('using')) {
+            if (line.trim().startsWith("using")) {
                 const result = await this.convertToFullPath(line.trim(), document.uri);
                 if (result) {
                     results.push(result);
@@ -609,13 +575,9 @@ export class ImportPathConverter {
     /**
      * Applies a conversion result to the document
      */
-    async applyConversion(
-        document: vscode.TextDocument,
-        conversion: ImportConversionResult,
-        selectedPath?: string
-    ): Promise<boolean> {
+    async applyConversion(document: vscode.TextDocument, conversion: ImportConversionResult, selectedPath?: string): Promise<boolean> {
         const text = document.getText();
-        const lines = text.split('\n');
+        const lines = text.split("\n");
 
         // Find the line with the original import
         let lineIndex = -1;
@@ -634,21 +596,16 @@ export class ImportPathConverter {
         // Determine the final import statement
         let finalImport = conversion.fullPathImport;
         if (conversion.isAmbiguous && selectedPath) {
-            const usesCurlyBraces = conversion.originalImport.includes('{');
-            finalImport = usesCurlyBraces
-                ? `using { ${selectedPath} }`
-                : `using. ${selectedPath}`;
+            const usesCurlyBraces = conversion.originalImport.includes("{");
+            finalImport = usesCurlyBraces ? `using { ${selectedPath} }` : `using. ${selectedPath}`;
         }
 
         // Create the edit
         const edit = new vscode.WorkspaceEdit();
-        const range = new vscode.Range(
-            new vscode.Position(lineIndex, 0),
-            new vscode.Position(lineIndex, lines[lineIndex].length)
-        );
+        const range = new vscode.Range(new vscode.Position(lineIndex, 0), new vscode.Position(lineIndex, lines[lineIndex].length));
 
         // Preserve original indentation
-        const originalIndent = lines[lineIndex].match(/^\s*/)?.[0] || '';
+        const originalIndent = lines[lineIndex].match(/^\s*/)?.[0] || "";
         edit.replace(document.uri, range, originalIndent + finalImport);
 
         try {

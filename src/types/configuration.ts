@@ -4,17 +4,17 @@
 
 export interface GeneralConfig {
     autoImport: boolean;
-    diagnosticDelay: number;  // Deprecated
+    diagnosticDelay: number; // Deprecated
     autoImportDebounceDelay: number;
 }
 
 export interface BehaviorConfig {
-    importSyntax: 'curly' | 'dot';
+    importSyntax: "curly" | "dot";
     preserveImportLocations: boolean;
     sortImportsAlphabetically: boolean;
-    importGrouping: 'none' | 'digestFirst' | 'localFirst';
+    importGrouping: "none" | "digestFirst" | "localFirst";
     ambiguousImports: Record<string, string>;
-    multiOptionStrategy: 'quickfix' | 'auto_shortest' | 'auto_first' | 'disabled';
+    multiOptionStrategy: "quickfix" | "auto_shortest" | "auto_first" | "disabled";
 }
 
 export interface QuickFixConfig {
@@ -29,7 +29,7 @@ export interface PathConversionConfig {
 
 export interface ExperimentalConfig {
     useDigestFiles: boolean;
-    unknownIdentifierResolution: 'digest_only' | 'digest_and_inference' | 'disabled';
+    unknownIdentifierResolution: "digest_only" | "digest_and_inference" | "disabled";
 }
 
 export interface VerseAutoImportsConfig {

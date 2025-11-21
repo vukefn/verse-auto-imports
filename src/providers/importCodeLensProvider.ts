@@ -24,7 +24,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         // Watch for document changes to refresh CodeLens immediately
         vscode.workspace.onDidChangeTextDocument((e) => {
             // Only refresh for Verse files that are currently showing CodeLens
-            if (e.document.languageId === 'verse' && this.isHoveringImport.get(e.document.uri.toString())) {
+            if (e.document.languageId === "verse" && this.isHoveringImport.get(e.document.uri.toString())) {
                 // Clear any pending refresh
                 if (this.refreshTimeout) {
                     clearTimeout(this.refreshTimeout);
@@ -57,7 +57,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
 
             this.hoverState.set(documentUri, {
                 lineNumber,
-                timeout: null
+                timeout: null,
             });
             this.isHoveringImport.set(documentUri, true);
             this._onDidChangeCodeLenses.fire();
@@ -76,7 +76,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             if (currentState) {
                 this.hoverState.set(documentUri, {
                     ...currentState,
-                    timeout
+                    timeout,
                 });
             }
         }
@@ -104,10 +104,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         setTimeout(() => this._onDidChangeCodeLenses.fire(), 150);
     }
 
-    async provideCodeLenses(
-        document: vscode.TextDocument,
-        token: vscode.CancellationToken
-    ): Promise<vscode.CodeLens[]> {
+    async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
         const codeLenses: vscode.CodeLens[] = [];
 
         // Check if CodeLens is enabled in configuration
@@ -128,18 +125,15 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         }
 
         const text = document.getText();
-        const lines = text.split('\n');
+        const lines = text.split("\n");
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
 
             // Check if this is an import line
-            if (trimmedLine.startsWith('using')) {
-                const range = new vscode.Range(
-                    new vscode.Position(i, 0),
-                    new vscode.Position(i, line.length)
-                );
+            if (trimmedLine.startsWith("using")) {
+                const range = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i, line.length));
 
                 // Check if it's a full path import that can be converted to relative
                 if (this.importPathConverter.isFullPathImport(trimmedLine)) {
@@ -153,17 +147,16 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                                 title: `$(arrow-left)  Use relative path`,
                                 tooltip: `Use relative path for '${moduleName}'`,
                                 command: "verseAutoImports.convertToRelativePath",
-                                arguments: [document, trimmedLine, i]
+                                arguments: [document, trimmedLine, i],
                             });
                             codeLenses.push(convertToRelativeLens);
 
                             // Check if there are multiple full path imports (non-builtin) in the file
-                            const hasMultipleFullPathImports = lines.filter(l => {
-                                const trimmed = l.trim();
-                                return trimmed.startsWith('using') &&
-                                    this.importPathConverter.isFullPathImport(trimmed) &&
-                                    !this.importPathConverter.isBuiltinModule(trimmed);
-                            }).length > 1;
+                            const hasMultipleFullPathImports =
+                                lines.filter((l) => {
+                                    const trimmed = l.trim();
+                                    return trimmed.startsWith("using") && this.importPathConverter.isFullPathImport(trimmed) && !this.importPathConverter.isBuiltinModule(trimmed);
+                                }).length > 1;
 
                             // Add "Use relative paths for all" option if there are multiple full path imports
                             if (hasMultipleFullPathImports) {
@@ -171,7 +164,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                                     title: `$(arrow-circle-left)  Use relative paths for all`,
                                     tooltip: "Use relative paths for all imports in this file",
                                     command: "verseAutoImports.convertAllToRelativePath",
-                                    arguments: [document]
+                                    arguments: [document],
                                 });
                                 codeLenses.push(convertAllRelativeLens);
                             }
@@ -187,15 +180,12 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                             title: `$(arrow-right)  Use absolute path`,
                             tooltip: `Use absolute path for '${moduleName}'`,
                             command: "verseAutoImports.convertToFullPath",
-                            arguments: [document, trimmedLine, i]
+                            arguments: [document, trimmedLine, i],
                         });
                         codeLenses.push(convertSingleLens);
 
                         // Check if there are multiple relative imports in the file
-                        const hasMultipleRelativeImports = lines.filter(l =>
-                            l.trim().startsWith('using') &&
-                            !this.importPathConverter.isFullPathImport(l.trim())
-                        ).length > 1;
+                        const hasMultipleRelativeImports = lines.filter((l) => l.trim().startsWith("using") && !this.importPathConverter.isFullPathImport(l.trim())).length > 1;
 
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {
@@ -203,7 +193,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                                 title: `$(arrow-circle-right)  Use absolute paths for all`,
                                 tooltip: "Use absolute paths for all imports in this file",
                                 command: "verseAutoImports.convertAllToFullPath",
-                                arguments: [document]
+                                arguments: [document],
                             });
                             codeLenses.push(convertAllLens);
                         }
@@ -216,10 +206,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         return codeLenses;
     }
 
-    resolveCodeLens(
-        codeLens: vscode.CodeLens,
-        token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.CodeLens> {
+    resolveCodeLens(codeLens: vscode.CodeLens, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CodeLens> {
         // We already set the command in provideCodeLenses, so just return the same CodeLens
         return codeLens;
     }

@@ -40,18 +40,14 @@ export class ProjectPathHandler {
         }
 
         for (const folder of workspaceFolders) {
-            const files = await vscode.workspace.findFiles(
-                new vscode.RelativePattern(folder, "*.uefnproject"),
-                null,
-                1
-            );
+            const files = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, "*.uefnproject"), null, 1);
 
             if (files.length > 0) {
                 const projectFilePath = files[0].fsPath;
                 log(this.outputChannel, `Found .uefnproject file at: ${projectFilePath}`);
 
                 try {
-                    const content = fs.readFileSync(projectFilePath, 'utf8');
+                    const content = fs.readFileSync(projectFilePath, "utf8");
                     this.cachedProjectFile = JSON.parse(content) as UEFNProjectFile;
 
                     if (this.cachedProjectFile.bindings?.projectVersePath) {
@@ -76,10 +72,7 @@ export class ProjectPathHandler {
         const parentDir = path.dirname(firstWorkspace.uri.fsPath);
         const possibleProjectFile = path.join(parentDir, "*.uefnproject");
 
-        const globPattern = new vscode.RelativePattern(
-            vscode.Uri.file(parentDir),
-            "*.uefnproject"
-        );
+        const globPattern = new vscode.RelativePattern(vscode.Uri.file(parentDir), "*.uefnproject");
 
         try {
             const files = await vscode.workspace.findFiles(globPattern, null, 1);
@@ -87,7 +80,7 @@ export class ProjectPathHandler {
                 const projectFilePath = files[0].fsPath;
                 log(this.outputChannel, `Found .uefnproject file in parent directory: ${projectFilePath}`);
 
-                const content = fs.readFileSync(projectFilePath, 'utf8');
+                const content = fs.readFileSync(projectFilePath, "utf8");
                 this.cachedProjectFile = JSON.parse(content) as UEFNProjectFile;
 
                 if (this.cachedProjectFile.bindings?.projectVersePath) {
