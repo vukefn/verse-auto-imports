@@ -436,14 +436,34 @@ export class ImportHandler {
                     }
                 }
             } else {
-                // No grouping detected or grouping disabled - use original behavior
-                const newImportPathsArray = Array.from(newImportPaths);
-                const newImports = this.groupAndFormatImports(newImportPathsArray, preferDotSyntax, sortAlphabetically, importGrouping);
+                // Either no existing grouping or need to create initial groups
+                if (importGrouping !== "none" && existingPaths.size > 0) {
+                    // We have existing imports but no grouping - reorganize everything into groups
+                    const allPaths = new Set<string>([...existingPaths, ...newImportPaths]);
+                    const allImportsArray = Array.from(allPaths);
+                    const groupedImports = this.groupAndFormatImports(allImportsArray, preferDotSyntax, sortAlphabetically, importGrouping);
 
-                if (importBlocks.length > 0 && importBlocks[0].start === 0) {
-                    edit.insert(document.uri, new vscode.Position(importBlocks[0].end + 1, 0), newImports.join("\n") + "\n");
+                    // Replace all existing imports with grouped version
+                    if (importBlocks.length > 0) {
+                        // Delete all existing import blocks
+                        for (let i = importBlocks.length - 1; i >= 0; i--) {
+                            const block = importBlocks[i];
+                            edit.delete(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)));
+                        }
+                    }
+
+                    // Insert grouped imports at the top
+                    edit.insert(document.uri, new vscode.Position(0, 0), groupedImports.join("\n") + "\n\n");
                 } else {
-                    edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                    // No grouping or no existing imports - use original behavior
+                    const newImportPathsArray = Array.from(newImportPaths);
+                    const newImports = this.groupAndFormatImports(newImportPathsArray, preferDotSyntax, sortAlphabetically, importGrouping);
+
+                    if (importBlocks.length > 0 && importBlocks[0].start === 0) {
+                        edit.insert(document.uri, new vscode.Position(importBlocks[0].end + 1, 0), newImports.join("\n") + "\n");
+                    } else {
+                        edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                    }
                 }
             }
         } else {
