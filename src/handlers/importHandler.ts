@@ -325,10 +325,11 @@ export class ImportHandler {
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
         const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", false);
         const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
+        const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
         log(
             this.outputChannel,
-            `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically}`
+            `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically} Grouping: ${importGrouping}`
         );
         importStatements.forEach((statement) => {
             log(this.outputChannel, `- ${statement}`);
@@ -413,13 +414,57 @@ export class ImportHandler {
             const allPaths = new Set<string>([...existingPaths, ...newImportPaths]);
             const allImportsArray = Array.from(allPaths);
 
-            // Only sort if the setting is enabled
-            if (sortAlphabetically) {
-                allImportsArray.sort((a, b) => a.localeCompare(b));
-            }
+            let formattedImports: string[] = [];
 
-            const formattedImports = allImportsArray
-                .map((path) => this.formatImportStatement(path, preferDotSyntax));
+            if (importGrouping === "none") {
+                // Legacy behavior: simple alphabetical sort if enabled
+                if (sortAlphabetically) {
+                    allImportsArray.sort((a, b) => a.localeCompare(b));
+                }
+                formattedImports = allImportsArray
+                    .map((path) => this.formatImportStatement(path, preferDotSyntax));
+            } else {
+                // New grouping behavior: separate digest and local imports
+                const digestImports: string[] = [];
+                const localImports: string[] = [];
+
+                for (const path of allImportsArray) {
+                    if (this.isDigestImport(path)) {
+                        digestImports.push(path);
+                    } else {
+                        localImports.push(path);
+                    }
+                }
+
+                // Sort within groups if enabled
+                if (sortAlphabetically) {
+                    digestImports.sort((a, b) => a.localeCompare(b));
+                    localImports.sort((a, b) => a.localeCompare(b));
+                }
+
+                // Format the imports
+                const formattedDigestImports = digestImports
+                    .map((path) => this.formatImportStatement(path, preferDotSyntax));
+                const formattedLocalImports = localImports
+                    .map((path) => this.formatImportStatement(path, preferDotSyntax));
+
+                // Combine based on configuration
+                if (importGrouping === "digestFirst") {
+                    formattedImports = [...formattedDigestImports];
+                    // Add spacing between groups if both have imports
+                    if (formattedDigestImports.length > 0 && formattedLocalImports.length > 0) {
+                        formattedImports.push(""); // Empty line between groups
+                    }
+                    formattedImports.push(...formattedLocalImports);
+                } else if (importGrouping === "localFirst") {
+                    formattedImports = [...formattedLocalImports];
+                    // Add spacing between groups if both have imports
+                    if (formattedLocalImports.length > 0 && formattedDigestImports.length > 0) {
+                        formattedImports.push(""); // Empty line between groups
+                    }
+                    formattedImports.push(...formattedDigestImports);
+                }
+            }
 
             // Determine the line after all existing import blocks to check for spacing
             let lineAfterImports = 0;
@@ -483,6 +528,24 @@ export class ImportHandler {
         }
 
         return null;
+    }
+
+    /**
+     * Determines if an import is a digest import (from Verse.org, Fortnite.com, or UnrealEngine.com)
+     * @param importPath The import path or statement to check
+     * @returns true if the import is from a digest source, false otherwise
+     */
+    private isDigestImport(importPath: string): boolean {
+        // Extract the path if this is a full import statement
+        let path = importPath;
+        if (importPath.includes('using')) {
+            path = this.extractPathFromImport(importPath) || importPath;
+        }
+
+        // Check if it's a digest import
+        return path.startsWith('/Verse.org/') ||
+               path.startsWith('/Fortnite.com/') ||
+               path.startsWith('/UnrealEngine.com/');
     }
 
     /**

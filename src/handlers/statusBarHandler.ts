@@ -216,6 +216,7 @@ export class StatusBarHandler {
         const importSyntax = config.get<string>("behavior.importSyntax", "curly");
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
         const sortImports = config.get<boolean>("behavior.sortImportsAlphabetically", true);
+        const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
         const items: QuickPickItemWithAction[] = [];
 
@@ -283,6 +284,38 @@ export class StatusBarHandler {
             action: async () => {
                 await config.update("behavior.sortImportsAlphabetically", !sortImports, vscode.ConfigurationTarget.Global);
                 log(this.outputChannel, `Sort imports alphabetically toggled: ${!sortImports}`);
+            }
+        });
+
+        // Import Grouping option
+        let groupingLabel = "";
+        let groupingDescription = "";
+        let nextGrouping = "none";
+
+        switch (importGrouping) {
+            case "none":
+                groupingLabel = "$(list-unordered) Import Grouping: None";
+                groupingDescription = "No grouping";
+                nextGrouping = "digestFirst";
+                break;
+            case "digestFirst":
+                groupingLabel = "$(list-ordered) Import Grouping: Digest First";
+                groupingDescription = "Digest imports, then local";
+                nextGrouping = "localFirst";
+                break;
+            case "localFirst":
+                groupingLabel = "$(list-ordered) Import Grouping: Local First";
+                groupingDescription = "Local imports, then digest";
+                nextGrouping = "none";
+                break;
+        }
+
+        items.push({
+            label: groupingLabel,
+            description: groupingDescription,
+            action: async () => {
+                await config.update("behavior.importGrouping", nextGrouping, vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, `Import grouping changed to: ${nextGrouping}`);
             }
         });
 

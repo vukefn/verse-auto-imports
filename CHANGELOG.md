@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [0.6.3] - Unreleased
 
 ### Added
+- **Import Grouping**: Separate digest imports from local imports for better organization
+  - New `behavior.importGrouping` setting with three options:
+    - `"none"` - No grouping (default, maintains backward compatibility)
+    - `"digestFirst"` - Groups digest imports (/Verse.org/, /Fortnite.com/, /UnrealEngine.com/) first, then local imports
+    - `"localFirst"` - Groups local imports first, then digest imports
+  - Automatic blank line separator between groups for visual clarity
+  - Works with both "Optimize Imports" command and auto-import
+  - Respects `sortImportsAlphabetically` setting within each group
+  - Toggle option available in status bar menu
 - **Smart Auto-Import Debouncing**: Auto-imports now wait for you to stop typing before triggering
   - Prevents distracting imports while actively coding
   - Configurable delay (default 3 seconds)

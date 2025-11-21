@@ -241,12 +241,41 @@ Core functionality settings:
 
 Control how imports are handled:
 
-| Setting                            | Default      | Description                             |
-| ---------------------------------- | ------------ | --------------------------------------- |
-| `behavior.importSyntax`            | `"curly"`    | Use `using { /Path }` or `using. /Path` |
-| `behavior.preserveImportLocations` | `true`       | Keep existing imports where they are    |
-| `behavior.multiOptionStrategy`     | `"quickfix"` | How to handle multiple import options   |
-| `behavior.ambiguousImports`        | `{...}`      | Preferred paths for ambiguous classes   |
+| Setting                            | Default      | Description                                        |
+| ---------------------------------- | ------------ | -------------------------------------------------- |
+| `behavior.importSyntax`            | `"curly"`    | Use `using { /Path }` or `using. /Path`           |
+| `behavior.preserveImportLocations` | `true`       | Keep existing imports where they are              |
+| `behavior.sortImportsAlphabetically` | `true`     | Sort imports alphabetically                       |
+| `behavior.importGrouping`          | `"none"`     | Group digest vs local imports (see below)         |
+| `behavior.multiOptionStrategy`     | `"quickfix"` | How to handle multiple import options             |
+| `behavior.ambiguousImports`        | `{...}`      | Preferred paths for ambiguous classes             |
+
+**Import Grouping Options:**
+
+Control how imports are organized and grouped:
+
+```json
+{
+  "verseAutoImports.behavior.importGrouping": "none" // No grouping (default)
+  // "digestFirst"  // Digest imports first, then local imports
+  // "localFirst"   // Local imports first, then digest imports
+}
+```
+
+- **`"none"`** - All imports are mixed together (legacy behavior)
+- **`"digestFirst"`** - Groups digest imports (`/Verse.org/`, `/Fortnite.com/`, `/UnrealEngine.com/`) first, followed by local imports with a blank line separator
+- **`"localFirst"`** - Groups local imports first, followed by digest imports with a blank line separator
+
+Example with `"digestFirst"`:
+```verse
+using { /Fortnite.com/Devices }
+using { /UnrealEngine.com/Temporary/SpatialMath }
+using { /Verse.org/Simulation }
+
+using { ../shared/Utils }
+using { ./components/PlayerManager }
+using { ./local/CustomDevice }
+```
 
 **Multi-Option Strategies:**
 
