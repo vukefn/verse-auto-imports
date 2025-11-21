@@ -290,32 +290,27 @@ export class StatusBarHandler {
         // Import Grouping option
         let groupingLabel = "";
         let groupingDescription = "";
-        let nextGrouping = "none";
 
         switch (importGrouping) {
             case "none":
                 groupingLabel = "$(list-unordered) Import Grouping: None";
                 groupingDescription = "No grouping";
-                nextGrouping = "digestFirst";
                 break;
             case "digestFirst":
                 groupingLabel = "$(list-ordered) Import Grouping: Digest First";
                 groupingDescription = "Digest imports, then local";
-                nextGrouping = "localFirst";
                 break;
             case "localFirst":
                 groupingLabel = "$(list-ordered) Import Grouping: Local First";
                 groupingDescription = "Local imports, then digest";
-                nextGrouping = "none";
                 break;
         }
 
         items.push({
-            label: groupingLabel,
+            label: `${groupingLabel} $(chevron-right)`,
             description: groupingDescription,
             action: async () => {
-                await config.update("behavior.importGrouping", nextGrouping, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Import grouping changed to: ${nextGrouping}`);
+                await this.showImportGroupingMenu();
             }
         });
 
@@ -400,6 +395,72 @@ export class StatusBarHandler {
             await selected.action();
             // Refresh the menu after action (optional - can be removed if too chatty)
             // await this.showMenu();
+        }
+    }
+
+    async showImportGroupingMenu(): Promise<void> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const currentGrouping = config.get<string>("behavior.importGrouping", "none");
+
+        const items: QuickPickItemWithAction[] = [];
+
+        // Add back option
+        items.push({
+            label: "$(arrow-left) Back to main menu",
+            description: "",
+            action: async () => {
+                await this.showMenu();
+            }
+        });
+
+        // Separator
+        items.push({
+            label: "",
+            kind: vscode.QuickPickItemKind.Separator
+        });
+
+        // None option
+        items.push({
+            label: `${currentGrouping === "none" ? "$(check) " : "$(blank) "}No Grouping`,
+            description: "All imports mixed together (default)",
+            action: async () => {
+                await config.update("behavior.importGrouping", "none", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: none");
+                vscode.window.showInformationMessage("Import grouping disabled");
+            }
+        });
+
+        // Digest First option
+        items.push({
+            label: `${currentGrouping === "digestFirst" ? "$(check) " : "$(blank) "}Digest First`,
+            description: "Digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com), then local imports",
+            action: async () => {
+                await config.update("behavior.importGrouping", "digestFirst", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: digestFirst");
+                vscode.window.showInformationMessage("Import grouping: Digest imports first");
+            }
+        });
+
+        // Local First option
+        items.push({
+            label: `${currentGrouping === "localFirst" ? "$(check) " : "$(blank) "}Local First`,
+            description: "Local imports, then digest imports",
+            action: async () => {
+                await config.update("behavior.importGrouping", "localFirst", vscode.ConfigurationTarget.Global);
+                log(this.outputChannel, "Import grouping changed to: localFirst");
+                vscode.window.showInformationMessage("Import grouping: Local imports first");
+            }
+        });
+
+        // Show the submenu
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select Import Grouping Option",
+            matchOnDescription: true
+        });
+
+        // Execute the action if an item was selected
+        if (selected?.action) {
+            await selected.action();
         }
     }
 
