@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [0.6.3] - Unreleased
 
 ### Added
+- **Configurable Empty Lines After Imports**: Control spacing between imports and code
+  - New `behavior.emptyLinesAfterImports` setting (0-5 lines, default: 1)
+  - Automatically applied when:
+    - Saving files
+    - Adding new imports (auto-import or quick fix)
+    - Running "Optimize Imports" command
+  - Maintains consistent code formatting across your project
 - **Import Grouping**: Separate digest imports from local imports for better organization
   - New `behavior.importGrouping` setting with three options:
     - `"none"` - No grouping (default, maintains backward compatibility)

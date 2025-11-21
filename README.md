@@ -247,6 +247,7 @@ Control how imports are handled:
 | `behavior.preserveImportLocations` | `true`       | Keep existing imports where they are              |
 | `behavior.sortImportsAlphabetically` | `true`     | Sort imports alphabetically                       |
 | `behavior.importGrouping`          | `"none"`     | Group digest vs local imports (see below)         |
+| `behavior.emptyLinesAfterImports`  | `1`          | Number of empty lines after imports (0-5)         |
 | `behavior.multiOptionStrategy`     | `"quickfix"` | How to handle multiple import options             |
 | `behavior.ambiguousImports`        | `{...}`      | Preferred paths for ambiguous classes             |
 
@@ -276,6 +277,25 @@ using { ../shared/Utils }
 using { ./components/PlayerManager }
 using { ./local/CustomDevice }
 ```
+
+**Empty Lines After Imports:**
+
+Control the spacing between imports and code:
+
+```json
+{
+  "verseAutoImports.behavior.emptyLinesAfterImports": 1 // Default: 1 empty line
+}
+```
+
+- **`0`** - No empty line between imports and code
+- **`1`** - One empty line (default, recommended)
+- **`2-5`** - Multiple empty lines for additional visual separation
+
+This setting is automatically applied:
+- When saving files
+- When adding new imports (auto-import or quick fix)
+- When running "Optimize Imports" command
 
 **Multi-Option Strategies:**
 
@@ -326,6 +346,9 @@ All settings with their full paths:
   "verseAutoImports.general.diagnosticDelay": 1000,
   "verseAutoImports.behavior.importSyntax": "curly",
   "verseAutoImports.behavior.preserveImportLocations": true,
+  "verseAutoImports.behavior.sortImportsAlphabetically": true,
+  "verseAutoImports.behavior.importGrouping": "none",
+  "verseAutoImports.behavior.emptyLinesAfterImports": 1,
   "verseAutoImports.behavior.multiOptionStrategy": "quickfix",
   "verseAutoImports.quickFix.ordering": "confidence",
   "verseAutoImports.quickFix.showDescriptions": false,

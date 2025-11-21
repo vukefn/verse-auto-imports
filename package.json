@@ -135,6 +135,14 @@
           "description": "Controls grouping of digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com) vs local imports. 'none' disables grouping, 'digestFirst' places digest imports before local, 'localFirst' places local imports before digest.",
           "order": 13
         },
+        "verseAutoImports.behavior.emptyLinesAfterImports": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Number of empty lines to add after the imports section at the top of the file",
+          "order": 14
+        },
         "verseAutoImports.behavior.ambiguousImports": {
           "type": "object",
           "default": {
@@ -143,7 +151,7 @@
             "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
           },
           "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}",
-          "order": 14
+          "order": 15
         },
         "verseAutoImports.behavior.multiOptionStrategy": {
           "type": "string",
@@ -155,7 +163,7 @@
           ],
           "default": "quickfix",
           "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
-          "order": 15
+          "order": 16
         },
         "verseAutoImports.quickFix.sortAlphabetically": {
           "type": "boolean",
