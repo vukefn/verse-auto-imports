@@ -393,7 +393,7 @@ Found a bug or want to contribute? We welcome issues and pull requests!
 
 ## What's New
 
-### Version 0.6.3 - Latest
+### Version 0.6.0 - Latest
 
 **Smart Auto-Import Debouncing**
 

@@ -1,232 +1,232 @@
 {
-  "name": "verse-auto-imports",
-  "displayName": "Verse Auto Imports",
-  "description": "Automatically adds missing using statements in Verse files",
-  "version": "0.6.3-SNAPSHOT",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onLanguage:verse"
-  ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "icons": {
-      "verse-imports-icon": {
-        "description": "Verse Auto Imports icon",
-        "default": {
-          "fontPath": "media/icon.woff",
-          "fontCharacter": "\\e800"
-        }
-      }
+    "name": "verse-auto-imports",
+    "displayName": "Verse Auto Imports",
+    "description": "Automatically adds missing using statements in Verse files",
+    "version": "0.6.0",
+    "engines": {
+        "vscode": "^1.85.0"
     },
-    "commands": [
-      {
-        "command": "verseAutoImports.showStatusMenu",
-        "title": "Verse: Show Quick Menu"
-      },
-      {
-        "command": "verseAutoImports.optimizeImports",
-        "title": "Verse: Optimize Imports"
-      },
-      {
-        "command": "verseAutoImports.addSingleImport",
-        "title": "Verse: Add Import"
-      },
-      {
-        "command": "verseAutoImports.toggleAutoImport",
-        "title": "Verse: Toggle Auto Import"
-      },
-      {
-        "command": "verseAutoImports.togglePreserveLocations",
-        "title": "Verse: Toggle Preserve Import Locations"
-      },
-      {
-        "command": "verseAutoImports.toggleImportSyntax",
-        "title": "Verse: Toggle Import Syntax"
-      },
-      {
-        "command": "verseAutoImports.toggleDigestFiles",
-        "title": "Verse: Toggle Digest Files"
-      },
-      {
-        "command": "verseAutoImports.toggleFullPathCodeLens",
-        "title": "Verse: Toggle Path Conversion Helper"
-      },
-      {
-        "command": "verseAutoImports.snoozeAutoImport",
-        "title": "Verse: Snooze Auto Import"
-      },
-      {
-        "command": "verseAutoImports.cancelSnooze",
-        "title": "Verse: Cancel Snooze"
-      },
-      {
-        "command": "verseAutoImports.convertToFullPath",
-        "title": "Verse: Use Absolute Path"
-      },
-      {
-        "command": "verseAutoImports.convertAllToFullPath",
-        "title": "Verse: Use Absolute Paths for All"
-      },
-      {
-        "command": "verseAutoImports.convertToRelativePath",
-        "title": "Verse: Use Relative Path"
-      },
-      {
-        "command": "verseAutoImports.convertAllToRelativePath",
-        "title": "Verse: Use Relative Paths for All"
-      }
+    "categories": [
+        "Other"
     ],
-    "configuration": {
-      "title": "Verse Auto Imports",
-      "properties": {
-        "verseAutoImports.general.autoImport": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically add missing imports when errors are detected",
-          "order": 1
+    "activationEvents": [
+        "onLanguage:verse"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "icons": {
+            "verse-imports-icon": {
+                "description": "Verse Auto Imports icon",
+                "default": {
+                    "fontPath": "media/icon.woff",
+                    "fontCharacter": "\\e800"
+                }
+            }
         },
-        "verseAutoImports.general.diagnosticDelay": {
-          "type": "number",
-          "default": 1000,
-          "description": "[DEPRECATED - Use autoImportDebounceDelay instead] Delay in milliseconds before processing diagnostics",
-          "order": 2
-        },
-        "verseAutoImports.general.autoImportDebounceDelay": {
-          "type": "number",
-          "default": 3000,
-          "description": "Debounce delay in milliseconds before auto-importing. Waits for this duration after the last diagnostic change before triggering auto-imports (while you're typing).",
-          "order": 3
-        },
-        "verseAutoImports.behavior.importSyntax": {
-          "type": "string",
-          "enum": [
-            "curly",
-            "dot"
-          ],
-          "default": "curly",
-          "description": "Preferred import syntax: 'curly' for 'using { /Path }' or 'dot' for 'using. /Path'",
-          "order": 10
-        },
-        "verseAutoImports.behavior.preserveImportLocations": {
-          "type": "boolean",
-          "default": true,
-          "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file.",
-          "order": 11
-        },
-        "verseAutoImports.behavior.sortImportsAlphabetically": {
-          "type": "boolean",
-          "default": true,
-          "description": "When true, sorts imports alphabetically. When false, preserves the original order.",
-          "order": 12
-        },
-        "verseAutoImports.behavior.importGrouping": {
-          "type": "string",
-          "enum": [
-            "none",
-            "digestFirst",
-            "localFirst"
-          ],
-          "default": "none",
-          "description": "Controls grouping of digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com) vs local imports. 'none' disables grouping, 'digestFirst' places digest imports before local, 'localFirst' places local imports before digest.",
-          "order": 13
-        },
-        "verseAutoImports.behavior.emptyLinesAfterImports": {
-          "type": "number",
-          "default": 1,
-          "minimum": 0,
-          "maximum": 5,
-          "description": "Number of empty lines to add after the imports section at the top of the file",
-          "order": 14
-        },
-        "verseAutoImports.behavior.ambiguousImports": {
-          "type": "object",
-          "default": {
-            "vector3": "/UnrealEngine.com/Temporary/SpatialMath",
-            "vector2": "/UnrealEngine.com/Temporary/SpatialMath",
-            "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
-          },
-          "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}",
-          "order": 15
-        },
-        "verseAutoImports.behavior.multiOptionStrategy": {
-          "type": "string",
-          "enum": [
-            "quickfix",
-            "auto_shortest",
-            "auto_first",
-            "disabled"
-          ],
-          "default": "quickfix",
-          "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
-          "order": 16
-        },
-        "verseAutoImports.quickFix.sortAlphabetically": {
-          "type": "boolean",
-          "default": false,
-          "description": "When true, sorts quick fix options alphabetically. When false, preserves original order.",
-          "order": 20
-        },
-        "verseAutoImports.quickFix.showDescriptions": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show descriptive text in quick fix menu items (e.g., 'class from /Fortnite.com/Devices')",
-          "order": 21
-        },
-        "verseAutoImports.pathConversion.enableCodeLens": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show CodeLens actions above import statements when hovering to convert between absolute and relative paths",
-          "order": 30
-        },
-        "verseAutoImports.pathConversion.scanDepth": {
-          "type": "number",
-          "default": 5,
-          "description": "Maximum directory depth to scan when searching for module locations (used for ambiguity detection)",
-          "order": 31
-        },
-        "verseAutoImports.experimental.useDigestFiles": {
-          "type": "boolean",
-          "default": false,
-          "description": "⚠️ Enable lookup of unknown identifiers in Verse digest files for intelligent import suggestions",
-          "order": 40
-        },
-        "verseAutoImports.experimental.unknownIdentifierResolution": {
-          "type": "string",
-          "enum": [
-            "digest_only",
-            "digest_and_inference",
-            "disabled"
-          ],
-          "default": "disabled",
-          "description": "⚠️ Strategy for resolving unknown identifiers: 'digest_only' uses only digest files, 'digest_and_inference' adds pattern-based guessing, 'disabled' turns off unknown identifier resolution",
-          "order": 41
+        "commands": [
+            {
+                "command": "verseAutoImports.showStatusMenu",
+                "title": "Verse: Show Quick Menu"
+            },
+            {
+                "command": "verseAutoImports.optimizeImports",
+                "title": "Verse: Optimize Imports"
+            },
+            {
+                "command": "verseAutoImports.addSingleImport",
+                "title": "Verse: Add Import"
+            },
+            {
+                "command": "verseAutoImports.toggleAutoImport",
+                "title": "Verse: Toggle Auto Import"
+            },
+            {
+                "command": "verseAutoImports.togglePreserveLocations",
+                "title": "Verse: Toggle Preserve Import Locations"
+            },
+            {
+                "command": "verseAutoImports.toggleImportSyntax",
+                "title": "Verse: Toggle Import Syntax"
+            },
+            {
+                "command": "verseAutoImports.toggleDigestFiles",
+                "title": "Verse: Toggle Digest Files"
+            },
+            {
+                "command": "verseAutoImports.toggleFullPathCodeLens",
+                "title": "Verse: Toggle Path Conversion Helper"
+            },
+            {
+                "command": "verseAutoImports.snoozeAutoImport",
+                "title": "Verse: Snooze Auto Import"
+            },
+            {
+                "command": "verseAutoImports.cancelSnooze",
+                "title": "Verse: Cancel Snooze"
+            },
+            {
+                "command": "verseAutoImports.convertToFullPath",
+                "title": "Verse: Use Absolute Path"
+            },
+            {
+                "command": "verseAutoImports.convertAllToFullPath",
+                "title": "Verse: Use Absolute Paths for All"
+            },
+            {
+                "command": "verseAutoImports.convertToRelativePath",
+                "title": "Verse: Use Relative Path"
+            },
+            {
+                "command": "verseAutoImports.convertAllToRelativePath",
+                "title": "Verse: Use Relative Paths for All"
+            }
+        ],
+        "configuration": {
+            "title": "Verse Auto Imports",
+            "properties": {
+                "verseAutoImports.general.autoImport": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically add missing imports when errors are detected",
+                    "order": 1
+                },
+                "verseAutoImports.general.diagnosticDelay": {
+                    "type": "number",
+                    "default": 1000,
+                    "description": "[DEPRECATED - Use autoImportDebounceDelay instead] Delay in milliseconds before processing diagnostics",
+                    "order": 2
+                },
+                "verseAutoImports.general.autoImportDebounceDelay": {
+                    "type": "number",
+                    "default": 3000,
+                    "description": "Debounce delay in milliseconds before auto-importing. Waits for this duration after the last diagnostic change before triggering auto-imports (while you're typing).",
+                    "order": 3
+                },
+                "verseAutoImports.behavior.importSyntax": {
+                    "type": "string",
+                    "enum": [
+                        "curly",
+                        "dot"
+                    ],
+                    "default": "curly",
+                    "description": "Preferred import syntax: 'curly' for 'using { /Path }' or 'dot' for 'using. /Path'",
+                    "order": 10
+                },
+                "verseAutoImports.behavior.preserveImportLocations": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When true, keeps existing imports where they are and only adds new imports at the top. When false, consolidates all imports at the top of the file.",
+                    "order": 11
+                },
+                "verseAutoImports.behavior.sortImportsAlphabetically": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "When true, sorts imports alphabetically. When false, preserves the original order.",
+                    "order": 12
+                },
+                "verseAutoImports.behavior.importGrouping": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "digestFirst",
+                        "localFirst"
+                    ],
+                    "default": "none",
+                    "description": "Controls grouping of digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com) vs local imports. 'none' disables grouping, 'digestFirst' places digest imports before local, 'localFirst' places local imports before digest.",
+                    "order": 13
+                },
+                "verseAutoImports.behavior.emptyLinesAfterImports": {
+                    "type": "number",
+                    "default": 1,
+                    "minimum": 0,
+                    "maximum": 5,
+                    "description": "Number of empty lines to add after the imports section at the top of the file",
+                    "order": 14
+                },
+                "verseAutoImports.behavior.ambiguousImports": {
+                    "type": "object",
+                    "default": {
+                        "vector3": "/UnrealEngine.com/Temporary/SpatialMath",
+                        "vector2": "/UnrealEngine.com/Temporary/SpatialMath",
+                        "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
+                    },
+                    "description": "Mappings for class names that appear in multiple modules. Format: {\"className\": \"preferredModulePath\"}",
+                    "order": 15
+                },
+                "verseAutoImports.behavior.multiOptionStrategy": {
+                    "type": "string",
+                    "enum": [
+                        "quickfix",
+                        "auto_shortest",
+                        "auto_first",
+                        "disabled"
+                    ],
+                    "default": "quickfix",
+                    "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
+                    "order": 16
+                },
+                "verseAutoImports.quickFix.sortAlphabetically": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, sorts quick fix options alphabetically. When false, preserves original order.",
+                    "order": 20
+                },
+                "verseAutoImports.quickFix.showDescriptions": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show descriptive text in quick fix menu items (e.g., 'class from /Fortnite.com/Devices')",
+                    "order": 21
+                },
+                "verseAutoImports.pathConversion.enableCodeLens": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show CodeLens actions above import statements when hovering to convert between absolute and relative paths",
+                    "order": 30
+                },
+                "verseAutoImports.pathConversion.scanDepth": {
+                    "type": "number",
+                    "default": 5,
+                    "description": "Maximum directory depth to scan when searching for module locations (used for ambiguity detection)",
+                    "order": 31
+                },
+                "verseAutoImports.experimental.useDigestFiles": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "⚠️ Enable lookup of unknown identifiers in Verse digest files for intelligent import suggestions",
+                    "order": 40
+                },
+                "verseAutoImports.experimental.unknownIdentifierResolution": {
+                    "type": "string",
+                    "enum": [
+                        "digest_only",
+                        "digest_and_inference",
+                        "disabled"
+                    ],
+                    "default": "disabled",
+                    "description": "⚠️ Strategy for resolving unknown identifiers: 'digest_only' uses only digest files, 'digest_and_inference' adds pattern-based guessing, 'disabled' turns off unknown identifier resolution",
+                    "order": 41
+                }
+            }
         }
-      }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/node": "^16.18.34",
+        "typescript": "^5.1.3"
+    },
+    "publisher": "vukefn",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/VukeFN/verse-auto-imports.git"
+    },
+    "icon": "icon.png",
+    "galleryBanner": {
+        "color": "#C80000",
+        "theme": "dark"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^16.18.34",
-    "typescript": "^5.1.3"
-  },
-  "publisher": "vukefn",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/VukeFN/verse-auto-imports.git"
-  },
-  "icon": "icon.png",
-  "galleryBanner": {
-    "color": "#C80000",
-    "theme": "dark"
-  }
 }
