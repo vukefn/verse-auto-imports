@@ -474,27 +474,8 @@ export class ImportHandler {
             // Use the new grouping method for all imports
             const formattedImports = this.groupAndFormatImports(allImportsArray, preferDotSyntax, sortAlphabetically, importGrouping);
 
-            // Determine the line after all existing import blocks to check for spacing
-            let lineAfterImports = 0;
-            if (importBlocks.length > 0) {
-                lineAfterImports = Math.max(...importBlocks.map((block) => block.end)) + 1;
-            }
-
-            // Check if there's already an empty line after imports
-            let needsEmptyLine = true;
-            if (lineAfterImports < lines.length) {
-                const lineAfter = lines[lineAfterImports];
-                // If the line after imports is empty, we don't need to add another empty line
-                if (lineAfter && lineAfter.trim() === "") {
-                    needsEmptyLine = false;
-                } else if (lineAfterImports === lines.length - 1 || !lineAfter) {
-                    // If we're at the end of file or no content after, we still want the empty line
-                    needsEmptyLine = true;
-                }
-            }
-
-            // Insert imports at top with appropriate spacing
-            const importsText = formattedImports.join("\n") + "\n" + (needsEmptyLine ? "\n" : "");
+            // Insert imports at top with minimal spacing (will be fixed by ensureEmptyLinesAfterImports)
+            const importsText = formattedImports.join("\n") + "\n";
             edit.insert(document.uri, new vscode.Position(0, 0), importsText);
 
             // Remove existing import blocks (in reverse order to maintain line numbers)
@@ -507,6 +488,12 @@ export class ImportHandler {
         try {
             const success = await vscode.workspace.applyEdit(edit);
             log(this.outputChannel, success ? "Successfully updated imports in document" : "Failed to update imports in document");
+
+            // After adding imports, ensure proper spacing
+            if (success) {
+                await this.ensureEmptyLinesAfterImports(document);
+            }
+
             return success;
         } catch (error) {
             log(this.outputChannel, `Error updating imports: ${error}`);
@@ -761,6 +748,106 @@ export class ImportHandler {
         const result = Array.from(suggestedPaths);
         log(this.outputChannel, `Extracted ${result.length} unique import paths from diagnostics`);
         return result;
+    }
+
+    /**
+     * Ensures the proper number of empty lines exists after the last import statement.
+     * This method is called when saving files, adding imports, or optimizing imports.
+     */
+    async ensureEmptyLinesAfterImports(document: vscode.TextDocument): Promise<boolean> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const emptyLinesAfterImports = config.get<number>("behavior.emptyLinesAfterImports", 1);
+
+        log(this.outputChannel, `Ensuring ${emptyLinesAfterImports} empty lines after imports`);
+
+        const text = document.getText();
+        const lines = text.split("\n");
+
+        // Find the last import line
+        let lastImportLine = -1;
+        for (let i = 0; i < lines.length; i++) {
+            const trimmed = lines[i].trim();
+            if (trimmed.startsWith("using")) {
+                lastImportLine = i;
+
+                // Handle multi-line imports (using: format)
+                if (trimmed.match(/^using\s*:\s*$/)) {
+                    // Check if next line is indented (part of multi-line import)
+                    if (i + 1 < lines.length && lines[i + 1].match(/^\s+.+/)) {
+                        lastImportLine = i + 1;
+                    }
+                }
+            }
+        }
+
+        // If no imports found or file only has imports, nothing to do
+        if (lastImportLine === -1 || lastImportLine === lines.length - 1) {
+            log(this.outputChannel, "No imports found or file ends with imports, skipping spacing adjustment");
+            return true;
+        }
+
+        // Count existing empty lines after the last import
+        let existingEmptyLines = 0;
+        for (let i = lastImportLine + 1; i < lines.length; i++) {
+            if (lines[i].trim() === "") {
+                existingEmptyLines++;
+            } else {
+                break;
+            }
+        }
+
+        // Check if there's non-import content after the imports
+        let hasContentAfterImports = false;
+        for (let i = lastImportLine + 1; i < lines.length; i++) {
+            if (lines[i].trim() !== "") {
+                hasContentAfterImports = true;
+                break;
+            }
+        }
+
+        // Only adjust if there's content after imports
+        if (!hasContentAfterImports) {
+            log(this.outputChannel, "No content after imports, skipping spacing adjustment");
+            return true;
+        }
+
+        // Calculate adjustment needed
+        const lineDifference = emptyLinesAfterImports - existingEmptyLines;
+
+        if (lineDifference === 0) {
+            log(this.outputChannel, `Already has ${emptyLinesAfterImports} empty lines after imports`);
+            return true;
+        }
+
+        const edit = new vscode.WorkspaceEdit();
+
+        if (lineDifference > 0) {
+            // Need to add empty lines
+            const newLines = '\n'.repeat(lineDifference);
+            const insertPosition = new vscode.Position(lastImportLine + 1, 0);
+            edit.insert(document.uri, insertPosition, newLines);
+            log(this.outputChannel, `Adding ${lineDifference} empty lines after imports`);
+        } else {
+            // Need to remove empty lines
+            const linesToRemove = Math.abs(lineDifference);
+            const startLine = lastImportLine + 1;
+            const endLine = Math.min(startLine + linesToRemove, lines.length);
+            const range = new vscode.Range(
+                new vscode.Position(startLine, 0),
+                new vscode.Position(endLine, 0)
+            );
+            edit.delete(document.uri, range);
+            log(this.outputChannel, `Removing ${linesToRemove} empty lines after imports`);
+        }
+
+        try {
+            const success = await vscode.workspace.applyEdit(edit);
+            log(this.outputChannel, success ? "Successfully adjusted spacing after imports" : "Failed to adjust spacing");
+            return success;
+        } catch (error) {
+            log(this.outputChannel, `Error adjusting spacing: ${error}`);
+            return false;
+        }
     }
 
     /**

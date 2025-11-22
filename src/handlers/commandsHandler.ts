@@ -55,6 +55,10 @@ export class CommandsHandler {
                 // Convert any scattered imports to preferred syntax
                 log(this.outputChannel, "Step 6: Converting scattered imports to preferred syntax");
                 await this.importHandler.convertScatteredImportsToPreferredSyntax(document);
+
+                // Step 7: Ensure proper spacing after imports
+                log(this.outputChannel, "Step 7: Ensuring proper spacing after imports");
+                await this.importHandler.ensureEmptyLinesAfterImports(document);
             } else {
                 // Step 5b: Auto-import is OFF - manually add missing imports
                 log(this.outputChannel, "Step 5b: Auto-import is disabled, manually processing diagnostics");
@@ -79,6 +83,10 @@ export class CommandsHandler {
                 // Convert any scattered imports to preferred syntax
                 log(this.outputChannel, "Step 6: Converting scattered imports to preferred syntax");
                 await this.importHandler.convertScatteredImportsToPreferredSyntax(document);
+
+                // Step 7: Ensure proper spacing after imports
+                log(this.outputChannel, "Step 7: Ensuring proper spacing after imports");
+                await this.importHandler.ensureEmptyLinesAfterImports(document);
             }
 
             // Save the document again to ensure all changes are persisted

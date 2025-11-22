@@ -297,6 +297,17 @@ export function activate(context: vscode.ExtensionContext) {
                 },
             }
         ),
+        vscode.workspace.onDidSaveTextDocument(async (document) => {
+            if (document.languageId === "verse") {
+                const config = vscode.workspace.getConfiguration("verseAutoImports");
+                const emptyLinesAfterImports = config.get<number>("behavior.emptyLinesAfterImports", 1);
+
+                // Only apply spacing if configured to have at least 0 lines (feature is enabled)
+                if (emptyLinesAfterImports >= 0) {
+                    await importHandler.ensureEmptyLinesAfterImports(document);
+                }
+            }
+        }),
         vscode.languages.onDidChangeDiagnostics(async (e) => {
             for (const uri of e.uris) {
                 const diagnostics = vscode.languages.getDiagnostics(uri);

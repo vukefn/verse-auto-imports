@@ -13,6 +13,7 @@ export interface BehaviorConfig {
     preserveImportLocations: boolean;
     sortImportsAlphabetically: boolean;
     importGrouping: "none" | "digestFirst" | "localFirst";
+    emptyLinesAfterImports: number;
     ambiguousImports: Record<string, string>;
     multiOptionStrategy: "quickfix" | "auto_shortest" | "auto_first" | "disabled";
 }
