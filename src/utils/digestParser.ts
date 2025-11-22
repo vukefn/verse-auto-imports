@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { log } from "./logging";
+import { logger } from "./logger";
 
 export interface DigestEntry {
     identifier: string;
@@ -21,11 +21,11 @@ export class DigestParser {
     async getDigestIndex(): Promise<Map<string, DigestEntry>> {
         const now = Date.now();
         if (this.digestCache.size > 0 && now - this.lastParsed < this.CACHE_DURATION) {
-            log(this.outputChannel, "Using cached digest index");
+            logger.debug("DigestParser", "Using cached digest index");
             return this.digestCache;
         }
 
-        log(this.outputChannel, "Parsing digest files...");
+        logger.debug("DigestParser", "Parsing digest files...");
         await this.parseDigestFiles();
         this.lastParsed = now;
         return this.digestCache;
@@ -60,7 +60,7 @@ export class DigestParser {
 
             const extensionPath = vscode.extensions.getExtension("vukefn.verse-auto-imports")?.extensionPath;
             if (!extensionPath) {
-                log(this.outputChannel, "Extension path not found, using relative path");
+                logger.warn("DigestParser", "Extension path not found, using relative path");
                 return;
             }
 
@@ -69,16 +69,16 @@ export class DigestParser {
             for (const fileName of digestFiles) {
                 const filePath = path.join(utilsPath, fileName);
                 if (fs.existsSync(filePath)) {
-                    log(this.outputChannel, `Parsing digest file: ${fileName}`);
+                    logger.trace("DigestParser", `Parsing digest file: ${fileName}`);
                     await this.parseDigestFile(filePath);
                 } else {
-                    log(this.outputChannel, `Digest file not found: ${filePath}`);
+                    logger.trace("DigestParser", `Digest file not found: ${filePath}`);
                 }
             }
 
-            log(this.outputChannel, `Parsed ${this.digestCache.size} identifiers from digest files`);
+            logger.info("DigestParser", `Parsed ${this.digestCache.size} identifiers from digest files`);
         } catch (error) {
-            log(this.outputChannel, `Error parsing digest files: ${error}`);
+            logger.error("DigestParser", "Error parsing digest files", error);
         }
     }
 
@@ -164,7 +164,7 @@ export class DigestParser {
                 }
             }
         } catch (error) {
-            log(this.outputChannel, `Error reading digest file ${filePath}: ${error}`);
+            logger.error("DigestParser", `Error reading digest file ${filePath}`, error);
         }
     }
 
@@ -192,6 +192,6 @@ export class DigestParser {
     clearCache(): void {
         this.digestCache.clear();
         this.lastParsed = 0;
-        log(this.outputChannel, "Digest cache cleared");
+        logger.debug("DigestParser", "Digest cache cleared");
     }
 }

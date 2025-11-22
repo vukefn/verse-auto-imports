@@ -25,13 +25,13 @@ Stop manually managing imports in your Verse code. This extension automatically 
 
 ## Key Features
 
-- **Automatic Import Detection** - Detects missing imports in real-time as you code
-- **Multi-Option Quick Fixes** - Choose from multiple import options when VS Code finds ambiguous identifiers
-- **Full Path Conversion** - Convert relative imports to full path format with CodeLens (NEW!)
-- **Smart Error Recognition** - Enhanced pattern matching for various Verse compiler errors
-- **Zero Configuration** - Works perfectly out of the box with sensible defaults
-- **Import Organization** - Automatically sorts and consolidates imports with proper spacing
-- **Flexible Configuration** - Customize behavior to match your coding style
+-   **Automatic Import Detection** - Detects missing imports in real-time as you code
+-   **Multi-Option Quick Fixes** - Choose from multiple import options when VS Code finds ambiguous identifiers
+-   **Full Path Conversion** - Convert relative imports to full path format with CodeLens (NEW!)
+-   **Smart Error Recognition** - Enhanced pattern matching for various Verse compiler errors
+-   **Zero Configuration** - Works perfectly out of the box with sensible defaults
+-   **Import Organization** - Automatically sorts and consolidates imports with proper spacing
+-   **Flexible Configuration** - Customize behavior to match your coding style
 
 ## Quick Start
 
@@ -90,9 +90,9 @@ MyComponent : some_component = some_component{}
 
 Auto-imports now wait for you to stop typing before triggering:
 
-- **Default delay:** 3 seconds (3000ms)
-- **Configurable:** Adjust to your preference
-- **Smart debouncing:** Timer resets when you continue typing
+-   **Default delay:** 3 seconds (3000ms)
+-   **Configurable:** Adjust to your preference
+-   **Smart debouncing:** Timer resets when you continue typing
 
 This prevents distracting import suggestions while you're actively coding. The extension waits for the configured duration after your last keystroke before analyzing and auto-importing.
 
@@ -100,7 +100,7 @@ This prevents distracting import suggestions while you're actively coding. The e
 
 ```json
 {
-  "verseAutoImports.general.autoImportDebounceDelay": 5000 // Wait 5 seconds instead of 3
+    "verseAutoImports.general.autoImportDebounceDelay": 5000 // Wait 5 seconds instead of 3
 }
 ```
 
@@ -137,22 +137,22 @@ The extension automatically detects your project's Verse path from the `.uefnpro
 **Dot Notation Support:**
 The extension properly handles Verse's dot notation for nested modules:
 
-- `using { HUD.Textures }` → searches for `Textures` module in `HUD` folder
-- `using { UI.Components.Button }` → searches for `Button` in `UI/Components` path
-- Converts to full paths like `/vuke@fortnite.com/Project/HUD/Textures`
+-   `using { HUD.Textures }` → searches for `Textures` module in `HUD` folder
+-   `using { UI.Components.Button }` → searches for `Button` in `UI/Components` path
+-   Converts to full paths like `/vuke@fortnite.com/Project/HUD/Textures`
 
 **Module Detection:**
 The extension finds both:
 
-- **Implicit modules**: Every folder in Content/ is automatically a module
-- **Explicit modules**: Code-defined using `ModuleName := module:` syntax
+-   **Implicit modules**: Every folder in Content/ is automatically a module
+-   **Explicit modules**: Code-defined using `ModuleName := module:` syntax
 
 **Digest Modules:**
 The extension skips digest modules that are already in their correct form:
 
-- `/Fortnite.com/` modules (e.g., `/Fortnite.com/Devices`)
-- `/UnrealEngine.com/` modules (e.g., `/UnrealEngine.com/Temporary/SpatialMath`)
-- `/Verse.org/` modules (e.g., `/Verse.org/Simulation`)
+-   `/Fortnite.com/` modules (e.g., `/Fortnite.com/Devices`)
+-   `/UnrealEngine.com/` modules (e.g., `/UnrealEngine.com/Temporary/SpatialMath`)
+-   `/Verse.org/` modules (e.g., `/Verse.org/Simulation`)
 
 These modules won't show the conversion CodeLens as they don't need to be converted.
 
@@ -189,12 +189,12 @@ Then use `Ctrl+.` on any error to see import options.
 
 ### Command Palette
 
-- **Verse: Optimize Imports** - Sort and organize all imports in current file
-- **Verse: Add Import** - Add a specific import (used by quick fixes)
-- **Verse: Use Absolute Path** - Convert a single import to absolute path format
-- **Verse: Use Absolute Paths for All** - Convert all relative imports to absolute paths
-- **Verse: Use Relative Path** - Convert a single import to relative path format
-- **Verse: Use Relative Paths for All** - Convert all absolute path imports to relative paths
+-   **Verse: Optimize Imports** - Sort and organize all imports in current file
+-   **Verse: Add Import** - Add a specific import (used by quick fixes)
+-   **Verse: Use Absolute Path** - Convert a single import to absolute path format
+-   **Verse: Use Absolute Paths for All** - Convert all relative imports to absolute paths
+-   **Verse: Use Relative Path** - Convert a single import to relative path format
+-   **Verse: Use Relative Paths for All** - Convert all absolute path imports to relative paths
 
 ### Ambiguous Import Handling
 
@@ -202,11 +202,11 @@ Configure preferred modules for classes that exist in multiple places:
 
 ```json
 {
-  "verseAutoImports.behavior.ambiguousImports": {
-    "vector3": "/UnrealEngine.com/Temporary/SpatialMath",
-    "vector2": "/UnrealEngine.com/Temporary/SpatialMath",
-    "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
-  }
+    "verseAutoImports.behavior.ambiguousImports": {
+        "vector3": "/UnrealEngine.com/Temporary/SpatialMath",
+        "vector2": "/UnrealEngine.com/Temporary/SpatialMath",
+        "rotation": "/UnrealEngine.com/Temporary/SpatialMath"
+    }
 }
 ```
 
@@ -216,8 +216,8 @@ Configure preferred modules for classes that exist in multiple places:
 
 ```json
 {
-  "verseAutoImports.experimental.useDigestFiles": true,
-  "verseAutoImports.experimental.unknownIdentifierResolution": "digest_and_inference"
+    "verseAutoImports.experimental.useDigestFiles": true,
+    "verseAutoImports.experimental.unknownIdentifierResolution": "digest_and_inference"
 }
 ```
 
@@ -241,15 +241,15 @@ Core functionality settings:
 
 Control how imports are handled:
 
-| Setting                            | Default      | Description                                        |
-| ---------------------------------- | ------------ | -------------------------------------------------- |
-| `behavior.importSyntax`            | `"curly"`    | Use `using { /Path }` or `using. /Path`           |
-| `behavior.preserveImportLocations` | `true`       | Keep existing imports where they are              |
-| `behavior.sortImportsAlphabetically` | `true`     | Sort imports alphabetically                       |
-| `behavior.importGrouping`          | `"none"`     | Group digest vs local imports (see below)         |
-| `behavior.emptyLinesAfterImports`  | `1`          | Number of empty lines after imports (0-5)         |
-| `behavior.multiOptionStrategy`     | `"quickfix"` | How to handle multiple import options             |
-| `behavior.ambiguousImports`        | `{...}`      | Preferred paths for ambiguous classes             |
+| Setting                              | Default      | Description                               |
+| ------------------------------------ | ------------ | ----------------------------------------- |
+| `behavior.importSyntax`              | `"curly"`    | Use `using { /Path }` or `using. /Path`   |
+| `behavior.preserveImportLocations`   | `true`       | Keep existing imports where they are      |
+| `behavior.sortImportsAlphabetically` | `true`       | Sort imports alphabetically               |
+| `behavior.importGrouping`            | `"none"`     | Group digest vs local imports (see below) |
+| `behavior.emptyLinesAfterImports`    | `1`          | Number of empty lines after imports (0-5) |
+| `behavior.multiOptionStrategy`       | `"quickfix"` | How to handle multiple import options     |
+| `behavior.ambiguousImports`          | `{...}`      | Preferred paths for ambiguous classes     |
 
 **Import Grouping Options:**
 
@@ -257,17 +257,18 @@ Control how imports are organized and grouped:
 
 ```json
 {
-  "verseAutoImports.behavior.importGrouping": "none" // No grouping (default)
-  // "digestFirst"  // Digest imports first, then local imports
-  // "localFirst"   // Local imports first, then digest imports
+    "verseAutoImports.behavior.importGrouping": "none" // No grouping (default)
+    // "digestFirst"  // Digest imports first, then local imports
+    // "localFirst"   // Local imports first, then digest imports
 }
 ```
 
-- **`"none"`** - All imports are mixed together (legacy behavior)
-- **`"digestFirst"`** - Groups digest imports (`/Verse.org/`, `/Fortnite.com/`, `/UnrealEngine.com/`) first, followed by local imports with a blank line separator
-- **`"localFirst"`** - Groups local imports first, followed by digest imports with a blank line separator
+-   **`"none"`** - All imports are mixed together (legacy behavior)
+-   **`"digestFirst"`** - Groups digest imports (`/Verse.org/`, `/Fortnite.com/`, `/UnrealEngine.com/`) first, followed by local imports with a blank line separator
+-   **`"localFirst"`** - Groups local imports first, followed by digest imports with a blank line separator
 
 Example with `"digestFirst"`:
+
 ```verse
 using { /Fortnite.com/Devices }
 using { /UnrealEngine.com/Temporary/SpatialMath }
@@ -284,27 +285,28 @@ Control the spacing between imports and code:
 
 ```json
 {
-  "verseAutoImports.behavior.emptyLinesAfterImports": 1 // Default: 1 empty line
+    "verseAutoImports.behavior.emptyLinesAfterImports": 1 // Default: 1 empty line
 }
 ```
 
-- **`0`** - No empty line between imports and code
-- **`1`** - One empty line (default, recommended)
-- **`2-5`** - Multiple empty lines for additional visual separation
+-   **`0`** - No empty line between imports and code
+-   **`1`** - One empty line (default, recommended)
+-   **`2-5`** - Multiple empty lines for additional visual separation
 
 This setting is automatically applied:
-- When saving files
-- When adding new imports (auto-import or quick fix)
-- When running "Optimize Imports" command
+
+-   When saving files
+-   When adding new imports (auto-import or quick fix)
+-   When running "Optimize Imports" command
 
 **Multi-Option Strategies:**
 
 ```json
 {
-  "verseAutoImports.behavior.multiOptionStrategy": "quickfix" // Show quick fix menu (recommended)
-  // "auto_shortest"  // Automatically choose shortest path
-  // "auto_first"     // Automatically choose first option
-  // "disabled"       // Ignore multi-option scenarios
+    "verseAutoImports.behavior.multiOptionStrategy": "quickfix" // Show quick fix menu (recommended)
+    // "auto_shortest"  // Automatically choose shortest path
+    // "auto_first"     // Automatically choose first option
+    // "disabled"       // Ignore multi-option scenarios
 }
 ```
 
@@ -341,29 +343,29 @@ All settings with their full paths:
 
 ```json
 {
-  "verseAutoImports.general.autoImport": true,
-  "verseAutoImports.general.autoImportDebounceDelay": 3000,
-  "verseAutoImports.general.diagnosticDelay": 1000,
-  "verseAutoImports.behavior.importSyntax": "curly",
-  "verseAutoImports.behavior.preserveImportLocations": true,
-  "verseAutoImports.behavior.sortImportsAlphabetically": true,
-  "verseAutoImports.behavior.importGrouping": "none",
-  "verseAutoImports.behavior.emptyLinesAfterImports": 1,
-  "verseAutoImports.behavior.multiOptionStrategy": "quickfix",
-  "verseAutoImports.quickFix.ordering": "confidence",
-  "verseAutoImports.quickFix.showDescriptions": false,
-  "verseAutoImports.pathConversion.enableCodeLens": true,
-  "verseAutoImports.pathConversion.scanDepth": 5,
-  "verseAutoImports.experimental.useDigestFiles": false,
-  "verseAutoImports.experimental.unknownIdentifierResolution": "disabled"
+    "verseAutoImports.general.autoImport": true,
+    "verseAutoImports.general.autoImportDebounceDelay": 3000,
+    "verseAutoImports.general.diagnosticDelay": 1000,
+    "verseAutoImports.behavior.importSyntax": "curly",
+    "verseAutoImports.behavior.preserveImportLocations": true,
+    "verseAutoImports.behavior.sortImportsAlphabetically": true,
+    "verseAutoImports.behavior.importGrouping": "none",
+    "verseAutoImports.behavior.emptyLinesAfterImports": 1,
+    "verseAutoImports.behavior.multiOptionStrategy": "quickfix",
+    "verseAutoImports.quickFix.ordering": "confidence",
+    "verseAutoImports.quickFix.showDescriptions": false,
+    "verseAutoImports.pathConversion.enableCodeLens": true,
+    "verseAutoImports.pathConversion.scanDepth": 5,
+    "verseAutoImports.experimental.useDigestFiles": false,
+    "verseAutoImports.experimental.unknownIdentifierResolution": "disabled"
 }
 ```
 
 ## Requirements
 
-- **VS Code:** 1.85.0 or newer
-- **Environment:** Working with `.verse` files in a UEFN project
-- **Language Server:** Verse language support enabled
+-   **VS Code:** 1.85.0 or newer
+-   **Environment:** Working with `.verse` files in a UEFN project
+-   **Language Server:** Verse language support enabled
 
 ## Troubleshooting
 
@@ -371,7 +373,9 @@ All settings with their full paths:
 
 1. Ensure you're working with `.verse` files
 2. Check that Verse language support is enabled
-3. Look at Output panel: `View` → `Output` → `Verse Auto Imports`
+3. Check the Output panel for logs:
+    - `View` → `Output` → `Verse Auto Imports` (shows important messages)
+    - `View` → `Output` → `Verse Auto Imports - Debug` (shows detailed debug logs)
 
 **Wrong imports being suggested?**
 
@@ -383,9 +387,9 @@ All settings with their full paths:
 
 Found a bug or want to contribute? We welcome issues and pull requests!
 
-- **GitHub Repository:** [verse-auto-imports](https://github.com/VukeFN/verse-auto-imports)
-- **Issues:** Report bugs and request features
-- **Discussions:** Share ideas and get help
+-   **GitHub Repository:** [verse-auto-imports](https://github.com/VukeFN/verse-auto-imports)
+-   **Issues:** Report bugs and request features
+-   **Discussions:** Share ideas and get help
 
 ## What's New
 
@@ -393,20 +397,28 @@ Found a bug or want to contribute? We welcome issues and pull requests!
 
 **Smart Auto-Import Debouncing**
 
-- Auto-imports now wait for you to stop typing before triggering (default: 3 seconds)
-- Prevents distracting imports while actively coding
-- Each keystroke resets the timer for a smoother coding experience
+-   Auto-imports now wait for you to stop typing before triggering (default: 3 seconds)
+-   Prevents distracting imports while actively coding
+-   Each keystroke resets the timer for a smoother coding experience
+
+**Enhanced Logging System**
+
+-   Dual output channels for better debugging:
+    -   User channel shows important messages (INFO, WARN, ERROR)
+    -   Debug channel shows all details (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+-   Performance tracking for slow operations
+-   Module-specific logging for easier troubleshooting
 
 **Improvements**
 
-- Enhanced error detection for "Unknown identifier" errors with specific import suggestions
-- Better path normalization in import path converter
-- Backward compatibility for legacy settings
+-   Enhanced error detection for "Unknown identifier" errors with specific import suggestions
+-   Better path normalization in import path converter
+-   Backward compatibility for legacy settings
 
 **Configuration Updates**
 
-- New `general.autoImportDebounceDelay` setting (replaces `diagnosticDelay`)
-- Changed defaults: `preserveImportLocations` now `true`, `showDescriptions` now `false`
+-   New `general.autoImportDebounceDelay` setting (replaces `diagnosticDelay`)
+-   Changed defaults: `preserveImportLocations` now `true`, `showDescriptions` now `false`
 
 ---
 

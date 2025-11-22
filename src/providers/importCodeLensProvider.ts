@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ImportPathConverter } from "../handlers/importPathConverter";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 
 export class ImportCodeLensProvider implements vscode.CodeLensProvider {
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
@@ -202,7 +202,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             }
         }
 
-        log(this.outputChannel, `Provided ${codeLenses.length} CodeLens items for ${document.fileName}`);
+        logger.debug("ImportCodeLensProvider", `Provided ${codeLenses.length} CodeLens items for ${document.fileName}`);
         return codeLenses;
     }
 

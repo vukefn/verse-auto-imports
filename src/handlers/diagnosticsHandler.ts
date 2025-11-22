@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { ImportHandler } from "./importHandler";
 // import { ModuleHandler } from "./moduleHandler";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 import { ImportSuggestion } from "../types/moduleInfo";
 
 export class DiagnosticsHandler {
@@ -15,29 +15,29 @@ export class DiagnosticsHandler {
     constructor(private outputChannel: vscode.OutputChannel) {
         this.importHandler = new ImportHandler(outputChannel);
         // this.moduleHandler = new ModuleHandler(outputChannel);
-        log(this.outputChannel, `DiagnosticsHandler initialized with ${this.delayMs}ms delay`);
+        logger.debug("DiagnosticsHandler", `Initialized with ${this.delayMs}ms delay`);
     }
 
     async handle(document: vscode.TextDocument) {
         const documentKey = path.basename(document.uri.fsPath);
 
-        log(this.outputChannel, `Received diagnostics for ${documentKey}`);
+        logger.trace("DiagnosticsHandler", `Received diagnostics for ${documentKey}`);
 
         // Cancel any pending timer for this document
         const existingTimer = this.pendingTimers.get(documentKey);
         if (existingTimer) {
             clearTimeout(existingTimer);
             this.pendingTimers.delete(documentKey);
-            log(this.outputChannel, `Cancelled pending timer for ${documentKey} (debouncing)`);
+            logger.trace("DiagnosticsHandler", `Cancelled pending timer for ${documentKey} (debouncing)`);
         }
 
         // If already processing this document, don't start a new timer
         if (this.processingDocuments.has(documentKey)) {
-            log(this.outputChannel, `Already processing ${documentKey}, skipping new timer`);
+            logger.debug("DiagnosticsHandler", `Already processing ${documentKey}, skipping new timer`);
             return;
         }
 
-        log(this.outputChannel, `Starting debounce timer (${this.delayMs}ms) for ${documentKey}`);
+        logger.debug("DiagnosticsHandler", `Starting debounce timer (${this.delayMs}ms) for ${documentKey}`);
 
         // Create new timer with proper debouncing
         const timer = setTimeout(async () => {
@@ -49,7 +49,7 @@ export class DiagnosticsHandler {
             try {
                 const currentDiagnostics = vscode.languages.getDiagnostics(document.uri);
 
-                log(this.outputChannel, `Processing diagnostics for ${documentKey} after delay`);
+                logger.debug("DiagnosticsHandler", `Processing diagnostics for ${documentKey} after delay`);
 
                 const config = vscode.workspace.getConfiguration("verseAutoImports");
                 const autoImportEnabled = config.get<boolean>("general.autoImport", true);
@@ -69,14 +69,14 @@ export class DiagnosticsHandler {
                     if (suggestions.length > 1) {
                         // Multi-option scenario detected
                         hasMultiOptionSuggestions = true;
-                        log(this.outputChannel, `Multi-option diagnostic found with ${suggestions.length} suggestions - will use quick fixes`);
+                        logger.debug("DiagnosticsHandler", `Multi-option diagnostic found with ${suggestions.length} suggestions - will use quick fixes`);
 
                         if (multiOptionStrategy.startsWith("auto_")) {
                             // Auto-select one option for import
                             const selectedSuggestion = this.selectBestSuggestion(suggestions, multiOptionStrategy);
                             if (selectedSuggestion && autoImportEnabled) {
                                 autoImportSuggestions.add(selectedSuggestion.importStatement);
-                                log(this.outputChannel, `Auto-selected: ${selectedSuggestion.importStatement}`);
+                                logger.debug("DiagnosticsHandler", `Auto-selected: ${selectedSuggestion.importStatement}`);
                             }
                         }
                         // For quickfix strategy, let ImportCodeActionProvider handle it
@@ -86,10 +86,10 @@ export class DiagnosticsHandler {
                     // Single suggestion - can auto-import if enabled
                     const suggestion = suggestions[0];
                     if (autoImportEnabled && suggestion.confidence === "high") {
-                        log(this.outputChannel, `Adding high-confidence import: ${suggestion.importStatement}`);
+                        logger.debug("DiagnosticsHandler", `Adding high-confidence import: ${suggestion.importStatement}`);
                         autoImportSuggestions.add(suggestion.importStatement);
                     } else {
-                        log(this.outputChannel, `Low confidence or auto-import disabled - will use quick fix for: ${suggestion.importStatement}`);
+                        logger.debug("DiagnosticsHandler", `Low confidence or auto-import disabled - will use quick fix for: ${suggestion.importStatement}`);
                     }
 
                     // Note: ModuleHandler logic would go here
@@ -98,9 +98,9 @@ export class DiagnosticsHandler {
 
                 // Apply auto-imports if any were collected
                 if (autoImportSuggestions.size > 0) {
-                    log(this.outputChannel, `Auto-importing ${autoImportSuggestions.size} statements`);
+                    logger.info("DiagnosticsHandler", `Auto-importing ${autoImportSuggestions.size} statements`);
                     autoImportSuggestions.forEach((imp) => {
-                        log(this.outputChannel, `Will auto-import: ${imp}`);
+                        logger.debug("DiagnosticsHandler", `Will auto-import: ${imp}`);
                     });
 
                     await this.importHandler.addImportsToDocument(document, Array.from(autoImportSuggestions));
@@ -112,10 +112,10 @@ export class DiagnosticsHandler {
                     vscode.window.setStatusBarMessage(`Multiple import options available - use quick fixes (Ctrl+.)`, 5000);
                 }
             } catch (error) {
-                log(this.outputChannel, `Error processing diagnostics: ${error}`);
+                logger.error("DiagnosticsHandler", "Error processing diagnostics", error);
             } finally {
                 this.processingDocuments.delete(documentKey);
-                log(this.outputChannel, `Finished processing ${documentKey}`);
+                logger.trace("DiagnosticsHandler", `Finished processing ${documentKey}`);
             }
         }, this.delayMs);
 
@@ -141,6 +141,6 @@ export class DiagnosticsHandler {
 
     setDelay(delayMs: number) {
         this.delayMs = delayMs;
-        log(this.outputChannel, `Diagnostic processing delay set to ${delayMs}ms`);
+        logger.info("DiagnosticsHandler", `Diagnostic processing delay set to ${delayMs}ms`);
     }
 }

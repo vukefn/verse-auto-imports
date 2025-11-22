@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ImportHandler } from "../handlers/importHandler";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 import { ImportSuggestion } from "../types/moduleInfo";
 
 export class ImportCodeActionProvider implements vscode.CodeActionProvider {
@@ -22,7 +22,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
             // Sort suggestions based on user preference
             const sortedSuggestions = this.sortSuggestions(suggestions, sortAlphabetically);
 
-            log(this.outputChannel, `Creating ${sortedSuggestions.length} quick fix action(s) for diagnostic`);
+            logger.debug("ImportCodeActionProvider", `Creating ${sortedSuggestions.length} quick fix action(s) for diagnostic`);
 
             // Create quick fix actions for each suggestion
             sortedSuggestions.forEach((suggestion, index) => {
