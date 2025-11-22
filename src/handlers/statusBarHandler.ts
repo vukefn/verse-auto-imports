@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ImportHandler } from "./importHandler";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 
 interface QuickPickItemWithAction extends vscode.QuickPickItem {
     action?: () => void | Promise<void>;
@@ -237,7 +237,7 @@ export class StatusBarHandler {
             description: autoImportEnabled ? "Enabled" : "Disabled",
             action: async () => {
                 await config.update("general.autoImport", !autoImportEnabled, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Auto import toggled: ${!autoImportEnabled}`);
+                logger.debug("StatusBarHandler", `Auto import toggled: ${!autoImportEnabled}`);
             },
         });
 
@@ -247,7 +247,7 @@ export class StatusBarHandler {
             description: preserveLocations ? "Keep imports in place" : "Consolidate at top",
             action: async () => {
                 await config.update("behavior.preserveImportLocations", !preserveLocations, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Preserve import locations toggled: ${!preserveLocations}`);
+                logger.debug("StatusBarHandler", `Preserve import locations toggled: ${!preserveLocations}`);
             },
         });
 
@@ -259,7 +259,7 @@ export class StatusBarHandler {
             action: async () => {
                 const newSyntax = isDotSyntax ? "curly" : "dot";
                 await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Import syntax changed to: ${newSyntax}`);
+                logger.debug("StatusBarHandler", `Import syntax changed to: ${newSyntax}`);
             },
         });
 
@@ -269,7 +269,7 @@ export class StatusBarHandler {
             description: showCodeLens ? "Show on hover" : "Hidden",
             action: async () => {
                 await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Path conversion CodeLens toggled: ${!showCodeLens}`);
+                logger.debug("StatusBarHandler", `Path conversion CodeLens toggled: ${!showCodeLens}`);
             },
         });
 
@@ -279,7 +279,7 @@ export class StatusBarHandler {
             description: sortImports ? "Sorted A-Z" : "Original order preserved",
             action: async () => {
                 await config.update("behavior.sortImportsAlphabetically", !sortImports, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Sort imports alphabetically toggled: ${!sortImports}`);
+                logger.debug("StatusBarHandler", `Sort imports alphabetically toggled: ${!sortImports}`);
             },
         });
 
@@ -316,7 +316,7 @@ export class StatusBarHandler {
             description: useDigestFiles ? "⚠️ Experimental - Enabled" : "⚠️ Experimental - Disabled",
             action: async () => {
                 await config.update("experimental.useDigestFiles", !useDigestFiles, vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, `Use digest files toggled: ${!useDigestFiles}`);
+                logger.debug("StatusBarHandler", `Use digest files toggled: ${!useDigestFiles}`);
             },
         });
 
@@ -421,7 +421,7 @@ export class StatusBarHandler {
             description: "All imports mixed together (default)",
             action: async () => {
                 await config.update("behavior.importGrouping", "none", vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, "Import grouping changed to: none");
+                logger.debug("StatusBarHandler", "Import grouping changed to: none");
                 vscode.window.showInformationMessage("Import grouping disabled");
             },
         });
@@ -432,7 +432,7 @@ export class StatusBarHandler {
             description: "Digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com), then local imports",
             action: async () => {
                 await config.update("behavior.importGrouping", "digestFirst", vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, "Import grouping changed to: digestFirst");
+                logger.debug("StatusBarHandler", "Import grouping changed to: digestFirst");
                 vscode.window.showInformationMessage("Import grouping: Digest imports first");
             },
         });
@@ -443,7 +443,7 @@ export class StatusBarHandler {
             description: "Local imports, then digest imports",
             action: async () => {
                 await config.update("behavior.importGrouping", "localFirst", vscode.ConfigurationTarget.Global);
-                log(this.outputChannel, "Import grouping changed to: localFirst");
+                logger.debug("StatusBarHandler", "Import grouping changed to: localFirst");
                 vscode.window.showInformationMessage("Import grouping: Local imports first");
             },
         });
@@ -461,7 +461,7 @@ export class StatusBarHandler {
     }
 
     startSnooze(minutes: number): void {
-        log(this.outputChannel, `Starting snooze for ${minutes} minutes`);
+        logger.debug("StatusBarHandler", `Starting snooze for ${minutes} minutes`);
 
         // Set snooze end time
         this.snoozeEndTime = Date.now() + minutes * 60 * 1000;
@@ -488,7 +488,7 @@ export class StatusBarHandler {
     private extendSnooze(minutes: number): void {
         if (this.snoozeEndTime === null) return;
 
-        log(this.outputChannel, `Extending snooze by ${minutes} minutes`);
+        logger.debug("StatusBarHandler", `Extending snooze by ${minutes} minutes`);
         this.snoozeEndTime += minutes * 60 * 1000;
         this.updateStatusBarDisplay();
 
@@ -496,7 +496,7 @@ export class StatusBarHandler {
     }
 
     cancelSnooze(): void {
-        log(this.outputChannel, "Cancelling snooze");
+        logger.debug("StatusBarHandler", "Cancelling snooze");
 
         // Clear snooze state
         this.snoozeEndTime = null;
@@ -515,7 +515,7 @@ export class StatusBarHandler {
     }
 
     private endSnooze(): void {
-        log(this.outputChannel, "Snooze timer expired");
+        logger.debug("StatusBarHandler", "Snooze timer expired");
 
         // Clear snooze state
         this.snoozeEndTime = null;

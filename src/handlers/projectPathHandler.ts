@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 
 interface UEFNProjectFile {
     bindings?: {
@@ -35,7 +35,7 @@ export class ProjectPathHandler {
 
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            log(this.outputChannel, "No workspace folders found");
+            logger.debug("ProjectPathHandler", "No workspace folders found");
             return null;
         }
 
@@ -44,7 +44,7 @@ export class ProjectPathHandler {
 
             if (files.length > 0) {
                 const projectFilePath = files[0].fsPath;
-                log(this.outputChannel, `Found .uefnproject file at: ${projectFilePath}`);
+                logger.debug("ProjectPathHandler", `Found .uefnproject file at: ${projectFilePath}`);
 
                 try {
                     const content = fs.readFileSync(projectFilePath, "utf8");
@@ -52,7 +52,7 @@ export class ProjectPathHandler {
 
                     if (this.cachedProjectFile.bindings?.projectVersePath) {
                         this.projectVersePath = this.cachedProjectFile.bindings.projectVersePath;
-                        log(this.outputChannel, `Project Verse path: ${this.projectVersePath}`);
+                        logger.debug("ProjectPathHandler", `Project Verse path: ${this.projectVersePath}`);
                     }
 
                     if (this.cachedProjectFile.title) {
@@ -61,7 +61,7 @@ export class ProjectPathHandler {
 
                     return this.cachedProjectFile;
                 } catch (error) {
-                    log(this.outputChannel, `Error parsing .uefnproject file: ${error}`);
+                    logger.debug("ProjectPathHandler", `Error parsing .uefnproject file: ${error}`);
                     return null;
                 }
             }
@@ -78,14 +78,14 @@ export class ProjectPathHandler {
             const files = await vscode.workspace.findFiles(globPattern, null, 1);
             if (files.length > 0) {
                 const projectFilePath = files[0].fsPath;
-                log(this.outputChannel, `Found .uefnproject file in parent directory: ${projectFilePath}`);
+                logger.debug("ProjectPathHandler", `Found .uefnproject file in parent directory: ${projectFilePath}`);
 
                 const content = fs.readFileSync(projectFilePath, "utf8");
                 this.cachedProjectFile = JSON.parse(content) as UEFNProjectFile;
 
                 if (this.cachedProjectFile.bindings?.projectVersePath) {
                     this.projectVersePath = this.cachedProjectFile.bindings.projectVersePath;
-                    log(this.outputChannel, `Project Verse path: ${this.projectVersePath}`);
+                    logger.debug("ProjectPathHandler", `Project Verse path: ${this.projectVersePath}`);
                 }
 
                 if (this.cachedProjectFile.title) {
@@ -95,10 +95,10 @@ export class ProjectPathHandler {
                 return this.cachedProjectFile;
             }
         } catch (error) {
-            log(this.outputChannel, `Error searching parent directory: ${error}`);
+            logger.debug("ProjectPathHandler", `Error searching parent directory: ${error}`);
         }
 
-        log(this.outputChannel, "No .uefnproject file found in workspace or parent directory");
+        logger.debug("ProjectPathHandler", "No .uefnproject file found in workspace or parent directory");
         return null;
     }
 
@@ -141,7 +141,7 @@ export class ProjectPathHandler {
         this.cachedProjectFile = null;
         this.projectVersePath = null;
         this.projectName = null;
-        log(this.outputChannel, "Cleared project path cache");
+        logger.debug("ProjectPathHandler", "Cleared project path cache");
     }
 
     /**
@@ -152,7 +152,7 @@ export class ProjectPathHandler {
 
         const clearCacheHandler = () => {
             this.clearCache();
-            log(this.outputChannel, "Project file changed, cache cleared");
+            logger.debug("ProjectPathHandler", "Project file changed, cache cleared");
         };
 
         watcher.onDidChange(clearCacheHandler);

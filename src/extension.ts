@@ -5,19 +5,23 @@ import { CommandsHandler } from "./handlers/commandsHandler";
 import { StatusBarHandler } from "./handlers/statusBarHandler";
 import { ProjectPathHandler } from "./handlers/projectPathHandler";
 import { ImportPathConverter } from "./handlers/importPathConverter";
-import { setupLogging } from "./utils/logging";
+import { logger } from "./utils/logger";
 import { ImportCodeActionProvider } from "./providers/importCodeActionProvider";
 import { ImportCodeLensProvider } from "./providers/importCodeLensProvider";
 
 export function activate(context: vscode.ExtensionContext) {
-    const outputChannel = setupLogging(context);
-    outputChannel.appendLine("Verse Auto Imports is now active");
+    // Initialize the logger
+    logger.initialize(context);
+    logger.info("Extension", "Verse Auto Imports is now active");
+
+    // Get output channel for backward compatibility with handlers
+    const outputChannel = logger.getUserChannel();
 
     const config = vscode.workspace.getConfiguration("verseAutoImports");
     const existingMappings = config.get<Record<string, string>>("ambiguousImports", {});
 
     if (Object.keys(existingMappings).length === 0) {
-        outputChannel.appendLine("Setting default ambiguous import mappings");
+        logger.info("Extension", "Setting default ambiguous import mappings");
         config.update(
             "ambiguousImports",
             {
@@ -29,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
     }
 
-    outputChannel.appendLine("About to create handlers");
+    logger.debug("Extension", "Creating handlers");
     const importHandler = new ImportHandler(outputChannel);
     const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
     const commandsHandler = new CommandsHandler(outputChannel, importHandler);
@@ -44,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
     const delayMs = legacyDelay !== undefined ? legacyDelay : newDelay;
 
     diagnosticsHandler.setDelay(delayMs);
-    outputChannel.appendLine(`Initial debounce delay set to ${delayMs}ms`);
+    logger.info("Extension", `Initial debounce delay set to ${delayMs}ms`);
 
     context.subscriptions.push(vscode.languages.registerCodeActionsProvider({ language: "verse" }, new ImportCodeActionProvider(outputChannel, importHandler)));
 
@@ -71,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const finalDelay = legacyDelay !== undefined ? legacyDelay : autoImportDebounceDelay;
 
                 diagnosticsHandler.setDelay(finalDelay);
-                outputChannel.appendLine(`Debounce delay updated to ${finalDelay}ms`);
+                logger.info("Extension", `Debounce delay updated to ${finalDelay}ms`);
             }
         })
     );
@@ -324,13 +328,15 @@ export function activate(context: vscode.ExtensionContext) {
                         }
                     }
                 } catch (error) {
-                    outputChannel.appendLine(`Error opening document ${uri.toString()}: ${error}`);
+                    logger.error("Extension", `Error opening document ${uri.toString()}`, error);
                 }
             }
         })
     );
 
-    outputChannel.appendLine("Verse Auto Imports extension activated successfully");
+    logger.info("Extension", "Verse Auto Imports extension activated successfully");
 }
 
-export function deactivate() {}
+export function deactivate() {
+    logger.info("Extension", "Verse Auto Imports extension deactivated");
+}

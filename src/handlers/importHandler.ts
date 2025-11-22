@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 import { ImportSuggestion, ImportSuggestionSource, ImportConfidence } from "../types/moduleInfo";
 import { DigestParser, DigestEntry } from "../utils/digestParser";
 
@@ -22,7 +22,7 @@ export class ImportHandler {
                 .map((line) => line.trim())
                 .filter((line) => line.length > 0);
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 1): ${options.join(", ")}`);
+            logger.debug("ImportHandler", `Found ${options.length} multi-options (pattern 1): ${options.join(", ")}`);
             return options;
         }
 
@@ -41,7 +41,7 @@ export class ImportHandler {
                 options.push(usingMatch[1]);
             }
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 2): ${options.join(", ")}`);
+            logger.debug("ImportHandler", `Found ${options.length} multi-options (pattern 2): ${options.join(", ")}`);
             return options;
         }
 
@@ -60,7 +60,7 @@ export class ImportHandler {
                 options.push(pathMatch[1]);
             }
 
-            log(this.outputChannel, `Found ${options.length} multi-options (pattern 3): ${options.join(", ")}`);
+            logger.debug("ImportHandler", `Found ${options.length} multi-options (pattern 3): ${options.join(", ")}`);
             return options;
         }
 
@@ -119,18 +119,18 @@ export class ImportHandler {
             }
 
             if (suggestions.length > 0) {
-                log(this.outputChannel, `Found ${suggestions.length} digest-based suggestions for: ${identifier}`);
+                logger.debug("ImportHandler", `Found ${suggestions.length} digest-based suggestions for: ${identifier}`);
             }
 
             return suggestions;
         } catch (error) {
-            log(this.outputChannel, `Error looking up identifier in digest: ${error}`);
+            logger.error("ImportHandler", `Error looking up identifier in digest`, error);
             return [];
         }
     }
 
     extractExistingImports(document: vscode.TextDocument): string[] {
-        log(this.outputChannel, "Extracting existing imports from document");
+        logger.debug("ImportHandler", "Extracting existing imports from document");
         const text = document.getText();
         const lines = text.split("\n");
         const imports = new Set<string>();
@@ -138,21 +138,21 @@ export class ImportHandler {
         for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith("using")) {
-                log(this.outputChannel, `Found import: ${trimmed}`);
+                logger.trace("ImportHandler", `Found import: ${trimmed}`);
                 imports.add(trimmed);
             }
         }
 
-        log(this.outputChannel, `Extracted ${imports.size} existing imports`);
+        logger.debug("ImportHandler", `Extracted ${imports.size} existing imports`);
         return Array.from(imports);
     }
 
     async extractImportSuggestions(errorMessage: string): Promise<ImportSuggestion[]> {
-        log(this.outputChannel, `Extracting import suggestions from error: ${errorMessage}`);
+        logger.debug("ImportHandler", `Extracting import suggestions from error: ${errorMessage}`);
 
         // Ignore errors that suggest using 'set' instead of import issues
         if (errorMessage.includes("Did you mean to write 'set")) {
-            log(this.outputChannel, `Ignoring 'set' suggestion error`);
+            logger.debug("ImportHandler", `Ignoring 'set' suggestion error`);
             return [];
         }
 
@@ -163,7 +163,7 @@ export class ImportHandler {
         // Check for multi-option "Did you mean any of" pattern first
         const multiOptions = this.parseMultiOptionSuggestions(errorMessage);
         if (multiOptions.length > 0) {
-            log(this.outputChannel, `Found multi-option pattern with ${multiOptions.length} options`);
+            logger.debug("ImportHandler", `Found multi-option pattern with ${multiOptions.length} options`);
             const suggestions: ImportSuggestion[] = [];
 
             for (const option of multiOptions) {
@@ -173,7 +173,7 @@ export class ImportHandler {
                     const importStatement = this.formatImportStatement(option, preferDotSyntax);
                     const moduleName = option.split("/").pop() || option;
 
-                    log(this.outputChannel, `Multi-option (module path): ${option}`);
+                    logger.trace("ImportHandler", `Multi-option (module path): ${option}`);
 
                     suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `Import from ${option}`));
                 } else {
@@ -184,13 +184,13 @@ export class ImportHandler {
                         const className = option.substring(lastDotIndex + 1);
                         const importStatement = this.formatImportStatement(namespace, preferDotSyntax);
 
-                        log(this.outputChannel, `Multi-option: ${option} -> namespace: ${namespace}, class: ${className}`);
+                        logger.debug("ImportHandler", `Multi-option: ${option} -> namespace: ${namespace}, class: ${className}`);
 
                         suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `${className} from ${namespace}`));
                     } else {
                         // No namespace detected, treat as simple reference
                         const importStatement = this.formatImportStatement(option, preferDotSyntax);
-                        log(this.outputChannel, `Multi-option (no namespace): ${option}`);
+                        logger.trace("ImportHandler", `Multi-option (no namespace): ${option}`);
 
                         suggestions.push(this.createImportSuggestion(importStatement, "error_message", "medium", `Import ${option}`));
                     }
@@ -211,7 +211,7 @@ export class ImportHandler {
             if (specificSuggestionMatch) {
                 const path = specificSuggestionMatch[1];
                 const importStatement = this.formatImportStatement(path, preferDotSyntax);
-                log(this.outputChannel, `Found specific import suggestion for unknown identifier ${className}: ${importStatement}`);
+                logger.debug("ImportHandler", `Found specific import suggestion for unknown identifier ${className}: ${importStatement}`);
                 return [this.createImportSuggestion(importStatement, "error_message", "high", `Import ${className} from ${path}`)];
             }
 
@@ -220,14 +220,14 @@ export class ImportHandler {
                 const preferredPath = ambiguousImportMappings[className];
                 const importStatement = this.formatImportStatement(preferredPath, preferDotSyntax);
 
-                log(this.outputChannel, `Using configured path for ambiguous class ${className}: ${importStatement}`);
+                logger.debug("ImportHandler", `Using configured path for ambiguous class ${className}: ${importStatement}`);
                 return [this.createImportSuggestion(importStatement, "error_message", "high", `Configured import for ${className}`)];
             }
 
             // Try digest-based lookup for unknown identifier
             const digestSuggestions = await this.lookupIdentifierInDigest(className);
             if (digestSuggestions.length > 0) {
-                log(this.outputChannel, `Found digest-based suggestions for unknown identifier: ${className}`);
+                logger.debug("ImportHandler", `Found digest-based suggestions for unknown identifier: ${className}`);
                 return digestSuggestions;
             }
         }
@@ -238,7 +238,7 @@ export class ImportHandler {
             const path = match[1].match(/using \{ (\/[^}]+) \}/)?.[1];
             if (path) {
                 const importStatement = this.formatImportStatement(path, preferDotSyntax);
-                log(this.outputChannel, `Found import statement: ${importStatement}`);
+                logger.debug("ImportHandler", `Found import statement: ${importStatement}`);
                 return [this.createImportSuggestion(importStatement, "error_message", "high", `Standard import for ${path}`)];
             }
         }
@@ -248,16 +248,16 @@ export class ImportHandler {
         if (match) {
             const fullName = match[1].trim();
             const lastDotIndex = fullName.lastIndexOf(".");
-            log(this.outputChannel, `Last dot index: ${lastDotIndex} for ${fullName}`);
+            logger.trace("ImportHandler", `Last dot index: ${lastDotIndex} for ${fullName}`);
             if (lastDotIndex > 0) {
                 const namespace = fullName.substring(0, lastDotIndex);
                 const importStatement = this.formatImportStatement(namespace, preferDotSyntax);
-                log(this.outputChannel, `Inferred import statement: ${importStatement}`);
+                logger.debug("ImportHandler", `Inferred import statement: ${importStatement}`);
                 return [this.createImportSuggestion(importStatement, "error_message", "high", `Inferred import for ${fullName}`)];
             }
         }
 
-        log(this.outputChannel, "No import suggestions found in error message");
+        logger.debug("ImportHandler", "No import suggestions found in error message");
         return [];
     }
 
@@ -272,7 +272,7 @@ export class ImportHandler {
     }
 
     async addImportsToDocument(document: vscode.TextDocument, importStatements: string[]): Promise<boolean> {
-        log(this.outputChannel, `Adding ${importStatements.length} import statements to document`);
+        logger.info("ImportHandler", `Adding ${importStatements.length} import statements to document`);
 
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
@@ -280,9 +280,9 @@ export class ImportHandler {
         const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
         const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
-        log(this.outputChannel, `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically} Grouping: ${importGrouping}`);
+        logger.debug("ImportHandler", `Import statements received:${preserveImportLocations ? " (locations will be preserved)" : ""} Sort: ${sortAlphabetically} Grouping: ${importGrouping}`);
         importStatements.forEach((statement) => {
-            log(this.outputChannel, `- ${statement}`);
+            logger.debug("ImportHandler", `- ${statement}`);
         });
 
         const text = document.getText();
@@ -295,7 +295,7 @@ export class ImportHandler {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
             if (line.startsWith("using")) {
-                log(this.outputChannel, `Found existing import at line ${i}: ${line}`);
+                logger.debug("ImportHandler", `Found existing import at line ${i}: ${line}`);
 
                 existingImports.add(line);
 
@@ -317,7 +317,7 @@ export class ImportHandler {
             importBlocks.push(currentBlock);
         }
 
-        log(this.outputChannel, `Found ${existingImports.size} existing imports in ${importBlocks.length} blocks`);
+        logger.debug("ImportHandler", `Found ${existingImports.size} existing imports in ${importBlocks.length} blocks`);
 
         const existingPaths = new Set<string>();
         existingImports.forEach((imp) => {
@@ -331,13 +331,13 @@ export class ImportHandler {
         importStatements.forEach((imp) => {
             const path = this.extractPathFromImport(imp);
             if (path && !existingPaths.has(path)) {
-                log(this.outputChannel, `New import needed: ${path}`);
+                logger.debug("ImportHandler", `New import needed: ${path}`);
                 newImportPaths.add(path);
             }
         });
 
         if (newImportPaths.size === 0) {
-            log(this.outputChannel, "No new imports needed, skipping update");
+            logger.debug("ImportHandler", "No new imports needed, skipping update");
             return true;
         }
 
@@ -487,7 +487,7 @@ export class ImportHandler {
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            log(this.outputChannel, success ? "Successfully updated imports in document" : "Failed to update imports in document");
+            logger.info("ImportHandler", success ? "Successfully updated imports in document" : "Failed to update imports in document");
 
             // After adding imports, ensure proper spacing
             if (success) {
@@ -496,7 +496,7 @@ export class ImportHandler {
 
             return success;
         } catch (error) {
-            log(this.outputChannel, `Error updating imports: ${error}`);
+            logger.error("ImportHandler", `Error updating imports: ${error}`, error);
             return false;
         }
     }
@@ -602,7 +602,7 @@ export class ImportHandler {
      *     /path
      */
     async removeAllImports(document: vscode.TextDocument): Promise<boolean> {
-        log(this.outputChannel, "Removing all imports from document");
+        logger.info("ImportHandler", "Removing all imports from document");
 
         const text = document.getText();
         const lines = text.split("\n");
@@ -616,7 +616,7 @@ export class ImportHandler {
 
             // Check for single-line imports (curly or dot syntax)
             if (trimmedLine.match(/^using\s*\{[^}]+\}/) || trimmedLine.match(/^using\.\s+.+/)) {
-                log(this.outputChannel, `Removing single-line import at line ${i + 1}: ${trimmedLine}`);
+                logger.trace("ImportHandler", `Removing single-line import at line ${i + 1}: ${trimmedLine}`);
                 removedCount++;
                 i++;
                 continue;
@@ -624,7 +624,7 @@ export class ImportHandler {
 
             // Check for multi-line import start
             if (trimmedLine.match(/^using\s*:\s*$/)) {
-                log(this.outputChannel, `Found multi-line import start at line ${i + 1}`);
+                logger.trace("ImportHandler", `Found multi-line import start at line ${i + 1}`);
                 removedCount++;
                 i++;
 
@@ -633,7 +633,7 @@ export class ImportHandler {
                     const nextLine = lines[i];
                     // Check if next line is indented (has leading whitespace)
                     if (nextLine.match(/^\s+.+/)) {
-                        log(this.outputChannel, `Removing indented path at line ${i + 1}: ${nextLine.trim()}`);
+                        logger.trace("ImportHandler", `Removing indented path at line ${i + 1}: ${nextLine.trim()}`);
                         i++;
                     }
                 }
@@ -646,7 +646,7 @@ export class ImportHandler {
         }
 
         if (removedCount === 0) {
-            log(this.outputChannel, "No imports found to remove");
+            logger.debug("ImportHandler", "No imports found to remove");
             return true;
         }
 
@@ -658,10 +658,10 @@ export class ImportHandler {
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            log(this.outputChannel, `Removed ${removedCount} import statements. Success: ${success}`);
+            logger.debug("ImportHandler", `Removed ${removedCount} import statements. Success: ${success}`);
             return success;
         } catch (error) {
-            log(this.outputChannel, `Error removing imports: ${error}`);
+            logger.error("ImportHandler", `Error removing imports: ${error}`, error);
             return false;
         }
     }
@@ -671,7 +671,7 @@ export class ImportHandler {
      * Parses error messages to find missing imports.
      */
     extractImportsFromDiagnostics(diagnostics: vscode.Diagnostic[]): string[] {
-        log(this.outputChannel, `Extracting imports from ${diagnostics.length} diagnostics`);
+        logger.debug("ImportHandler", `Extracting imports from ${diagnostics.length} diagnostics`);
 
         const suggestedPaths = new Set<string>();
 
@@ -687,7 +687,7 @@ export class ImportHandler {
             const unknownWithSuggestionMatch = errorMessage.match(/Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s);
             if (unknownWithSuggestionMatch) {
                 suggestedPaths.add(unknownWithSuggestionMatch[1]);
-                log(this.outputChannel, `Found path from unknown identifier with suggestion: ${unknownWithSuggestionMatch[1]}`);
+                logger.debug("ImportHandler", `Found path from unknown identifier with suggestion: ${unknownWithSuggestionMatch[1]}`);
                 continue;
             }
 
@@ -695,7 +695,7 @@ export class ImportHandler {
             const forgetMatch = errorMessage.match(/Did you forget to specify using \{ (\/[^}]+) \}/);
             if (forgetMatch) {
                 suggestedPaths.add(forgetMatch[1]);
-                log(this.outputChannel, `Found path from 'forget' pattern: ${forgetMatch[1]}`);
+                logger.debug("ImportHandler", `Found path from 'forget' pattern: ${forgetMatch[1]}`);
                 continue;
             }
 
@@ -707,7 +707,7 @@ export class ImportHandler {
                 let usingMatch;
                 while ((usingMatch = usingPattern.exec(optionsText)) !== null) {
                     suggestedPaths.add(usingMatch[1]);
-                    log(this.outputChannel, `Found path from multi-option: ${usingMatch[1]}`);
+                    logger.debug("ImportHandler", `Found path from multi-option: ${usingMatch[1]}`);
                 }
                 continue;
             }
@@ -720,7 +720,7 @@ export class ImportHandler {
                 let pathMatch;
                 while ((pathMatch = pathPattern.exec(optionsText)) !== null) {
                     suggestedPaths.add(pathMatch[1]);
-                    log(this.outputChannel, `Found path from identifier pattern: ${pathMatch[1]}`);
+                    logger.debug("ImportHandler", `Found path from identifier pattern: ${pathMatch[1]}`);
                 }
                 continue;
             }
@@ -740,13 +740,13 @@ export class ImportHandler {
                         // For now, add as-is
                         suggestedPaths.add(namespace);
                     }
-                    log(this.outputChannel, `Found path from 'did you mean': ${namespace}`);
+                    logger.debug("ImportHandler", `Found path from 'did you mean': ${namespace}`);
                 }
             }
         }
 
         const result = Array.from(suggestedPaths);
-        log(this.outputChannel, `Extracted ${result.length} unique import paths from diagnostics`);
+        logger.debug("ImportHandler", `Extracted ${result.length} unique import paths from diagnostics`);
         return result;
     }
 
@@ -758,7 +758,7 @@ export class ImportHandler {
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const emptyLinesAfterImports = config.get<number>("behavior.emptyLinesAfterImports", 1);
 
-        log(this.outputChannel, `Ensuring ${emptyLinesAfterImports} empty lines after imports`);
+        logger.debug("ImportHandler", `Ensuring ${emptyLinesAfterImports} empty lines after imports`);
 
         const text = document.getText();
         const lines = text.split("\n");
@@ -782,7 +782,7 @@ export class ImportHandler {
 
         // If no imports found or file only has imports, nothing to do
         if (lastImportLine === -1 || lastImportLine === lines.length - 1) {
-            log(this.outputChannel, "No imports found or file ends with imports, skipping spacing adjustment");
+            logger.debug("ImportHandler", "No imports found or file ends with imports, skipping spacing adjustment");
             return true;
         }
 
@@ -807,7 +807,7 @@ export class ImportHandler {
 
         // Only adjust if there's content after imports
         if (!hasContentAfterImports) {
-            log(this.outputChannel, "No content after imports, skipping spacing adjustment");
+            logger.debug("ImportHandler", "No content after imports, skipping spacing adjustment");
             return true;
         }
 
@@ -815,7 +815,7 @@ export class ImportHandler {
         const lineDifference = emptyLinesAfterImports - existingEmptyLines;
 
         if (lineDifference === 0) {
-            log(this.outputChannel, `Already has ${emptyLinesAfterImports} empty lines after imports`);
+            logger.debug("ImportHandler", `Already has ${emptyLinesAfterImports} empty lines after imports`);
             return true;
         }
 
@@ -823,29 +823,26 @@ export class ImportHandler {
 
         if (lineDifference > 0) {
             // Need to add empty lines
-            const newLines = '\n'.repeat(lineDifference);
+            const newLines = "\n".repeat(lineDifference);
             const insertPosition = new vscode.Position(lastImportLine + 1, 0);
             edit.insert(document.uri, insertPosition, newLines);
-            log(this.outputChannel, `Adding ${lineDifference} empty lines after imports`);
+            logger.info("ImportHandler", `Adding ${lineDifference} empty lines after imports`);
         } else {
             // Need to remove empty lines
             const linesToRemove = Math.abs(lineDifference);
             const startLine = lastImportLine + 1;
             const endLine = Math.min(startLine + linesToRemove, lines.length);
-            const range = new vscode.Range(
-                new vscode.Position(startLine, 0),
-                new vscode.Position(endLine, 0)
-            );
+            const range = new vscode.Range(new vscode.Position(startLine, 0), new vscode.Position(endLine, 0));
             edit.delete(document.uri, range);
-            log(this.outputChannel, `Removing ${linesToRemove} empty lines after imports`);
+            logger.info("ImportHandler", `Removing ${linesToRemove} empty lines after imports`);
         }
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            log(this.outputChannel, success ? "Successfully adjusted spacing after imports" : "Failed to adjust spacing");
+            logger.info("ImportHandler", success ? "Successfully adjusted spacing after imports" : "Failed to adjust spacing");
             return success;
         } catch (error) {
-            log(this.outputChannel, `Error adjusting spacing: ${error}`);
+            logger.error("ImportHandler", `Error adjusting spacing: ${error}`, error);
             return false;
         }
     }
@@ -859,7 +856,7 @@ export class ImportHandler {
         const preferredSyntax = config.get<string>("behavior.importSyntax", "curly");
         const preferDotSyntax = preferredSyntax === "dot";
 
-        log(this.outputChannel, `Converting all imports to ${preferredSyntax} syntax`);
+        logger.info("ImportHandler", `Converting all imports to ${preferredSyntax} syntax`);
 
         const text = document.getText();
         const lines = text.split("\n");
@@ -884,7 +881,7 @@ export class ImportHandler {
                         oldText: line,
                         newText: leadingWhitespace + newStatement,
                     });
-                    log(this.outputChannel, `Converting line ${i + 1} from curly to ${preferredSyntax}`);
+                    logger.trace("ImportHandler", `Converting line ${i + 1} from curly to ${preferredSyntax}`);
                 }
                 continue;
             }
@@ -904,7 +901,7 @@ export class ImportHandler {
                         oldText: line,
                         newText: leadingWhitespace + newStatement,
                     });
-                    log(this.outputChannel, `Converting line ${i + 1} from dot to ${preferredSyntax}`);
+                    logger.trace("ImportHandler", `Converting line ${i + 1} from dot to ${preferredSyntax}`);
                 }
                 continue;
             }
@@ -923,7 +920,7 @@ export class ImportHandler {
 
                         // We need to replace both lines with a single line
                         // For now, just mark them for conversion
-                        log(this.outputChannel, `Found multi-line import at lines ${i + 1}-${i + 2}, converting to ${preferredSyntax}`);
+                        logger.trace("ImportHandler", `Found multi-line import at lines ${i + 1}-${i + 2}, converting to ${preferredSyntax}`);
                         // This is more complex - we'll handle it in the apply phase
                     }
                 }
@@ -931,7 +928,7 @@ export class ImportHandler {
         }
 
         if (edits.length === 0) {
-            log(this.outputChannel, "No imports need syntax conversion");
+            logger.debug("ImportHandler", "No imports need syntax conversion");
             return true;
         }
 
@@ -944,10 +941,10 @@ export class ImportHandler {
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            log(this.outputChannel, `Converted ${edits.length} import statements. Success: ${success}`);
+            logger.debug("ImportHandler", `Converted ${edits.length} import statements. Success: ${success}`);
             return success;
         } catch (error) {
-            log(this.outputChannel, `Error converting imports: ${error}`);
+            logger.error("ImportHandler", `Error converting imports: ${error}`, error);
             return false;
         }
     }

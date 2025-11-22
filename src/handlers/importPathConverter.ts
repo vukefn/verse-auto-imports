@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { ProjectPathHandler } from "./projectPathHandler";
-import { log } from "../utils/logging";
+import { logger } from "../utils/logger";
 
 interface ImportConversionResult {
     originalImport: string;
@@ -241,7 +241,7 @@ export class ImportPathConverter {
 
                                     if (!locations.includes(relativePath)) {
                                         locations.push(relativePath);
-                                        log(this.outputChannel, `Found module in parent directory: ${relativePath}`);
+                                        logger.debug("ImportPathConverter", `Found module in parent directory: ${relativePath}`);
                                     }
                                 }
                             }
@@ -296,7 +296,7 @@ export class ImportPathConverter {
                 }
             }
         } catch (error) {
-            log(this.outputChannel, `Error searching for folder module: ${error}`);
+            logger.debug("ImportPathConverter", `Error searching for folder module: ${error}`);
         }
 
         // Phase 2: Search for explicit module definitions in .verse files (only if Phase 1 didn't find enough)
@@ -372,12 +372,12 @@ export class ImportPathConverter {
                     }
                 }
             } catch (error) {
-                log(this.outputChannel, `Error searching for explicit module definitions: ${error}`);
+                logger.debug("ImportPathConverter", `Error searching for explicit module definitions: ${error}`);
             }
         }
 
-        log(this.outputChannel, `Found ${locations.length} possible locations for module '${modulePath}'`);
-        locations.forEach((loc) => log(this.outputChannel, `  - ${loc}`));
+        logger.debug("ImportPathConverter", `Found ${locations.length} possible locations for module '${modulePath}'`);
+        locations.forEach((loc) => logger.debug("ImportPathConverter", `  - ${loc}`));
 
         return locations;
     }
@@ -388,13 +388,13 @@ export class ImportPathConverter {
     async convertFromFullPath(importStatement: string, documentUri: vscode.Uri): Promise<ImportConversionResult | null> {
         // Check if it's a built-in module (should not be converted)
         if (this.isBuiltinModule(importStatement)) {
-            log(this.outputChannel, "Cannot convert built-in module to relative path");
+            logger.debug("ImportPathConverter", "Cannot convert built-in module to relative path");
             return null;
         }
 
         // Check if it's actually a full path
         if (!this.isFullPathImport(importStatement)) {
-            log(this.outputChannel, "Import is not in full path format");
+            logger.debug("ImportPathConverter", "Import is not in full path format");
             return null;
         }
 
@@ -430,7 +430,7 @@ export class ImportPathConverter {
         const relativeImportPath = modulePathSegments.join(".");
 
         if (!relativeImportPath) {
-            log(this.outputChannel, "Could not extract relative path from full path");
+            logger.debug("ImportPathConverter", "Could not extract relative path from full path");
             return null;
         }
 
@@ -481,9 +481,9 @@ export class ImportPathConverter {
         // Check if already full path
         if (this.isFullPathImport(importStatement)) {
             if (this.isBuiltinModule(importStatement)) {
-                log(this.outputChannel, "Import is a built-in module and should not be converted");
+                logger.debug("ImportPathConverter", "Import is a built-in module and should not be converted");
             } else {
-                log(this.outputChannel, "Import is already in full path format");
+                logger.debug("ImportPathConverter", "Import is already in full path format");
             }
             return null;
         }
@@ -491,7 +491,7 @@ export class ImportPathConverter {
         // Extract module path and name
         const moduleInfo = this.extractModuleFromImport(importStatement);
         if (!moduleInfo) {
-            log(this.outputChannel, "Could not extract module info from import");
+            logger.debug("ImportPathConverter", "Could not extract module info from import");
             return null;
         }
 
@@ -589,7 +589,7 @@ export class ImportPathConverter {
         }
 
         if (lineIndex === -1) {
-            log(this.outputChannel, `Could not find import line: ${conversion.originalImport}`);
+            logger.debug("ImportPathConverter", `Could not find import line: ${conversion.originalImport}`);
             return false;
         }
 
@@ -611,13 +611,13 @@ export class ImportPathConverter {
         try {
             const success = await vscode.workspace.applyEdit(edit);
             if (success) {
-                log(this.outputChannel, `Converted: ${conversion.originalImport} -> ${finalImport}`);
+                logger.debug("ImportPathConverter", `Converted: ${conversion.originalImport} -> ${finalImport}`);
             } else {
-                log(this.outputChannel, `Failed to apply conversion for: ${conversion.originalImport}`);
+                logger.debug("ImportPathConverter", `Failed to apply conversion for: ${conversion.originalImport}`);
             }
             return success;
         } catch (error) {
-            log(this.outputChannel, `Error applying conversion: ${error}`);
+            logger.debug("ImportPathConverter", `Error applying conversion: ${error}`);
             return false;
         }
     }
