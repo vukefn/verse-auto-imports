@@ -28,6 +28,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Configurable delay (default 3 seconds)
   - Properly cancels pending imports when you continue typing
   - Each keystroke resets the timer for a smoother coding experience
+- **Enhanced Logging System**: Improved debugging with multi-level logging
+  - Six log levels: TRACE, DEBUG, INFO, WARN, ERROR, FATAL
+  - Dual output channels:
+    - "Verse Auto Imports" - User-facing channel showing INFO+ messages
+    - "Verse Auto Imports - Debug" - Debug channel showing all log levels
+  - Performance tracking with built-in timers for slow operations
+  - Structured logging with module context and error stack traces
+  - No configuration needed - works out of the box
 - New `general.autoImportDebounceDelay` setting (default: 3000ms)
 
 ### Changed
