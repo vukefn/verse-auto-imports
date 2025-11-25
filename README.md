@@ -21,7 +21,7 @@
 
 Stop manually managing imports in your Verse code. This extension automatically detects missing imports, provides smart suggestions, and keeps your code organized with zero configuration.
 
-![Demo of auto-importing](./media/demo.gif)
+![Demo of auto-importing](https://i.ibb.co/cKx35ymv/demo.gif)
 
 ## Key Features
 
