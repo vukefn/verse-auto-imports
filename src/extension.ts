@@ -227,7 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
             const documentUri = document.uri.toString();
             importCodeLensProvider.keepHoverStateActive(documentUri);
 
-            const result = await importPathConverter.convertFromFullPath(importStatement, document.uri);
+            const result = await importPathConverter.convertFromFullPath(importStatement);
 
             if (!result) {
                 vscode.window.showInformationMessage("Import cannot be converted to relative path.");
