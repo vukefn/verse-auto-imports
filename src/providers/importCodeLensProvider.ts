@@ -155,7 +155,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         if (moduleName) {
                             // Create CodeLens for converting to relative path
                             const convertToRelativeLens = new vscode.CodeLens(range, {
-                                title: `$(arrow-left)  Use relative path`,
+                                title: `$(arrow-both)  Use relative path`,
                                 tooltip: `Use relative path for '${moduleName}'`,
                                 command: "verseAutoImports.convertToRelativePath",
                                 arguments: [document, trimmedLine, i],
@@ -172,7 +172,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                             // Add "Use relative paths for all" option if there are multiple full path imports
                             if (hasMultipleFullPathImports) {
                                 const convertAllRelativeLens = new vscode.CodeLens(range, {
-                                    title: `$(arrow-circle-left)  Use relative paths for all`,
+                                    title: `$(arrow-swap)  Use relative paths for all`,
                                     tooltip: "Use relative paths for all imports in this file",
                                     command: "verseAutoImports.convertAllToRelativePath",
                                     arguments: [document],
@@ -188,7 +188,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                     if (moduleName) {
                         // Create CodeLens for converting to absolute path
                         const convertSingleLens = new vscode.CodeLens(range, {
-                            title: `$(arrow-right)  Use absolute path`,
+                            title: `$(arrow-both)  Use absolute path`,
                             tooltip: `Use absolute path for '${moduleName}'`,
                             command: "verseAutoImports.convertToFullPath",
                             arguments: [document, trimmedLine, i],
@@ -201,7 +201,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {
                             const convertAllLens = new vscode.CodeLens(range, {
-                                title: `$(arrow-circle-right)  Use absolute paths for all`,
+                                title: `$(arrow-swap)  Use absolute paths for all`,
                                 tooltip: "Use absolute paths for all imports in this file",
                                 command: "verseAutoImports.convertAllToFullPath",
                                 arguments: [document],

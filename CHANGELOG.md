@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+-   **Organized Status Bar Menu**: Menu items are now grouped into logical categories with labeled separators:
+    -   Quick Actions, General, Import Behavior, Path Conversion, Experimental, Utilities
+-   **CodeLens Visibility Submenu**: Access CodeLens visibility settings directly from the status bar menu
 -   **Configurable Empty Lines After Imports**: Control spacing between imports and code
     -   New `behavior.emptyLinesAfterImports` setting (0-5 lines, default: 1)
     -   Automatically applied when saving files, adding new imports, or running "Optimize Imports"
@@ -56,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+-   **Updated CodeLens Icons**: Path conversion actions now use clearer icons (`$(arrow-both)` for single, `$(arrow-swap)` for bulk) instead of thin arrows for better visibility
 -   Default for `preserveImportLocations` changed to `true` (was `false`) - now preserves import locations by default
 -   Default for `showDescriptions` changed to `false` (was `true`) - cleaner quick fix menu by default
 -   Deprecated `general.diagnosticDelay` in favor of the new clearer naming `autoImportDebounceDelay`
@@ -83,6 +87,7 @@ Settings have been reorganized with new names (old settings will need to be upda
 
 ### Improved
 
+-   **Smart Snooze Cancellation**: Snooze is now automatically cancelled when auto imports are manually enabled mid-snooze, keeping the UI state consistent with user intent
 -   **Faster CodeLens Updates**: Optimized CodeLens refresh performance by eliminating redundant refresh calls
 -   Better Timer Management: Enhanced diagnostic handler with proper debouncing mechanism
 -   Enhanced Error Detection: Improved handling of "Unknown identifier" errors that include specific import suggestions

@@ -22,6 +22,16 @@ export class StatusBarHandler {
         // Listen for configuration changes to update status bar
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("verseAutoImports")) {
+                // Check if auto import was manually enabled while snooze is active
+                if (event.affectsConfiguration("verseAutoImports.general.autoImport") && this.snoozeEndTime !== null) {
+                    const config = vscode.workspace.getConfiguration("verseAutoImports");
+                    const autoImportEnabled = config.get<boolean>("general.autoImport", true);
+
+                    if (autoImportEnabled) {
+                        // User manually enabled auto imports - cancel the snooze silently
+                        this.cancelSnoozeSilently();
+                    }
+                }
                 this.updateStatusBarDisplay();
             }
         });
@@ -211,12 +221,18 @@ export class StatusBarHandler {
         const useDigestFiles = config.get<boolean>("experimental.useDigestFiles", false);
         const importSyntax = config.get<string>("behavior.importSyntax", "curly");
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
+        const codeLensVisibility = config.get<string>("pathConversion.codeLensVisibility", "hover");
         const sortImports = config.get<boolean>("behavior.sortImportsAlphabetically", true);
         const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
         const items: QuickPickItemWithAction[] = [];
 
-        // Optimize Imports button
+        // ── Quick Actions ──
+        items.push({
+            label: "Quick Actions",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
         items.push({
             label: "$(file-code) Optimize Imports",
             description: "Sort and organize imports in current file",
@@ -225,13 +241,12 @@ export class StatusBarHandler {
             },
         });
 
-        // Separator
+        // ── General ──
         items.push({
-            label: "",
+            label: "General",
             kind: vscode.QuickPickItemKind.Separator,
         });
 
-        // Auto Import checkbox
         items.push({
             label: autoImportEnabled ? "$(check) Auto Import" : "$(blank) Auto Import",
             description: autoImportEnabled ? "Enabled" : "Disabled",
@@ -241,7 +256,41 @@ export class StatusBarHandler {
             },
         });
 
-        // Preserve Import Locations checkbox
+        // Snooze section
+        if (this.snoozeEndTime !== null) {
+            const remaining = this.getRemainingTime();
+
+            items.push({
+                label: "$(add) Add 5 Minutes",
+                description: `${remaining} remaining`,
+                action: () => {
+                    this.extendSnooze(5);
+                },
+            });
+
+            items.push({
+                label: "$(close) Cancel Snooze",
+                description: "Resume auto imports immediately",
+                action: () => {
+                    this.cancelSnooze();
+                },
+            });
+        } else {
+            items.push({
+                label: "$(clock) Snooze",
+                description: "Turn off auto imports for 5 mins",
+                action: () => {
+                    this.startSnooze(5);
+                },
+            });
+        }
+
+        // ── Import Behavior ──
+        items.push({
+            label: "Import Behavior",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
         items.push({
             label: preserveLocations ? "$(check) Preserve Import Locations" : "$(blank) Preserve Import Locations",
             description: preserveLocations ? "Keep imports in place" : "Consolidate at top",
@@ -251,29 +300,6 @@ export class StatusBarHandler {
             },
         });
 
-        // Import Syntax checkbox
-        const isDotSyntax = importSyntax === "dot";
-        items.push({
-            label: isDotSyntax ? "$(check) Dot Syntax (using.)" : "$(blank) Dot Syntax (using.)",
-            description: isDotSyntax ? "using. /Path" : "using { /Path }",
-            action: async () => {
-                const newSyntax = isDotSyntax ? "curly" : "dot";
-                await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
-                logger.debug("StatusBarHandler", `Import syntax changed to: ${newSyntax}`);
-            },
-        });
-
-        // Show Path Conversion CodeLens checkbox
-        items.push({
-            label: showCodeLens ? "$(check) Path Conversion Helper" : "$(blank) Path Conversion Helper",
-            description: showCodeLens ? "Show on hover" : "Hidden",
-            action: async () => {
-                await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
-                logger.debug("StatusBarHandler", `Path conversion CodeLens toggled: ${!showCodeLens}`);
-            },
-        });
-
-        // Sort Imports Alphabetically checkbox
         items.push({
             label: sortImports ? "$(check) Sort Imports Alphabetically" : "$(blank) Sort Imports Alphabetically",
             description: sortImports ? "Sorted A-Z" : "Original order preserved",
@@ -310,60 +336,64 @@ export class StatusBarHandler {
             },
         });
 
-        // Use Digest Files checkbox (experimental)
+        // Import Syntax checkbox
+        const isDotSyntax = importSyntax === "dot";
+        items.push({
+            label: isDotSyntax ? "$(check) Dot Syntax (using.)" : "$(blank) Dot Syntax (using.)",
+            description: isDotSyntax ? "using. /Path" : "using { /Path }",
+            action: async () => {
+                const newSyntax = isDotSyntax ? "curly" : "dot";
+                await config.update("behavior.importSyntax", newSyntax, vscode.ConfigurationTarget.Global);
+                logger.debug("StatusBarHandler", `Import syntax changed to: ${newSyntax}`);
+            },
+        });
+
+        // ── Path Conversion ──
+        items.push({
+            label: "Path Conversion",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
+        items.push({
+            label: showCodeLens ? "$(check) Path Conversion Helper" : "$(blank) Path Conversion Helper",
+            description: showCodeLens ? "Enabled" : "Disabled",
+            action: async () => {
+                await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
+                logger.debug("StatusBarHandler", `Path conversion CodeLens toggled: ${!showCodeLens}`);
+            },
+        });
+
+        // CodeLens Visibility submenu
+        const visibilityLabel = codeLensVisibility === "hover" ? "Hover Only" : "Always Visible";
+        items.push({
+            label: `$(list-unordered) CodeLens Visibility: ${visibilityLabel} $(chevron-right)`,
+            description: "When to show path conversion options",
+            action: async () => {
+                await this.showCodeLensVisibilityMenu();
+            },
+        });
+
+        // ── Experimental ──
+        items.push({
+            label: "Experimental",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
         items.push({
             label: useDigestFiles ? "$(check) Use Digest Files" : "$(blank) Use Digest Files",
-            description: useDigestFiles ? "⚠️ Experimental - Enabled" : "⚠️ Experimental - Disabled",
+            description: useDigestFiles ? "Enabled" : "Disabled",
             action: async () => {
                 await config.update("experimental.useDigestFiles", !useDigestFiles, vscode.ConfigurationTarget.Global);
                 logger.debug("StatusBarHandler", `Use digest files toggled: ${!useDigestFiles}`);
             },
         });
 
-        // Separator
+        // ── Utilities ──
         items.push({
-            label: "",
+            label: "Utilities",
             kind: vscode.QuickPickItemKind.Separator,
         });
 
-        // Snooze section
-        if (this.snoozeEndTime !== null) {
-            // Snooze is active - show timer and controls
-            const remaining = this.getRemainingTime();
-
-            items.push({
-                label: "$(add) Add 5 Minutes",
-                description: `${remaining} remaining`,
-                action: () => {
-                    this.extendSnooze(5);
-                },
-            });
-
-            items.push({
-                label: "$(close) Cancel Snooze",
-                description: "Resume auto imports immediately",
-                action: () => {
-                    this.cancelSnooze();
-                },
-            });
-        } else {
-            // Snooze is not active - show snooze button
-            items.push({
-                label: "$(clock) Snooze",
-                description: "Turn off auto imports for 5 mins",
-                action: () => {
-                    this.startSnooze(5);
-                },
-            });
-        }
-
-        // Separator
-        items.push({
-            label: "",
-            kind: vscode.QuickPickItemKind.Separator,
-        });
-
-        // Utility actions
         items.push({
             label: "$(output) View Output Logs",
             description: "Open extension output channel",
@@ -389,8 +419,6 @@ export class StatusBarHandler {
         // Execute the action if an item was selected
         if (selected?.action) {
             await selected.action();
-            // Refresh the menu after action (optional - can be removed if too chatty)
-            // await this.showMenu();
         }
     }
 
@@ -460,6 +488,61 @@ export class StatusBarHandler {
         }
     }
 
+    async showCodeLensVisibilityMenu(): Promise<void> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const currentVisibility = config.get<string>("pathConversion.codeLensVisibility", "hover");
+
+        const items: QuickPickItemWithAction[] = [];
+
+        // Add back option
+        items.push({
+            label: "$(arrow-left) Back to main menu",
+            description: "",
+            action: async () => {
+                await this.showMenu();
+            },
+        });
+
+        // Separator
+        items.push({
+            label: "",
+            kind: vscode.QuickPickItemKind.Separator,
+        });
+
+        // Hover Only option
+        items.push({
+            label: `${currentVisibility === "hover" ? "$(check) " : "$(blank) "}Hover Only`,
+            description: "Show only when hovering over imports (default)",
+            action: async () => {
+                await config.update("pathConversion.codeLensVisibility", "hover", vscode.ConfigurationTarget.Global);
+                logger.debug("StatusBarHandler", "CodeLens visibility changed to: hover");
+                vscode.window.showInformationMessage("CodeLens visibility: Hover only");
+            },
+        });
+
+        // Always Visible option
+        items.push({
+            label: `${currentVisibility === "always" ? "$(check) " : "$(blank) "}Always Visible`,
+            description: "Always show above import statements",
+            action: async () => {
+                await config.update("pathConversion.codeLensVisibility", "always", vscode.ConfigurationTarget.Global);
+                logger.debug("StatusBarHandler", "CodeLens visibility changed to: always");
+                vscode.window.showInformationMessage("CodeLens visibility: Always visible");
+            },
+        });
+
+        // Show the submenu
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select CodeLens Visibility Option",
+            matchOnDescription: true,
+        });
+
+        // Execute the action if an item was selected
+        if (selected?.action) {
+            await selected.action();
+        }
+    }
+
     startSnooze(minutes: number): void {
         logger.debug("StatusBarHandler", `Starting snooze for ${minutes} minutes`);
 
@@ -512,6 +595,21 @@ export class StatusBarHandler {
         this.updateStatusBarDisplay();
 
         vscode.window.showInformationMessage("Auto imports resumed");
+    }
+
+    private cancelSnoozeSilently(): void {
+        if (this.snoozeEndTime === null) {
+            return;
+        }
+
+        this.snoozeEndTime = null;
+
+        if (this.snoozeInterval) {
+            clearInterval(this.snoozeInterval);
+            this.snoozeInterval = null;
+        }
+
+        logger.debug("StatusBarHandler", "Snooze cancelled due to manual auto import enable");
     }
 
     private endSnooze(): void {
