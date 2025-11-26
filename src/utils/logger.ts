@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * Log levels for the logger
@@ -9,7 +9,7 @@ export enum LogLevel {
     INFO = 2,
     WARN = 3,
     ERROR = 4,
-    FATAL = 5
+    FATAL = 5,
 }
 
 /**
@@ -29,6 +29,8 @@ export class Logger {
     private userChannel: vscode.OutputChannel;
     private debugChannel: vscode.OutputChannel;
     private performanceTimers: Map<string, number> = new Map();
+    private logBuffer: string[] = [];
+    private readonly MAX_LOG_ENTRIES = 10000;
 
     private constructor() {
         this.userChannel = vscode.window.createOutputChannel("Verse Auto Imports");
@@ -173,6 +175,74 @@ export class Logger {
     }
 
     /**
+     * Get the current number of log entries in the buffer
+     */
+    public getBufferSize(): number {
+        return this.logBuffer.length;
+    }
+
+    /**
+     * Get debug logs as a single string for file export
+     */
+    public getDebugLogsAsString(): string {
+        const header = ["Verse Auto Imports - Debug Log Export", `Exported: ${new Date().toISOString()}`, `Entries: ${this.logBuffer.length}`, "-------------------------------------------", ""].join(
+            "\n"
+        );
+
+        return header + this.logBuffer.join("\n");
+    }
+
+    /**
+     * Export debug logs to a file chosen by the user
+     * @returns The URI of the saved file, or undefined if cancelled/failed
+     */
+    public async exportDebugLogs(): Promise<vscode.Uri | undefined> {
+        const timestamp = this.formatTimestampForFilename(new Date());
+        const defaultFileName = `verseAutoImports_debugLogs_${timestamp}.log`;
+
+        const uri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(defaultFileName),
+            filters: {
+                "Log Files": ["log"],
+                "Text Files": ["txt"],
+                "All Files": ["*"],
+            },
+            saveLabel: "Export Debug Logs",
+            title: "Export Verse Auto Imports Debug Logs",
+        });
+
+        if (!uri) {
+            return undefined; // User cancelled
+        }
+
+        try {
+            const content = this.getDebugLogsAsString();
+            const encoder = new TextEncoder();
+            await vscode.workspace.fs.writeFile(uri, encoder.encode(content));
+
+            this.info("Logger", `Debug logs exported to ${uri.fsPath}`);
+            return uri;
+        } catch (error) {
+            this.error("Logger", "Failed to export debug logs", error);
+            throw error;
+        }
+    }
+
+    /**
+     * Format a timestamp for use in the export filename
+     */
+    private formatTimestampForFilename(date: Date): string {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+
+        return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+    }
+
+    /**
      * Core logging method
      */
     private log(level: LogLevel, module: string, message: string, data?: LogData): void {
@@ -188,6 +258,19 @@ export class Logger {
         // Format for debug channel (all levels)
         const debugFormat = this.formatDebugMessage(timestamp, levelName, module, message, data);
         this.debugChannel.appendLine(debugFormat);
+
+        // Store in buffer for export
+        this.addToBuffer(debugFormat);
+    }
+
+    /**
+     * Add a log entry to the circular buffer
+     */
+    private addToBuffer(logEntry: string): void {
+        if (this.logBuffer.length >= this.MAX_LOG_ENTRIES) {
+            this.logBuffer.shift(); // Remove oldest entry
+        }
+        this.logBuffer.push(logEntry);
     }
 
     /**
@@ -201,13 +284,7 @@ export class Logger {
     /**
      * Format message for debug channel (detailed format)
      */
-    private formatDebugMessage(
-        timestamp: Date,
-        level: string,
-        module: string,
-        message: string,
-        data?: LogData
-    ): string {
+    private formatDebugMessage(timestamp: Date, level: string, module: string, message: string, data?: LogData): string {
         const time = timestamp.toISOString().substring(11, 23);
         let formatted = `[${time}] [${level}] [${module}] ${message}`;
 
@@ -229,15 +306,15 @@ export class Logger {
         const parts: string[] = [];
 
         for (const [key, value] of Object.entries(data)) {
-            if (key === 'errorStack' && value) {
+            if (key === "errorStack" && value) {
                 // Handle stack traces specially
-                parts.push(`\n  Stack trace:\n    ${value.replace(/\n/g, '\n    ')}`);
+                parts.push(`\n  Stack trace:\n    ${value.replace(/\n/g, "\n    ")}`);
             } else if (value !== undefined && value !== null) {
                 // Handle other values
                 let valueStr: string;
-                if (typeof value === 'string') {
+                if (typeof value === "string") {
                     valueStr = value;
-                } else if (typeof value === 'object') {
+                } else if (typeof value === "object") {
                     try {
                         valueStr = JSON.stringify(value, null, 2);
                     } catch {
@@ -250,7 +327,7 @@ export class Logger {
             }
         }
 
-        return parts.length > 0 ? `{ ${parts.join(', ')} }` : '';
+        return parts.length > 0 ? `{ ${parts.join(", ")} }` : "";
     }
 
     /**

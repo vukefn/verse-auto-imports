@@ -403,6 +403,14 @@ export class StatusBarHandler {
         });
 
         items.push({
+            label: "$(export) Export Debug Logs",
+            description: `${logger.getBufferSize()} entries`,
+            action: async () => {
+                await vscode.commands.executeCommand("verseAutoImports.exportDebugLogs");
+            },
+        });
+
+        items.push({
             label: "$(settings-gear) Open Extension Settings",
             description: "View all Verse Auto Imports settings",
             action: async () => {

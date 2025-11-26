@@ -79,6 +79,10 @@
             {
                 "command": "verseAutoImports.convertAllToRelativePath",
                 "title": "Verse: Use Relative Paths for All"
+            },
+            {
+                "command": "verseAutoImports.exportDebugLogs",
+                "title": "Verse: Export Debug Logs"
             }
         ],
         "configuration": {

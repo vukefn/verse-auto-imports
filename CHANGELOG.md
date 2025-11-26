@@ -34,6 +34,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     -   Dual output channels:
         -   "Verse Auto Imports" - User-facing channel showing INFO+ messages
         -   "Verse Auto Imports - Debug" - Debug channel showing all log levels
+    -   **Export Debug Logs**: Export debug logs to a file for sharing or analysis
+        -   Access via Status Bar menu → Utilities → Export Debug Logs
+        -   Choose save location with native file dialog
+        -   Logs up to 10,000 entries in memory
     -   Performance tracking with built-in timers for slow operations
     -   Structured logging with module context and error stack traces
     -   No configuration needed - works out of the box

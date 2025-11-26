@@ -380,6 +380,7 @@ All settings with their full paths:
 3. Check the Output panel for logs:
     - `View` → `Output` → `Verse Auto Imports` (shows important messages)
     - `View` → `Output` → `Verse Auto Imports - Debug` (shows detailed debug logs)
+4. Export logs for sharing: Status Bar menu → Utilities → Export Debug Logs
 
 **Wrong imports being suggested?**
 
