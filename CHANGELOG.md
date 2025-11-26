@@ -35,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     -   Structured logging with module context and error stack traces
     -   No configuration needed - works out of the box
 -   **Full Path Import Conversion**: Added CodeLens support to convert relative imports to full path format
+-   **CodeLens Visibility Options**: Configure when path conversion CodeLens appears
+    -   `pathConversion.codeLensVisibility`: Choose between `"hover"` (default) or `"always"` visible
+    -   `pathConversion.codeLensHideDelay`: Customize how long CodeLens stays visible after leaving hover (default: 1 second)
 -   **Project Path Detection**: Automatically detects project Verse path from .uefnproject files
 -   **Ambiguous Module Handling**: Smart detection and resolution when modules exist in multiple locations
 -   **Batch Conversion**: Convert all imports to full paths with a single command
@@ -80,6 +83,7 @@ Settings have been reorganized with new names (old settings will need to be upda
 
 ### Improved
 
+-   **Faster CodeLens Updates**: Optimized CodeLens refresh performance by eliminating redundant refresh calls
 -   Better Timer Management: Enhanced diagnostic handler with proper debouncing mechanism
 -   Enhanced Error Detection: Improved handling of "Unknown identifier" errors that include specific import suggestions
 -   Backward Compatibility: Legacy `diagnosticDelay` setting still works while transitioning to new `autoImportDebounceDelay`
@@ -90,6 +94,8 @@ Settings have been reorganized with new names (old settings will need to be upda
 
 -   Path normalization in import path converter for better handling of forward/backward slashes
 -   Properly removes trailing slashes after stripping module paths
+-   Module path conversion now works correctly when workspace folder IS the Content folder (not just containing it)
+-   Shows clear error notification when module cannot be found instead of silently producing incorrect paths
 
 ### Documentation
 

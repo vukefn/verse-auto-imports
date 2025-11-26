@@ -16,7 +16,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
 
         // Watch for configuration changes
         vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration("verseAutoImports.pathConversion.enableCodeLens")) {
+            if (e.affectsConfiguration("verseAutoImports.pathConversion")) {
                 this._onDidChangeCodeLenses.fire();
             }
         });
@@ -31,22 +31,33 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                     this.refreshTimeout = null;
                 }
 
-                // Refresh immediately for better responsiveness
+                // Single immediate refresh
                 this._onDidChangeCodeLenses.fire();
-
-                // Schedule another refresh shortly after to catch any delayed updates
-                this.refreshTimeout = setTimeout(() => {
-                    this._onDidChangeCodeLenses.fire();
-                    this.refreshTimeout = null;
-                }, 100);
             }
         });
+    }
+
+    /** Gets the configured hide delay in milliseconds */
+    private getHideDelay(): number {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        return config.get<number>("pathConversion.codeLensHideDelay", 1000);
+    }
+
+    /** Gets the visibility mode setting */
+    private getVisibilityMode(): "hover" | "always" {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        return config.get<"hover" | "always">("pathConversion.codeLensVisibility", "hover");
     }
 
     /**
      * Sets the hover state for a document
      */
     setHoverState(documentUri: string, hovering: boolean, lineNumber?: number): void {
+        // In "always" mode, hover state management is not needed
+        if (this.getVisibilityMode() === "always") {
+            return;
+        }
+
         const currentState = this.hoverState.get(documentUri);
 
         if (hovering && lineNumber !== undefined) {
@@ -62,16 +73,17 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             this.isHoveringImport.set(documentUri, true);
             this._onDidChangeCodeLenses.fire();
         } else if (!hovering) {
-            // Set timeout to hide CodeLens after 2 seconds
+            // Set timeout to hide CodeLens after configured delay
             if (currentState?.timeout) {
                 clearTimeout(currentState.timeout);
             }
 
+            const hideDelay = this.getHideDelay();
             const timeout = setTimeout(() => {
                 this.isHoveringImport.set(documentUri, false);
                 this.hoverState.delete(documentUri);
                 this._onDidChangeCodeLenses.fire();
-            }, 2000);
+            }, hideDelay);
 
             if (currentState) {
                 this.hoverState.set(documentUri, {
@@ -96,12 +108,8 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         // Keep the hover state active
         this.isHoveringImport.set(documentUri, true);
 
-        // Fire immediately for responsive updates
+        // Single immediate refresh
         this._onDidChangeCodeLenses.fire();
-
-        // Schedule additional refreshes to ensure UI updates
-        setTimeout(() => this._onDidChangeCodeLenses.fire(), 50);
-        setTimeout(() => this._onDidChangeCodeLenses.fire(), 150);
     }
 
     async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.CodeLens[]> {
@@ -115,13 +123,16 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             return codeLenses;
         }
 
-        // Check if we should show CodeLens based on hover state
+        // Check visibility mode
+        const visibilityMode = this.getVisibilityMode();
         const documentUri = document.uri.toString();
-        const isHovering = this.isHoveringImport.get(documentUri);
 
-        // Only show CodeLens if hovering over imports
-        if (!isHovering) {
-            return codeLenses;
+        // In "hover" mode, only show CodeLens if hovering over imports
+        if (visibilityMode === "hover") {
+            const isHovering = this.isHoveringImport.get(documentUri);
+            if (!isHovering) {
+                return codeLenses;
+            }
         }
 
         const text = document.getText();
@@ -225,13 +236,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
         // Ensure hover state remains active
         this.isHoveringImport.set(documentUri, true);
 
-        // Multiple rapid refreshes to ensure UI catches the change
+        // Single immediate refresh - VS Code handles the timing
         this._onDidChangeCodeLenses.fire();
-
-        // Use requestAnimationFrame equivalent timing for browser-like immediate update
-        setImmediate(() => this._onDidChangeCodeLenses.fire());
-        setTimeout(() => this._onDidChangeCodeLenses.fire(), 0);
-        setTimeout(() => this._onDidChangeCodeLenses.fire(), 50);
-        setTimeout(() => this._onDidChangeCodeLenses.fire(), 100);
     }
 }

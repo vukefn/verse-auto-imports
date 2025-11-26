@@ -180,14 +180,29 @@
                 "verseAutoImports.pathConversion.enableCodeLens": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Show CodeLens actions above import statements when hovering to convert between absolute and relative paths",
+                    "description": "Show CodeLens actions above import statements to convert between absolute and relative paths",
                     "order": 30
+                },
+                "verseAutoImports.pathConversion.codeLensVisibility": {
+                    "type": "string",
+                    "enum": ["hover", "always"],
+                    "default": "hover",
+                    "description": "Control when CodeLens appears: 'hover' shows only when hovering over imports, 'always' keeps them visible",
+                    "order": 31
+                },
+                "verseAutoImports.pathConversion.codeLensHideDelay": {
+                    "type": "number",
+                    "default": 1000,
+                    "minimum": 500,
+                    "maximum": 10000,
+                    "description": "Milliseconds to wait before hiding CodeLens after cursor leaves import (only applies when visibility is 'hover')",
+                    "order": 32
                 },
                 "verseAutoImports.pathConversion.scanDepth": {
                     "type": "number",
                     "default": 5,
                     "description": "Maximum directory depth to scan when searching for module locations (used for ambiguity detection)",
-                    "order": 31
+                    "order": 33
                 },
                 "verseAutoImports.experimental.useDigestFiles": {
                     "type": "boolean",

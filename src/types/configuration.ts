@@ -25,6 +25,8 @@ export interface QuickFixConfig {
 
 export interface PathConversionConfig {
     enableCodeLens: boolean;
+    codeLensVisibility: "hover" | "always";
+    codeLensHideDelay: number;
     scanDepth: number;
 }
 

@@ -323,10 +323,12 @@ Quick fix menu customization:
 
 Absolute/relative path conversion settings:
 
-| Setting                         | Default | Description                             |
-| ------------------------------- | ------- | --------------------------------------- |
-| `pathConversion.enableCodeLens` | `true`  | Show hover actions to convert paths     |
-| `pathConversion.scanDepth`      | `5`     | Max directory depth for module scanning |
+| Setting                            | Default   | Description                                                          |
+| ---------------------------------- | --------- | -------------------------------------------------------------------- |
+| `pathConversion.enableCodeLens`    | `true`    | Show CodeLens actions to convert paths                               |
+| `pathConversion.codeLensVisibility`| `"hover"` | When to show CodeLens: `"hover"` or `"always"`                       |
+| `pathConversion.codeLensHideDelay` | `1000`    | Milliseconds before hiding CodeLens after leaving hover (hover mode) |
+| `pathConversion.scanDepth`         | `5`       | Max directory depth for module scanning                              |
 
 ### Experimental
 
@@ -355,6 +357,8 @@ All settings with their full paths:
     "verseAutoImports.quickFix.ordering": "confidence",
     "verseAutoImports.quickFix.showDescriptions": false,
     "verseAutoImports.pathConversion.enableCodeLens": true,
+    "verseAutoImports.pathConversion.codeLensVisibility": "hover",
+    "verseAutoImports.pathConversion.codeLensHideDelay": 1000,
     "verseAutoImports.pathConversion.scanDepth": 5,
     "verseAutoImports.experimental.useDigestFiles": false,
     "verseAutoImports.experimental.unknownIdentifierResolution": "disabled"
