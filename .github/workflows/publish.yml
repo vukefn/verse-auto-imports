@@ -27,3 +27,38 @@ jobs:
 
       - name: Publish to VS Code Marketplace
         run: vsce publish -p ${{ secrets.VSCE_PAT }}
+
+      - name: Announce to Discord
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+        run: |
+          # Escape special characters for JSON
+          ESCAPED_BODY=$(echo "$RELEASE_BODY" | jq -Rs '.')
+
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"content\": \"@everyone\",
+              \"embeds\": [{
+                \"title\": \"Verse Auto Imports ${RELEASE_TAG} Released!\",
+                \"description\": ${ESCAPED_BODY},
+                \"color\": 13172736,
+                \"fields\": [
+                  {
+                    \"name\": \"Download\",
+                    \"value\": \"[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=vukefn.verse-auto-imports)\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Release Notes\",
+                    \"value\": \"[GitHub Release](${RELEASE_URL})\",
+                    \"inline\": true
+                  }
+                ]
+              }]
+            }" \
+            "$DISCORD_WEBHOOK"
