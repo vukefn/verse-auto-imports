@@ -24,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     -   Works with both "Optimize Imports" command and auto-import
     -   Respects `sortImportsAlphabetically` setting within each group
     -   Toggle option available in status bar menu
+-   **Configurable Digest Import Prefixes**: Customize which path prefixes are recognized as digest (API) imports
+    -   New `behavior.digestImportPrefixes` setting
+    -   Default: `["/Verse.org/", "/Fortnite.com/", "/UnrealEngine.com/"]`
+    -   Add new prefixes if Epic introduces additional API domains without waiting for an extension update
 -   **Smart Auto-Import Debouncing**: Auto-imports now wait for you to stop typing before triggering
     -   Prevents distracting imports while actively coding
     -   Configurable delay (default 3 seconds)

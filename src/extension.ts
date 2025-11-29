@@ -129,11 +129,7 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 const uri = await logger.exportDebugLogs();
                 if (uri) {
-                    const action = await vscode.window.showInformationMessage(
-                        `Debug logs exported to ${uri.fsPath}`,
-                        "Open File",
-                        "Open Folder"
-                    );
+                    const action = await vscode.window.showInformationMessage(`Debug logs exported to ${uri.fsPath}`, "Open File", "Open Folder");
                     if (action === "Open File") {
                         await vscode.commands.executeCommand("vscode.open", uri);
                     } else if (action === "Open Folder") {
@@ -141,9 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                 }
             } catch (error) {
-                vscode.window.showErrorMessage(
-                    `Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`
-                );
+                vscode.window.showErrorMessage(`Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`);
             }
         }),
         // Command to convert a single import to absolute path
