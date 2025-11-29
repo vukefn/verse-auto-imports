@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { logger } from "../utils/logger";
-import { ImportFormatter } from "./importFormatter";
+import { logger } from "../utils";
+import { ImportFormatter } from "./ImportFormatter";
 
 /**
  * Handles all document modifications for imports.

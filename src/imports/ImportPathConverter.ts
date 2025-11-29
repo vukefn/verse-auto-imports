@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { ProjectPathHandler } from "./projectPathHandler";
-import { logger } from "../utils/logger";
+import { logger } from "../utils";
+import { ProjectPathHandler } from "../project";
 
 interface ImportConversionResult {
     originalImport: string;

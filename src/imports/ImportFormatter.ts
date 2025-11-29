@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { logger } from "../utils/logger";
 
 /**
  * Handles import formatting, syntax preferences, grouping, and path utilities.

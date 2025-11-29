@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-import { ImportSuggestion } from "../types/moduleInfo";
-import { ImportFormatter } from "./importFormatter";
-import { ImportSuggestionExtractor } from "./importSuggestionExtractor";
-import { ImportDocumentEditor } from "./importDocumentEditor";
+import { ImportSuggestion } from "../types";
+import { ImportFormatter } from "./ImportFormatter";
+import { ImportSuggestionExtractor } from "./ImportSuggestionExtractor";
+import { ImportDocumentEditor } from "./ImportDocumentEditor";
 
 /**
  * Facade class that coordinates import handling operations.

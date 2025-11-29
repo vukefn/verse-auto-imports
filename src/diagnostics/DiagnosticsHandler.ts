@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { ImportHandler } from "./importHandler";
-// import { ModuleHandler } from "./moduleHandler";
-import { logger } from "../utils/logger";
-import { ImportSuggestion } from "../types/moduleInfo";
+import { logger } from "../utils";
+import { ImportSuggestion } from "../types";
+import { ImportHandler } from "../imports";
 
 export class DiagnosticsHandler {
     private importHandler: ImportHandler;

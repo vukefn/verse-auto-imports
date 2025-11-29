@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-import { logger } from "../utils/logger";
-import { ImportSuggestion, ImportSuggestionSource, ImportConfidence } from "../types/moduleInfo";
-import { DigestParser } from "../utils/digestParser";
-import { ImportFormatter } from "./importFormatter";
+import { logger } from "../utils";
+import { ImportSuggestion, ImportSuggestionSource, ImportConfidence } from "../types";
+import { DigestParser } from "../services";
+import { ImportFormatter } from "./ImportFormatter";
 
 /**
  * Handles parsing error messages and diagnostics to extract import suggestions.
