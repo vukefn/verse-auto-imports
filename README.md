@@ -10,6 +10,10 @@
 <a href="https://buymeacoffee.com/vukefn">
   <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" width="180" style="vertical-align: middle;"/>
 </a>
+&nbsp;&nbsp;&nbsp;
+<a href="https://discord.gg/yw5cT2Yu3h">
+  <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" width="180" style="vertical-align: middle;"/>
+</a>
 
 </div>
 
@@ -79,8 +83,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete version history.
 Found a bug or want to contribute? We welcome issues and pull requests!
 
 -   **GitHub Repository:** [verse-auto-imports](https://github.com/VukeFN/verse-auto-imports)
+-   **Discord:** [Join our community](https://discord.gg/yw5cT2Yu3h)
 -   **Issues:** Report bugs and request features
--   **Discussions:** Share ideas and get help
 
 ## License
 
