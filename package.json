@@ -169,6 +169,19 @@
                     "description": "How to handle multiple import options: 'quickfix' shows options in quick fix menu, 'auto_shortest' automatically selects shortest path, 'auto_first' selects first option, 'disabled' ignores multi-option scenarios",
                     "order": 16
                 },
+                "verseAutoImports.behavior.digestImportPrefixes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "/Verse.org/",
+                        "/Fortnite.com/",
+                        "/UnrealEngine.com/"
+                    ],
+                    "description": "List of path prefixes that identify digest (API) imports. These are grouped separately from local project imports when import grouping is enabled.",
+                    "order": 17
+                },
                 "verseAutoImports.quickFix.sortAlphabetically": {
                     "type": "boolean",
                     "default": false,

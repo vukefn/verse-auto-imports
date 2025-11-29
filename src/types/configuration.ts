@@ -16,6 +16,7 @@ export interface BehaviorConfig {
     emptyLinesAfterImports: number;
     ambiguousImports: Record<string, string>;
     multiOptionStrategy: "quickfix" | "auto_shortest" | "auto_first" | "disabled";
+    digestImportPrefixes: string[];
 }
 
 export interface QuickFixConfig {

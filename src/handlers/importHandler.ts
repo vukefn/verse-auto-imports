@@ -531,8 +531,16 @@ export class ImportHandler {
             path = this.extractPathFromImport(importPath) || importPath;
         }
 
+        // Get configurable digest prefixes
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const digestPrefixes = config.get<string[]>("behavior.digestImportPrefixes", [
+            "/Verse.org/",
+            "/Fortnite.com/",
+            "/UnrealEngine.com/"
+        ]);
+
         // Check if it's a digest import
-        return path.startsWith("/Verse.org/") || path.startsWith("/Fortnite.com/") || path.startsWith("/UnrealEngine.com/");
+        return digestPrefixes.some(prefix => path.startsWith(prefix));
     }
 
     /**

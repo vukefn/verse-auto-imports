@@ -241,15 +241,16 @@ Core functionality settings:
 
 Control how imports are handled:
 
-| Setting                              | Default      | Description                               |
-| ------------------------------------ | ------------ | ----------------------------------------- |
-| `behavior.importSyntax`              | `"curly"`    | Use `using { /Path }` or `using. /Path`   |
-| `behavior.preserveImportLocations`   | `true`       | Keep existing imports where they are      |
-| `behavior.sortImportsAlphabetically` | `true`       | Sort imports alphabetically               |
-| `behavior.importGrouping`            | `"none"`     | Group digest vs local imports (see below) |
-| `behavior.emptyLinesAfterImports`    | `1`          | Number of empty lines after imports (0-5) |
-| `behavior.multiOptionStrategy`       | `"quickfix"` | How to handle multiple import options     |
-| `behavior.ambiguousImports`          | `{...}`      | Preferred paths for ambiguous classes     |
+| Setting                              | Default      | Description                                  |
+| ------------------------------------ | ------------ | -------------------------------------------- |
+| `behavior.importSyntax`              | `"curly"`    | Use `using { /Path }` or `using. /Path`      |
+| `behavior.preserveImportLocations`   | `true`       | Keep existing imports where they are         |
+| `behavior.sortImportsAlphabetically` | `true`       | Sort imports alphabetically                  |
+| `behavior.importGrouping`            | `"none"`     | Group digest vs local imports (see below)    |
+| `behavior.emptyLinesAfterImports`    | `1`          | Number of empty lines after imports (0-5)    |
+| `behavior.multiOptionStrategy`       | `"quickfix"` | How to handle multiple import options        |
+| `behavior.ambiguousImports`          | `{...}`      | Preferred paths for ambiguous classes        |
+| `behavior.digestImportPrefixes`      | `[...]`      | Path prefixes that identify digest imports   |
 
 **Import Grouping Options:**
 
@@ -354,6 +355,7 @@ All settings with their full paths:
     "verseAutoImports.behavior.importGrouping": "none",
     "verseAutoImports.behavior.emptyLinesAfterImports": 1,
     "verseAutoImports.behavior.multiOptionStrategy": "quickfix",
+    "verseAutoImports.behavior.digestImportPrefixes": ["/Verse.org/", "/Fortnite.com/", "/UnrealEngine.com/"],
     "verseAutoImports.quickFix.ordering": "confidence",
     "verseAutoImports.quickFix.showDescriptions": false,
     "verseAutoImports.pathConversion.enableCodeLens": true,
