@@ -21,17 +21,17 @@
 
 Stop manually managing imports in your Verse code. This extension automatically detects missing imports, provides smart suggestions, and keeps your code organized with zero configuration.
 
-![Demo of auto-importing](https://i.ibb.co/cKx35ymv/demo.gif)
+![Demo of auto-importing](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnlhamd5NTNsOHJtMHVtMjRhY2RnemQ2OGJjYWFpaG00c2M3ejdlYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/8OzEx3geM5xFE9zU1O/giphy.gif)
 
 ## Key Features
 
-- **Automatic Import Detection** - Detects missing imports in real-time as you code
-- **Multi-Option Quick Fixes** - Choose from multiple import options when VS Code finds ambiguous identifiers
-- **Full Path Conversion** - Convert relative imports to full path format with CodeLens
-- **Smart Error Recognition** - Enhanced pattern matching for various Verse compiler errors
-- **Zero Configuration** - Works perfectly out of the box with sensible defaults
-- **Import Organization** - Automatically sorts and consolidates imports with proper spacing
-- **Flexible Configuration** - Customize behavior to match your coding style
+-   **Automatic Import Detection** - Detects missing imports in real-time as you code
+-   **Multi-Option Quick Fixes** - Choose from multiple import options when VS Code finds ambiguous identifiers
+-   **Full Path Conversion** - Convert relative imports to full path format with CodeLens
+-   **Smart Error Recognition** - Enhanced pattern matching for various Verse compiler errors
+-   **Zero Configuration** - Works perfectly out of the box with sensible defaults
+-   **Import Organization** - Automatically sorts and consolidates imports with proper spacing
+-   **Flexible Configuration** - Customize behavior to match your coding style
 
 ## Quick Start
 
@@ -60,15 +60,15 @@ if(MyCharacter := Player.GetFortCharacter[]){}
 
 For detailed documentation, see the **[Wiki](https://github.com/VukeFN/verse-auto-imports/wiki)**:
 
-- **[Features](https://github.com/VukeFN/verse-auto-imports/wiki/Features)** - Complete guide to all features
-- **[Configuration](https://github.com/VukeFN/verse-auto-imports/wiki/Configuration)** - All settings and options
-- **[Troubleshooting](https://github.com/VukeFN/verse-auto-imports/wiki/Troubleshooting)** - Common issues and solutions
+-   **[Features](https://github.com/VukeFN/verse-auto-imports/wiki/Features)** - Complete guide to all features
+-   **[Configuration](https://github.com/VukeFN/verse-auto-imports/wiki/Configuration)** - All settings and options
+-   **[Troubleshooting](https://github.com/VukeFN/verse-auto-imports/wiki/Troubleshooting)** - Common issues and solutions
 
 ## Requirements
 
-- **VS Code:** 1.85.0 or newer
-- **Environment:** Working with `.verse` files in a UEFN project
-- **Language Server:** Verse language support enabled
+-   **VS Code:** 1.85.0 or newer
+-   **Environment:** Working with `.verse` files in a UEFN project
+-   **Language Server:** Verse language support enabled
 
 ## What's New
 
@@ -78,9 +78,9 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete version history.
 
 Found a bug or want to contribute? We welcome issues and pull requests!
 
-- **GitHub Repository:** [verse-auto-imports](https://github.com/VukeFN/verse-auto-imports)
-- **Issues:** Report bugs and request features
-- **Discussions:** Share ideas and get help
+-   **GitHub Repository:** [verse-auto-imports](https://github.com/VukeFN/verse-auto-imports)
+-   **Issues:** Report bugs and request features
+-   **Discussions:** Share ideas and get help
 
 ## License
 
