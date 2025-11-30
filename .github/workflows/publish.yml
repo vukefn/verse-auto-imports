@@ -25,6 +25,14 @@ jobs:
       - name: Compile TypeScript
         run: npm run compile
 
+      - name: Package extension
+        run: vsce package --out verse-auto-imports-${{ github.event.release.tag_name }}.vsix
+
+      - name: Upload VSIX to release
+        run: gh release upload ${{ github.event.release.tag_name }} verse-auto-imports-${{ github.event.release.tag_name }}.vsix
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Publish to VS Code Marketplace
         run: vsce publish -p ${{ secrets.VSCE_PAT }}
 
