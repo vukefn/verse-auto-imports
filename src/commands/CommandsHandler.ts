@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { logger } from "../utils/logger";
-import { ImportHandler } from "./importHandler";
+import { logger } from "../utils";
+import { ImportHandler } from "../imports";
 
 export class CommandsHandler {
     constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { ImportPathConverter } from "../handlers/importPathConverter";
-import { logger } from "../utils/logger";
+import { logger } from "../utils";
+import { ImportPathConverter } from "./ImportPathConverter";
 
 export class ImportCodeLensProvider implements vscode.CodeLensProvider {
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { ImportHandler } from "./importHandler";
-import { logger } from "../utils/logger";
+import { logger } from "../utils";
+import { ImportHandler } from "../imports";
 
 interface QuickPickItemWithAction extends vscode.QuickPickItem {
     action?: () => void | Promise<void>;

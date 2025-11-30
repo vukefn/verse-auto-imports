@@ -86,6 +86,10 @@ Found a bug or want to contribute? We welcome issues and pull requests!
 -   **Discord:** [Join our community](https://discord.gg/yw5cT2Yu3h)
 -   **Issues:** Report bugs and request features
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=VukeFN/verse-auto-imports&type=Date)](https://star-history.com/#VukeFN/verse-auto-imports&Date)
+
 ## License
 
 This project is licensed under a proprietary license. See the [LICENSE.md](LICENSE.md) file for full details.
