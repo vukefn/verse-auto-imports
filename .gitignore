@@ -1,9 +1,25 @@
+# Dependencies
 node_modules/
-npm-debug.log*
+
+# Build outputs
+out/
+
+# VS Code extension testing
 .vscode-test/
 .vscode/
-out/
-*.vsix
+
+# Package releases
+releases/
+
+# Development notes
+dev-notes/
+
+# Testing
+test/
+
+# Logs
+npm-debug.log*
+
+# Claude Code
 .claude
 CLAUDE.md
-tests/

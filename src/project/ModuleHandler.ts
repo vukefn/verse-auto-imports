@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ModuleInfo } from '../types/moduleInfo';
-import { log } from '../utils/logging';
+import { logger } from "../utils/logger";
 
 export class ModuleHandler {
     constructor(private outputChannel: vscode.OutputChannel) {}
@@ -23,11 +23,11 @@ export class ModuleHandler {
     }
 
     extractModuleInfo(errorMessage: string): ModuleInfo | null {
-        log(this.outputChannel, `Attempting to extract module info from error: ${errorMessage}`);
+        logger.debug("ModuleHandler", `Attempting to extract module info from error: ${errorMessage}`);
     
         const match = errorMessage.match(/Invalid access of internal module `\(([^)]+)\)([^`]+)`/);
         if (!match) {
-            log(this.outputChannel, 'No match found for module info pattern');
+            logger.debug("ModuleHandler", 'No match found for module info pattern');
             return null;
         }
 
@@ -39,7 +39,7 @@ export class ModuleHandler {
         const outerModule = pathParts[pathParts.length - 1];
         const intermediatePath = pathParts.slice(2, -1).join('/');
         
-        log(this.outputChannel, `Extracted module info:
+        logger.debug("ModuleHandler", `Extracted module info:
         Project Name: ${projectName}
         Intermediate Path: ${intermediatePath}
         Outer Module: ${outerModule}
@@ -59,16 +59,16 @@ export class ModuleHandler {
             moduleInfo.intermediatePath
         );
         
-        log(this.outputChannel, `Searching in directory: ${searchPath}`);
+        logger.debug("ModuleHandler", `Searching in directory: ${searchPath}`);
         
         try {
             const files = await fs.promises.readdir(searchPath);
             const verseFiles = files.filter(f => f.endsWith('.verse'));
-            log(this.outputChannel, `Found verse files: ${verseFiles.join(', ')}`);
+            logger.debug("ModuleHandler", `Found verse files: ${verseFiles.join(', ')}`);
             
             for (const file of verseFiles) {
                 const filePath = path.join(searchPath, file);
-                log(this.outputChannel, `Checking file: ${file}`);
+                logger.debug("ModuleHandler", `Checking file: ${file}`);
                 const content = await fs.promises.readFile(filePath, 'utf8');
                 
                 const modulePattern = new RegExp(
@@ -76,19 +76,19 @@ export class ModuleHandler {
                 );
                 
                 if (modulePattern.test(content)) {
-                    log(this.outputChannel, `Found matching module in file: ${filePath}`);
+                    logger.debug("ModuleHandler", `Found matching module in file: ${filePath}`);
                     return filePath;
                 }
             }
         } catch (error) {
-            log(this.outputChannel, `Error searching for module:\n${error}`);
+            logger.debug("ModuleHandler", `Error searching for module:\n${error}`);
         }
         
         return null;
     }
 
     async addPublicAttribute(document: vscode.TextDocument, moduleInfo: ModuleInfo): Promise<boolean> {
-        log(this.outputChannel, `Attempting to add public attribute to ${moduleInfo.internalModule} in ${document.uri.toString()}`);
+        logger.debug("ModuleHandler", `Attempting to add public attribute to ${moduleInfo.internalModule} in ${document.uri.toString()}`);
         const text = document.getText();
         
         const outerModuleMatch = text.match(
@@ -96,31 +96,31 @@ export class ModuleHandler {
         );
         
         if (!outerModuleMatch) {
-            log(this.outputChannel, `Outer module ${moduleInfo.outerModule} not found in document`);
+            logger.debug("ModuleHandler", `Outer module ${moduleInfo.outerModule} not found in document`);
             return false;
         }
-        log(this.outputChannel, `Found outer module declaration: ${outerModuleMatch[0]}`);
+        logger.debug("ModuleHandler", `Found outer module declaration: ${outerModuleMatch[0]}`);
         
         const afterOuterModule = text.slice(outerModuleMatch.index! + outerModuleMatch[0].length);
-        log(this.outputChannel, `After outer module: ${afterOuterModule}`);
-        log(this.outputChannel, `Found outer module declaration from ${outerModuleMatch.index}:${outerModuleMatch[0].length}`);
+        logger.debug("ModuleHandler", `After outer module: ${afterOuterModule}`);
+        logger.debug("ModuleHandler", `Found outer module declaration from ${outerModuleMatch.index}:${outerModuleMatch[0].length}`);
         
         const internalModuleMatch = afterOuterModule.match(
             new RegExp(`${moduleInfo.internalModule}\\s*:=\\s*module`)
         );
         
         if (!internalModuleMatch) {
-            log(this.outputChannel, `Internal module ${moduleInfo.internalModule} not found within outer module`);
+            logger.debug("ModuleHandler", `Internal module ${moduleInfo.internalModule} not found within outer module`);
             return false;
         }
-        log(this.outputChannel, `Found internal module declaration: ${internalModuleMatch[0]}`);
+        logger.debug("ModuleHandler", `Found internal module declaration: ${internalModuleMatch[0]}`);
         
         const fullPosition = outerModuleMatch.index! + outerModuleMatch[0].length + internalModuleMatch.index!;
         const editor = await vscode.window.showTextDocument(document);
         const startPosition = document.positionAt(fullPosition);
         const endPosition = document.positionAt(fullPosition + internalModuleMatch[0].length);
         
-        log(this.outputChannel, `Found internal module declaration from ${startPosition.line}:${startPosition.character} to ${endPosition.line}:${endPosition.character}`);
+        logger.debug("ModuleHandler", `Found internal module declaration from ${startPosition.line}:${startPosition.character} to ${endPosition.line}:${endPosition.character}`);
         
         await editor.edit(editBuilder => {
             const newDeclaration = `${moduleInfo.internalModule}<public> := module`;
@@ -130,7 +130,7 @@ export class ModuleHandler {
             );
         });
         
-        log(this.outputChannel, 'Successfully added public attribute');
+        logger.debug("ModuleHandler", 'Successfully added public attribute');
         return true;
     }
 }*/
