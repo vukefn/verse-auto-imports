@@ -1,6 +1,6 @@
 <div align="center">
 
-**This is project is built and maintained for free for the Verse community.**
+**This project is built and maintained for the Verse community for free.**
 **If you find it helpful, consider supporting its development!**
 
 <a href="https://www.paypal.com/donate/?hosted_button_id=SANPYNE27HHYA">

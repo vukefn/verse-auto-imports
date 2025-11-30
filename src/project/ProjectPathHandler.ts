@@ -70,8 +70,6 @@ export class ProjectPathHandler {
         // If not found in workspace root, check parent directory (in case workspace is in Content folder)
         const firstWorkspace = workspaceFolders[0];
         const parentDir = path.dirname(firstWorkspace.uri.fsPath);
-        const possibleProjectFile = path.join(parentDir, "*.uefnproject");
-
         const globPattern = new vscode.RelativePattern(vscode.Uri.file(parentDir), "*.uefnproject");
 
         try {
