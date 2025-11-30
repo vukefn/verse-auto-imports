@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import { ImportHandler } from "../handlers/importHandler";
-import { logger } from "../utils/logger";
-import { ImportSuggestion } from "../types/moduleInfo";
+import { logger } from "../utils";
+import { ImportSuggestion } from "../types";
+import { ImportHandler } from "./ImportHandler";
 
 export class ImportCodeActionProvider implements vscode.CodeActionProvider {
     constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}

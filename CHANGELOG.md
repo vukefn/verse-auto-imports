@@ -4,7 +4,7 @@ All notable changes to the "Verse Auto Imports" extension will be documented in 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.6.0] - Unreleased
+## [0.6.0] - 2025-11-30
 
 ### Added
 
@@ -95,6 +95,10 @@ Settings have been reorganized with new names (old settings will need to be upda
 
 ### Improved
 
+-   **Code Architecture Refactoring**: Reorganized codebase for better maintainability
+    -   Feature-based folder structure (imports/, diagnostics/, commands/, ui/, project/, services/)
+    -   Barrel files (index.ts) for cleaner imports throughout the codebase
+    -   Split ImportHandler into focused single-purpose classes (ImportFormatter, ImportSuggestionExtractor, ImportDocumentEditor)
 -   **Smart Snooze Cancellation**: Snooze is now automatically cancelled when auto imports are manually enabled mid-snooze, keeping the UI state consistent with user intent
 -   **Faster CodeLens Updates**: Optimized CodeLens refresh performance by eliminating redundant refresh calls
 -   Better Timer Management: Enhanced diagnostic handler with proper debouncing mechanism

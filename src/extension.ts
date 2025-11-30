@@ -1,13 +1,10 @@
 import * as vscode from "vscode";
-import { DiagnosticsHandler } from "./handlers/diagnosticsHandler";
-import { ImportHandler } from "./handlers/importHandler";
-import { CommandsHandler } from "./handlers/commandsHandler";
-import { StatusBarHandler } from "./handlers/statusBarHandler";
-import { ProjectPathHandler } from "./handlers/projectPathHandler";
-import { ImportPathConverter } from "./handlers/importPathConverter";
-import { logger } from "./utils/logger";
-import { ImportCodeActionProvider } from "./providers/importCodeActionProvider";
-import { ImportCodeLensProvider } from "./providers/importCodeLensProvider";
+import { logger } from "./utils";
+import { DiagnosticsHandler } from "./diagnostics";
+import { ImportHandler, ImportPathConverter, ImportCodeActionProvider, ImportCodeLensProvider } from "./imports";
+import { CommandsHandler } from "./commands";
+import { StatusBarHandler } from "./ui";
+import { ProjectPathHandler } from "./project";
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the logger
