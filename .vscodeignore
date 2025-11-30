@@ -1,0 +1,37 @@
+# Source files (compiled output in out/ is included)
+src/**
+**/*.ts
+!out/**
+
+# Development files
+.vscode/**
+.github/**
+.claude/**
+CLAUDE.md
+tsconfig.json
+
+# Git
+.git/**
+.gitignore
+
+# Dependencies and build
+node_modules/**
+package-lock.json
+
+# Test files
+test/**
+**/*.test.js
+**/*.spec.js
+vitest.config.*
+
+# Development artifacts
+*.vsix
+dev-notes/**
+releases/**
+
+# Logs
+npm-debug.log*
+*.log
+
+# Documentation (README and CHANGELOG are kept)
+docs/**
