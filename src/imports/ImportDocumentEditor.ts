@@ -502,15 +502,25 @@ export class ImportDocumentEditor {
                     const nextLine = lines[i + 1];
                     const pathMatch = nextLine.match(/^\s+(.+)/);
                     if (pathMatch) {
-                        const path = pathMatch[1].trim();
-                        const newStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
+                        const importPath = pathMatch[1].trim();
+                        const newStatement = this.formatter.formatImportStatement(importPath, preferDotSyntax);
                         // Preserve indentation of the original 'using:' line
                         const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
 
-                        // We need to replace both lines with a single line
-                        // For now, just mark them for conversion
-                        logger.trace("ImportDocumentEditor", `Found multi-line import at lines ${i + 1}-${i + 2}, converting to ${preferredSyntax}`);
-                        // This is more complex - we'll handle it in the apply phase
+                        // Replace the 'using:' line with the converted single-line import
+                        edits.push({
+                            line: i,
+                            oldText: line,
+                            newText: leadingWhitespace + newStatement,
+                        });
+                        // Mark the indented path line for removal (replace with empty)
+                        edits.push({
+                            line: i + 1,
+                            oldText: nextLine,
+                            newText: "",
+                        });
+                        logger.trace("ImportDocumentEditor", `Converting multi-line import at lines ${i + 1}-${i + 2} to ${preferredSyntax}`);
+                        i++; // Skip the next line since we've handled it
                     }
                 }
             }
