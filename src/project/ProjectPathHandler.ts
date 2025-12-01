@@ -67,36 +67,47 @@ export class ProjectPathHandler {
             }
         }
 
-        // If not found in workspace root, check parent directory (in case workspace is in Content folder)
         const firstWorkspace = workspaceFolders[0];
-        const parentDir = path.dirname(firstWorkspace.uri.fsPath);
-        const globPattern = new vscode.RelativePattern(vscode.Uri.file(parentDir), "*.uefnproject");
+        let currentDir = firstWorkspace.uri.fsPath;
+        const maxLevels = 5;
 
-        try {
-            const files = await vscode.workspace.findFiles(globPattern, null, 1);
-            if (files.length > 0) {
-                const projectFilePath = files[0].fsPath;
-                logger.debug("ProjectPathHandler", `Found .uefnproject file in parent directory: ${projectFilePath}`);
+        for (let level = 0; level < maxLevels; level++) {
+            const parentDir = path.dirname(currentDir);
 
-                const content = fs.readFileSync(projectFilePath, "utf8");
-                this.cachedProjectFile = JSON.parse(content) as UEFNProjectFile;
-
-                if (this.cachedProjectFile.bindings?.projectVersePath) {
-                    this.projectVersePath = this.cachedProjectFile.bindings.projectVersePath;
-                    logger.debug("ProjectPathHandler", `Project Verse path: ${this.projectVersePath}`);
-                }
-
-                if (this.cachedProjectFile.title) {
-                    this.projectName = this.cachedProjectFile.title;
-                }
-
-                return this.cachedProjectFile;
+            if (parentDir === currentDir) {
+                break;
             }
-        } catch (error) {
-            logger.debug("ProjectPathHandler", `Error searching parent directory: ${error}`);
+
+            try {
+                const globPattern = new vscode.RelativePattern(vscode.Uri.file(parentDir), "*.uefnproject");
+                const files = await vscode.workspace.findFiles(globPattern, null, 1);
+
+                if (files.length > 0) {
+                    const projectFilePath = files[0].fsPath;
+                    logger.debug("ProjectPathHandler", `Found .uefnproject file in parent directory (${level + 1} level(s) up): ${projectFilePath}`);
+
+                    const content = fs.readFileSync(projectFilePath, "utf8");
+                    this.cachedProjectFile = JSON.parse(content) as UEFNProjectFile;
+
+                    if (this.cachedProjectFile.bindings?.projectVersePath) {
+                        this.projectVersePath = this.cachedProjectFile.bindings.projectVersePath;
+                        logger.debug("ProjectPathHandler", `Project Verse path: ${this.projectVersePath}`);
+                    }
+
+                    if (this.cachedProjectFile.title) {
+                        this.projectName = this.cachedProjectFile.title;
+                    }
+
+                    return this.cachedProjectFile;
+                }
+            } catch (error) {
+                logger.debug("ProjectPathHandler", `Error searching parent directory at level ${level + 1}: ${error}`);
+            }
+
+            currentDir = parentDir;
         }
 
-        logger.debug("ProjectPathHandler", "No .uefnproject file found in workspace or parent directory");
+        logger.debug("ProjectPathHandler", "No .uefnproject file found in workspace or parent directories (checked up to 5 levels)");
         return null;
     }
 
