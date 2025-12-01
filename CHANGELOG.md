@@ -4,6 +4,14 @@ All notable changes to the "Verse Auto Imports" extension will be documented in 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.6.1] - 2025-12-01
+
+### Fixed
+
+-   **Old UEFN Project Structure Support**: Fixed `.uefnproject` file detection for legacy UEFN projects where the Content folder is nested under `Plugins/<ProjectName>/Content`
+    -   Now searches up to 5 parent directories to find the project file
+    -   Supports both old structure (`Plugins/<ProjectName>/Content`) and new structure (`Content` directly under project root)
+
 ## [0.6.0] - 2025-11-30
 
 ### Added
