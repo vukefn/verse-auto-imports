@@ -251,7 +251,7 @@
     },
     "devDependencies": {
         "@types/vscode": "^1.85.0",
-        "@types/node": "^25.0.9",
+        "@types/node": "^25.0.10",
         "typescript": "^5.9.3"
     },
     "publisher": "vukefn",
