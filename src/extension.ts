@@ -5,6 +5,7 @@ import { ImportHandler, ImportPathConverter, ImportCodeActionProvider, ImportCod
 import { CommandsHandler } from "./commands";
 import { StatusBarHandler } from "./ui";
 import { ProjectPathHandler } from "./project";
+import { AssetsDigestParser } from "./services";
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the logger
@@ -31,13 +32,19 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     logger.debug("Extension", "Creating handlers");
-    const importHandler = new ImportHandler(outputChannel);
+    const projectPathHandler = new ProjectPathHandler(outputChannel);
+    const assetsDigestParser = new AssetsDigestParser(outputChannel, projectPathHandler);
+    const importHandler = new ImportHandler(outputChannel, assetsDigestParser);
     const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
     const commandsHandler = new CommandsHandler(outputChannel, importHandler);
     const statusBarHandler = new StatusBarHandler(outputChannel, importHandler);
-    const projectPathHandler = new ProjectPathHandler(outputChannel);
     const importPathConverter = new ImportPathConverter(outputChannel);
     const importCodeLensProvider = new ImportCodeLensProvider(outputChannel);
+
+    // Initialize assets digest cache asynchronously
+    assetsDigestParser.ensureCachePopulated().catch((err) => {
+        logger.warn("Extension", `Failed to initialize assets digest cache: ${err}`);
+    });
 
     // Handle backward compatibility: use legacy setting if configured, otherwise use new setting
     const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
@@ -54,6 +61,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Set up file watcher for project file changes
     context.subscriptions.push(projectPathHandler.setupFileWatcher());
+
+    // Set up file watcher for Assets.digest.verse changes
+    context.subscriptions.push(assetsDigestParser.setupFileWatcher());
 
     context.subscriptions.push(
         vscode.commands.registerCommand("verseAutoImports.addSingleImport", async (document: vscode.TextDocument, importStatement: string) => {
