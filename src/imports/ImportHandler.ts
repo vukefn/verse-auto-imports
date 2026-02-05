@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { ImportSuggestion } from "../types";
+import { AssetsDigestParser } from "../services";
 import { ImportFormatter } from "./ImportFormatter";
 import { ImportSuggestionExtractor } from "./ImportSuggestionExtractor";
 import { ImportDocumentEditor } from "./ImportDocumentEditor";
@@ -13,9 +14,9 @@ export class ImportHandler {
     private suggestionExtractor: ImportSuggestionExtractor;
     private documentEditor: ImportDocumentEditor;
 
-    constructor(private outputChannel: vscode.OutputChannel) {
+    constructor(private outputChannel: vscode.OutputChannel, assetsDigestParser?: AssetsDigestParser) {
         this.formatter = new ImportFormatter();
-        this.suggestionExtractor = new ImportSuggestionExtractor(outputChannel, this.formatter);
+        this.suggestionExtractor = new ImportSuggestionExtractor(outputChannel, this.formatter, assetsDigestParser);
         this.documentEditor = new ImportDocumentEditor(outputChannel, this.formatter);
     }
 
