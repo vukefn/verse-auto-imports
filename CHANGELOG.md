@@ -4,6 +4,16 @@ All notable changes to the "Verse Auto Imports" extension will be documented in 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.6.2] - 2026-02-05
+
+### Fixed
+
+-   **Asset Class Name Detection**: Fixed incorrect import suggestions when using project assets
+    -   Previously, errors like "Did you mean Ake.UI.UI_UMG.ClassName" would incorrectly suggest `using { Ake.UI.UI_UMG }` (including the class name in the import)
+    -   Now correctly suggests `using { Ake.UI }` by parsing the project's `Assets.digest.verse` file to identify class names
+    -   Automatically detects asset class names from `Assets.digest.verse` located in your UEFN VerseProject folder
+    -   File watcher automatically refreshes class name cache when `Assets.digest.verse` changes
+
 ## [0.6.1] - 2025-12-01
 
 ### Fixed
