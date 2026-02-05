@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportSuggestion, ImportSuggestionSource, ImportConfidence } from "../types";
-import { DigestParser } from "../services";
+import { DigestParser, AssetsDigestParser } from "../services";
 import { ImportFormatter } from "./ImportFormatter";
 
 /**
@@ -10,10 +10,54 @@ import { ImportFormatter } from "./ImportFormatter";
 export class ImportSuggestionExtractor {
     private digestParser: DigestParser;
     private formatter: ImportFormatter;
+    private assetsDigestParser: AssetsDigestParser | null;
 
-    constructor(outputChannel: vscode.OutputChannel, formatter: ImportFormatter) {
+    constructor(outputChannel: vscode.OutputChannel, formatter: ImportFormatter, assetsDigestParser?: AssetsDigestParser) {
         this.digestParser = new DigestParser(outputChannel);
         this.formatter = formatter;
+        this.assetsDigestParser = assetsDigestParser || null;
+    }
+
+    /**
+     * Finds the correct module path from a fully qualified name by checking
+     * if any intermediate segments are known asset class names.
+     *
+     * @param fullName The fully qualified name (e.g., "Ake.UI.UI_UMG.ClassName")
+     * @returns The correct module path and class name, or null if invalid
+     */
+    private findCorrectModulePath(fullName: string): { modulePath: string; className: string } | null {
+        const parts = fullName.split(".");
+        if (parts.length < 2) {
+            return null;
+        }
+
+        // Check from second-to-last segment backwards to find asset class names
+        // The last segment is always assumed to be the actual identifier being referenced
+        for (let i = parts.length - 2; i > 0; i--) {
+            const segment = parts[i];
+
+            // Check if this segment is a known asset class name
+            if (this.assetsDigestParser?.isAssetClassName(segment)) {
+                // This segment is a class, so the module path is everything before it
+                const modulePath = parts.slice(0, i).join(".");
+                const className = parts[parts.length - 1];
+
+                logger.debug(
+                    "ImportSuggestionExtractor",
+                    `Found asset class '${segment}' in path '${fullName}'. Module: ${modulePath}, Class: ${className}`
+                );
+
+                return { modulePath, className };
+            }
+        }
+
+        // No asset class found in intermediate segments - use default behavior
+        // (last segment is the class, everything else is the module)
+        const lastDotIndex = fullName.lastIndexOf(".");
+        return {
+            modulePath: fullName.substring(0, lastDotIndex),
+            className: fullName.substring(lastDotIndex + 1),
+        };
     }
 
     /**
@@ -184,16 +228,14 @@ export class ImportSuggestionExtractor {
 
                     suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `Import from ${option}`));
                 } else {
-                    // Fully qualified class name (e.g., "Module.ClassName")
-                    const lastDotIndex = option.lastIndexOf(".");
-                    if (lastDotIndex > 0) {
-                        const namespace = option.substring(0, lastDotIndex);
-                        const className = option.substring(lastDotIndex + 1);
-                        const importStatement = this.formatter.formatImportStatement(namespace, preferDotSyntax);
+                    // Fully qualified class name (e.g., "Module.ClassName" or "Module.AssetClass.Member")
+                    const result = this.findCorrectModulePath(option);
+                    if (result && result.modulePath) {
+                        const importStatement = this.formatter.formatImportStatement(result.modulePath, preferDotSyntax);
 
-                        logger.debug("ImportSuggestionExtractor", `Multi-option: ${option} -> namespace: ${namespace}, class: ${className}`);
+                        logger.debug("ImportSuggestionExtractor", `Multi-option: ${option} -> namespace: ${result.modulePath}, class: ${result.className}`);
 
-                        suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `${className} from ${namespace}`));
+                        suggestions.push(this.createImportSuggestion(importStatement, "error_message", "high", `${result.className} from ${result.modulePath}`));
                     } else {
                         // No namespace detected, treat as simple reference
                         const importStatement = this.formatter.formatImportStatement(option, preferDotSyntax);
@@ -254,12 +296,11 @@ export class ImportSuggestionExtractor {
         match = errorMessage.match(/Did you mean ([^`\n]+)/);
         if (match) {
             const fullName = match[1].trim();
-            const lastDotIndex = fullName.lastIndexOf(".");
-            logger.trace("ImportSuggestionExtractor", `Last dot index: ${lastDotIndex} for ${fullName}`);
-            if (lastDotIndex > 0) {
-                const namespace = fullName.substring(0, lastDotIndex);
-                const importStatement = this.formatter.formatImportStatement(namespace, preferDotSyntax);
-                logger.debug("ImportSuggestionExtractor", `Inferred import statement: ${importStatement}`);
+            const result = this.findCorrectModulePath(fullName);
+            logger.trace("ImportSuggestionExtractor", `Finding module path for: ${fullName}`);
+            if (result && result.modulePath) {
+                const importStatement = this.formatter.formatImportStatement(result.modulePath, preferDotSyntax);
+                logger.debug("ImportSuggestionExtractor", `Inferred import statement: ${importStatement} (class: ${result.className})`);
                 return [this.createImportSuggestion(importStatement, "error_message", "high", `Inferred import for ${fullName}`)];
             }
         }
@@ -343,18 +384,17 @@ export class ImportSuggestionExtractor {
             const didYouMeanMatch = errorMessage.match(/Did you mean ([^`\n]+)/);
             if (didYouMeanMatch) {
                 const fullName = didYouMeanMatch[1].trim();
-                const lastDotIndex = fullName.lastIndexOf(".");
-                if (lastDotIndex > 0) {
-                    const namespace = fullName.substring(0, lastDotIndex);
+                const result = this.findCorrectModulePath(fullName);
+                if (result && result.modulePath) {
                     // Check if it's an absolute path or relative module
-                    if (namespace.startsWith("/")) {
-                        suggestedPaths.add(namespace);
+                    if (result.modulePath.startsWith("/")) {
+                        suggestedPaths.add(result.modulePath);
                     } else {
                         // For relative modules, we might need to handle them differently
                         // For now, add as-is
-                        suggestedPaths.add(namespace);
+                        suggestedPaths.add(result.modulePath);
                     }
-                    logger.debug("ImportSuggestionExtractor", `Found path from 'did you mean': ${namespace}`);
+                    logger.debug("ImportSuggestionExtractor", `Found path from 'did you mean': ${result.modulePath}`);
                 }
             }
         }
