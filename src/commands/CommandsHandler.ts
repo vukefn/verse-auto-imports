@@ -1,11 +1,9 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportHandler } from "../imports";
-import { ProjectPathCache, DigestParser } from "../services";
+import { ProjectPathCache } from "../services";
 
 export class CommandsHandler {
-    private digestParser: DigestParser | null = null;
-
     constructor(
         private outputChannel: vscode.OutputChannel,
         private importHandler: ImportHandler,

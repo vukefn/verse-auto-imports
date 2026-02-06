@@ -6,14 +6,12 @@ import { ImportHandler } from "../imports";
 
 export class DiagnosticsHandler {
     private importHandler: ImportHandler;
-    // private moduleHandler: ModuleHandler;
     private processingDocuments: Set<string> = new Set();
     private pendingTimers: Map<string, NodeJS.Timeout> = new Map();
     private delayMs: number = 1000;
 
     constructor(private outputChannel: vscode.OutputChannel) {
         this.importHandler = new ImportHandler(outputChannel);
-        // this.moduleHandler = new ModuleHandler(outputChannel);
         logger.debug("DiagnosticsHandler", `Initialized with ${this.delayMs}ms delay`);
     }
 
@@ -90,9 +88,6 @@ export class DiagnosticsHandler {
                     } else {
                         logger.debug("DiagnosticsHandler", `Low confidence or auto-import disabled - will use quick fix for: ${suggestion.importStatement}`);
                     }
-
-                    // Note: ModuleHandler logic would go here
-                    // await this.moduleHandler.handleModuleError(diagnostic, document);
                 }
 
                 // Apply auto-imports if any were collected
