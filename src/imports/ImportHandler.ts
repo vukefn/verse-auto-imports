@@ -14,9 +14,18 @@ export class ImportHandler {
     private suggestionExtractor: ImportSuggestionExtractor;
     private documentEditor: ImportDocumentEditor;
 
-    constructor(private outputChannel: vscode.OutputChannel, assetsDigestParser?: AssetsDigestParser) {
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        assetsDigestParser?: AssetsDigestParser,
+        extensionContext?: vscode.ExtensionContext
+    ) {
         this.formatter = new ImportFormatter();
-        this.suggestionExtractor = new ImportSuggestionExtractor(outputChannel, this.formatter, assetsDigestParser);
+        this.suggestionExtractor = new ImportSuggestionExtractor(
+            outputChannel,
+            this.formatter,
+            assetsDigestParser,
+            extensionContext
+        );
         this.documentEditor = new ImportDocumentEditor(outputChannel, this.formatter);
     }
 

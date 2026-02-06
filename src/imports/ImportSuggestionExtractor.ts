@@ -12,8 +12,13 @@ export class ImportSuggestionExtractor {
     private formatter: ImportFormatter;
     private assetsDigestParser: AssetsDigestParser | null;
 
-    constructor(outputChannel: vscode.OutputChannel, formatter: ImportFormatter, assetsDigestParser?: AssetsDigestParser) {
-        this.digestParser = new DigestParser(outputChannel);
+    constructor(
+        outputChannel: vscode.OutputChannel,
+        formatter: ImportFormatter,
+        assetsDigestParser?: AssetsDigestParser,
+        extensionContext?: vscode.ExtensionContext
+    ) {
+        this.digestParser = new DigestParser(outputChannel, extensionContext);
         this.formatter = formatter;
         this.assetsDigestParser = assetsDigestParser || null;
     }

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { logger } from "../utils";
 import { ProjectPathHandler } from "../project";
+import { ProjectPathCache } from "../services";
 
 interface ImportConversionResult {
     originalImport: string;
@@ -13,9 +14,21 @@ interface ImportConversionResult {
 
 export class ImportPathConverter {
     private projectPathHandler: ProjectPathHandler;
+    private projectPathCache: ProjectPathCache | null = null;
 
-    constructor(private outputChannel: vscode.OutputChannel) {
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        projectPathCache?: ProjectPathCache
+    ) {
         this.projectPathHandler = new ProjectPathHandler(outputChannel);
+        this.projectPathCache = projectPathCache || null;
+    }
+
+    /**
+     * Set the project path cache for faster lookups.
+     */
+    setProjectPathCache(cache: ProjectPathCache): void {
+        this.projectPathCache = cache;
     }
 
     /**
@@ -117,6 +130,16 @@ export class ImportPathConverter {
 
         const pathSegments = modulePath.split("/").filter((s) => s);
         const moduleName = pathSegments[pathSegments.length - 1];
+
+        // Try cache lookup first for faster results
+        if (this.projectPathCache) {
+            const cachedLocations = this.projectPathCache.lookupModulePath(modulePath);
+            if (cachedLocations.length > 0) {
+                logger.debug("ImportPathConverter", `Found ${cachedLocations.length} locations from cache for '${modulePath}'`);
+                return cachedLocations;
+            }
+            logger.debug("ImportPathConverter", `No cache hit for '${modulePath}', falling back to filesystem scan`);
+        }
 
         // Phase 1: Search for folders (implicit modules) in Content folder
         try {

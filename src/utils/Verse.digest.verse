@@ -2,7 +2,7 @@
 #################################################
 # Generated Digest of Verse API
 # DO NOT modify this manually!
-# Generated from build: ++Fortnite+Release-37.20-CL-45679054
+# Generated from build: ++Fortnite+Release-39.40-CL-50341043
 #################################################
 
 SceneGraph<public> := module:
@@ -48,7 +48,7 @@ SceneGraph<public> := module:
         # Succeeds if the component is enabled, fails if it’s disabled.
         IsEnabled<native><override>()<transacts><decides>:void
 
-        # Event fires when an a successful interaction starts. Sends the interacting agent. InteractDuration at or below 0 makes this event identical to InteractSucceededEvent.
+        # Event fires when a successful interaction starts. Sends the interacting agent. InteractDuration at or below 0 makes this event identical to InteractSucceededEvent.
         StartedEvent<native><public>:listenable(agent) = external {}
 
         # Event fires when an interaction has completed successfully. Sends the formerly interacting agent. InteractDuration at or below 0 makes this event identical to InteractStartedEvent.
@@ -169,8 +169,8 @@ SceneGraph<public> := module:
     # The order of the returned components is unspecified and subject to change.
     (InEntity:entity).FindAncestorComponents<native><public>(component_type:castable_subtype(component))<transacts>:generator(component_type)
     using {/Verse.org/Simulation/Tags}
-    using {/Verse.org/Colors}
     using {/Verse.org/SpatialMath}
+    using {/Verse.org/Colors}
     # A `capsule_light_component` emits light in all directions into the scene from a capsule shaped source with a specified radius and length. A radius and length of 0 makes it a point light. You can use these
     # to simulate any kind of light sources that emit in all directions and need an elongated source shape, such as a long light bulb.
     capsule_light_component<native><public> := class<final>(light_component):
@@ -200,6 +200,8 @@ SceneGraph<public> := module:
     # Module import path: /Verse.org/SceneGraph/KeyframedMovement
     # Animate Scene Graph entities with keyframes.
     KeyframedMovement<public> := module:
+        using {/Verse.org/Simulation}
+        using {/Verse.org/SpatialMath}
         # Base class for an animation easing function.
         easing_function<native><public> := class<abstract><computes><epic_internal>:
             Evaluate<native><public>(Input:float):float
@@ -451,6 +453,14 @@ SceneGraph<public> := module:
     # Find all objects in the scene that would intersect Volume if they were swept from GlobalTransform along the Displacement vector Hits are sorted by hit distance. NOTE: This entity defines the context(scene) for the query but does not otherwise take part in the sweep.
     (Entity:entity).FindSweepHits<public>(Displacement:(/Verse.org/SpatialMath:)vector3, StartGlobalTransform:(/Verse.org/SpatialMath:)transform, Volume:collision_volume)<transacts>:generator(sweep_hit) = external {}
 
+    @available {MinUploadedAtFNVersion := 3800}
+    # Assign the players that this entity will be presented to. False = presentable to everyone, array = presentable to no one.
+    (Entity:entity).SetPresentableToPlayers<native><public>(Players:?[]player):void
+
+    @available {MinUploadedAtFNVersion := 3800}
+    # Get the players that this entity is currently be presented to. False = presentable to everyone, array = presentable to no one.
+    (Entity:entity).GetPresentableToPlayers<native><public>()<transacts>:?[]player
+
     # A `rect_light_component` emits light into the scene from a rectangular plane with a specified width and height. You can use these
     # to simulate any kind of light sources that have rectangular areas, such as televisions or monitor screens, overhead lighting
     # fixtures, or wall sconces.
@@ -555,15 +565,15 @@ SceneGraph<public> := module:
         # Removes a tag from this component. Returns `true` if the tag was present before being removed.
         RemoveTag<native><public>(TagToRemove:tag)<transacts>:logic
 
-    @experimental
     @available {MinUploadedAtFNVersion := 2930}
+    @experimental
     # Finds all descendant entities including `InEntity` with `Tag` present in their `tag_component`.
     # When querying from the simulation entity, the simulation entity itself is not included in the results.
     # The order of the returned entities is unspecified and subject to change.
     (InEntity:entity).FindDescendantEntitiesWithTag<native><public>(Tag:tag)<transacts>:generator(entity)
 
-    @experimental
     @available {MinUploadedAtFNVersion := 2930}
+    @experimental
     # Finds all ancestor entities to `InEntity` with `Tag` present in their `tag_component`.
     # The order of the returned entities is unspecified and subject to change.
     (InEntity:entity).FindAncestorEntitiesWithTag<native><public>(Tag:tag)<transacts>:generator(entity)
@@ -838,8 +848,8 @@ SceneGraph<public> := module:
         var<private> TickEvents<protected>:tick_events = external {}
 
         @experimental
-        # Respond to an event being propagated through the scene graph. Returns if the event is consumed, in which case the event will not be passed to the next entity, depending on how the event is being sent through the hierarchy.
-        OnReceive<native><native_callable><public>(SceneEvent:scene_event):logic
+        # Send a scene event to this component.  Return true to consume the event and halt propogation.
+        SendDown<native><native_callable><public>(SceneEvent:scene_event):logic
 
     @experimental
     # An event which can be sent through the scene graph.
@@ -904,16 +914,12 @@ SceneGraph<public> := module:
         AddComponents<native><final><public>(Components:[]component):void
 
         @experimental
-        # Send a scene event to only this entity. Returns true if the event was consumed.
-        SendDirect<final><native><public>(SceneEvent:scene_event):logic
+        # Send a scene event to this entity and then up the hierarchy. First, SendDown will be invoked on each component on this entity. Next, SendUp will be invoked on this entity's parent. Consuming the event at any point will halt propogation. Returns true if any participant consumed the event.
+        SendUp<native><native_callable><public>(SceneEvent:scene_event):logic
 
         @experimental
-        # Send a scene event to this entity and its ancestors. Events do not propagate beyond the Simulation Entity. OnReceive will be invoked for each entity. Consuming the event will halt propagation to the next ancestor. Returns true if the event was consumed.
-        SendUp<final><native><public>(SceneEvent:scene_event):logic
-
-        @experimental
-        # Send a scene event to this entity and all of its descendants. OnReceive will be invoked for each entity. Consuming the event at any entity will halt propagation down that subtree. Entities are traversed in breadth-first order, i.e. each layer is evaluated before moving deeper. Returns true if the event was consumed.
-        SendDown<final><native><public>(SceneEvent:scene_event):logic
+        # Send a scene event to this entity and then down the hierarchy. First, SendDown will be invoked on each component on this entity. Next, SendDown will be invoked on each child entity.  Consuming the event at any point will halt propogation. Returns true if any participant consumed the event.
+        SendDown<native><native_callable><public>(SceneEvent:scene_event):logic
 
     # Reference type to editor defined prefab. Only generated digest code should reference this type.
     entity_prefab<native><public> := class<computes><epic_internal>:
@@ -948,19 +954,11 @@ SceneGraph<public> := module:
         # Current transform of the entity, globally referenced. Any value set at construction will be overrridden with the calculation from the Local Transform
         var GlobalTransform<public>:(/Verse.org/SpatialMath:)transform = external {}
 
-        var<private> GlobalTransformInternal<native><private>:(/Verse.org/SpatialMath:)transform = external {}
-
         # LocalTransform to its parent/origin
         var LocalTransform<public>:(/Verse.org/SpatialMath:)transform = external {}
 
-        @editable {}
-        var<private> LocalTransformInternal<native><private>:(/Verse.org/SpatialMath:)transform = external {}
-
         # alternate origin than the default parent entity
         var Origin<public>:?origin = external {}
-
-        @editable {}
-        var<private> OriginInternal<native><private>:?origin = external {}
 
     # Returns the global transform of this entity, in the case the entity does not have a transform_component it will return the transform of the first parent that has a transform
     (InEntity:entity).GetGlobalTransform<native><public>()<transacts>:(/Verse.org/SpatialMath:)transform
@@ -982,15 +980,29 @@ SceneGraph<public> := module:
 
     # Resets the origin of this entity, which will now default to its parent
     (InEntity:entity).ResetOrigin<native><public>()<transacts>:void
-    # Users to subscribe to, or await on, a DeltaTime based callback from one of the phases in a component's `TickEvents` object.'
-    # 
-    # IMPORTANT: You must keep a pointer on your component to the returned `cancelable`. Otherwise the GC will eventually clean up your subscription and your callback will stop being invoked.
+    # Users to subscribe to, or await on, a DeltaTime based callback from one of the phases in a component's `TickEvents` object.
     execution_listenable<native><public> := class<epic_internal>(listenable(float)):
         # Suspends the current task until resumed by a matching call to `signalable.Signal`. Returns the event `payload`.
         Await<native><override>()<suspends>:float
 
         # Subscribe a callback function to this TickEvent phase. The input parameter to your function (DeltaTime) is the time that has passed between the last update and the current update.
         Subscribe<native><override>(Callback:type {_(:float):void})<transacts>:cancelable
+
+Presentation<public> := module:
+    using {/Verse.org/Simulation}
+    # Interface that provides descriptive names or text.
+    has_description<public> := interface:
+        @editable
+        # Name.
+        var<protected> Name<public>:message
+
+        @editable
+        # Full description.
+        var<protected> Description<public>:message
+
+        @editable
+        # Short description with only the essential information.
+        var<protected> ShortDescription<public>:message
 
 Simulation<public> := module:
     # Module import path: /Verse.org/Simulation/Tags
@@ -1054,6 +1066,8 @@ Simulation<public> := module:
     @attribscope_data
     @customattribhandler
     editable_slider<public>(t:type) := class<final><computes>(editable):
+        (/Verse.org/Simulation/editable_slider:)Simulation_editable_slider_Variance<private>:?type {_():tuple(t)} = external {}
+
         # The minimum value of the editor slider.
         MinValue<public>:?t = external {}
 
@@ -1076,6 +1090,8 @@ Simulation<public> := module:
     @attribscope_data
     @customattribhandler
     editable_number<public>(t:type) := class<final><computes>(editable):
+        (/Verse.org/Simulation/editable_number:)Simulation_editable_number_Variance<private>:?type {_():tuple(t)} = external {}
+
         # The minimum value the editor allows.
         MinValue<public>:?t = external {}
 
@@ -1090,6 +1106,8 @@ Simulation<public> := module:
     @attribscope_data
     @customattribhandler
     editable_vector_slider<public>(t:type) := class<final><computes>(editable):
+        (/Verse.org/Simulation/editable_vector_slider:)Simulation_editable_vector_slider_Variance<private>:?type {_():tuple(t)} = external {}
+
         # Show the button that allows locking the vector aspect ratio.
         ShowPreserveRatio<public>:logic = external {}
 
@@ -1118,6 +1136,8 @@ Simulation<public> := module:
     @attribscope_data
     @customattribhandler
     editable_vector_number<public>(t:type) := class<final><computes>(editable):
+        (/Verse.org/Simulation/editable_vector_number:)Simulation_editable_vector_number_Variance<private>:?type {_():tuple(t)} = external {}
+
         # Show the button that allows locking the vector aspect ratio.
         ShowPreserveRatio<public>:logic = external {}
 
@@ -1142,16 +1162,7 @@ Simulation<public> := module:
         AllowReordering<public>:logic = external {}
 
 
-    agent<native><public> := class<unique><epic_internal>:
-
-    localizable_agent<native><epic_internal> := class(localizable_value):
-
-    (/Verse.org/Simulation:)MakeLocalizableValue<epic_internal>(Agent:agent):localizable_agent = external {}
-
-    player<native><public> := class<unique><persistent><module_scoped_var_weak_map_key><epic_internal>(agent):
-        # Succeeds when this `player` may be used as a module-scoped `var` `weak_map` key. This coincides with the corresponding player having joined the game and not yet left. Using a `player` as a module-scope `var` `weak_map` key when this method fails results in a runtime error.
-        IsActive<native><public>()<reads><decides>:void
-
+    using {/Verse.org/Native}
     # Type for which there is a single instance per round.  Use `GetSession` to get the current round's `session` instance. May be used with `weak_map` to implement global variables.
     # Note: may be changed in a future release to a single instance per game. Round-local behavior should not be relied upon.
     session<native><public> := class<unique><module_scoped_var_weak_map_key><epic_internal>:
@@ -1159,6 +1170,18 @@ Simulation<public> := module:
     # Returns the `session` corresponding to the current round.  The result can be used with `weak_map` to implement global variables.
     # Note: may be changed in a future release to return a single instance per game. Round-local behavior should not be relied upon.
     GetSession<native><public>()<reads>:session
+
+    # Specifies what type of environment the current session is in.
+    session_environment<native><public> := enum:
+        # The current session is in an Edit environment for an experience, such as a session started within UEFN.
+        Edit
+        # The current session is in a Private environment for an experience, such as a playtest.
+        Private
+        # The current session is in a Live environment for an experience.
+        Live
+
+    @available {MinUploadedAtFNVersion := 3800}
+    (Session:session).Environment<native><public>()<transacts>:session_environment
 
     # Waits specified number of seconds and then resumes. If `Seconds` = 0.0 then it waits until next tick/frame/update. If `Seconds` = Inf then it waits forever and only calls back if canceled - such as via `race`. If `Seconds` < 0.0 then it completes immediately and does not yield to other aysnc expressions.
     # Waiting until the next update (0.0) is especially useful in a loop of a coroutine that needs to do some work every update and this yields to other coroutines so that it doesn't hog a processor's resources.
@@ -1171,9 +1194,21 @@ Simulation<public> := module:
 
     team<native><public> := class<unique><epic_internal>:
 
-using {/Verse.org/Simulation}
+    using {/Verse.org/SceneGraph}
+    agent<native><public> := class<unique><epic_internal>(entity):
+
+    localizable_agent<native><epic_internal> := class(localizable_value):
+
+    (/Verse.org/Simulation:)MakeLocalizableValue<epic_internal>(Agent:agent):localizable_agent = external {}
+
+    player<native><public> := class<unique><persistent><module_scoped_var_weak_map_key><epic_internal>(agent):
+        # Succeeds when this `player` may be used as a module-scoped `var` `weak_map` key. This coincides with the corresponding player having joined the game and not yet left. Using a `player` as a module-scope `var` `weak_map` key when this method fails results in a runtime error.
+        IsActive<native><public>()<reads><decides>:void
+
+
 # Module import path: /Verse.org/Assets
 Assets<public> := module:
+    using {/Verse.org/Simulation}
     animation_sequence<native><public> := class<computes><final><epic_internal>:
 
     material<native><public> := class<epic_internal>:
@@ -1187,6 +1222,7 @@ Assets<public> := module:
     texture<native><public> := class<computes><final><epic_internal>:
 
     input_action<native><public>(t:type) := class<computes><epic_internal>:
+        (/Verse.org/Assets/input_action:)Assets_input_action_Variance<private>:?type {_():tuple(t)} = external {}
 
     input_mapping<native><public> := class<computes><epic_internal>:
 
@@ -1205,6 +1241,8 @@ Verse<public> := module:
 
     # Writes `Message` to a dedicated `Print` log while displaying it in `Color` on the client screen for `Duration` seconds. By default, `Color` is `NamedColors.White` and `Duration` is `2.0` seconds.
     Print<public>(Message:diagnostic, ?Duration:float = external {}, ?Color:color = external {})<transacts>:void = external {}
+    using {/Verse.org/Concurrency}
+    using {/Verse.org/Native}
     # Makes a flattened `array` by concatenating the elements of `Arrays`.
     Concatenate<public>(Arrays:[][]t where t:type)<computes>:[]t = external {}
 
@@ -1258,6 +1296,42 @@ Verse<public> := module:
         # Prevents any current or future work from completing.
         Cancel<native_callable><public>()<transacts>:void
 
+    @experimental
+    # A `classifiable_subset` is a container that holds a set of elements. A classifiable_subset can hold multiple elements of the same type.
+    classifiable_subset<native><public>(element_type:type) := class<final><reads><internal>:
+        (/Verse.org/Verse/classifiable_subset:)Verse_classifiable_subset_Variance<private>:?type {_():tuple(element_type)} = external {}
+
+        # Temporary function for constraining variance correctly.
+        CovarianceConstraint<protected>():?element_type = external {}
+
+    @experimental
+    # Constructs a `classifiable_subset` containing the `InElements`.
+    MakeClassifiableSubset<native><public>(InElements:[]t where t:type)<reads><converges>:classifiable_subset(t)
+
+    @available {MinUploadedAtFNVersion := 3800}
+    @experimental
+    # Succeeds if `element_type` is present in `InSet`.
+    (InSet:classifiable_subset(t) where t:castable_subtype(k), k:type).Contains<public>(element_type:castable_subtype(k))<reads><decides>:void = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    @experimental
+    # Succeeds if all the `element_types` are present in `InSet`.
+    (InSet:classifiable_subset(t) where t:castable_subtype(k), k:type).ContainsAll<public>(element_types:[]castable_subtype(k))<reads><decides>:void = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    @experimental
+    # Succeeds if any of the `element_types` are present in `InSet`.
+    (InSet:classifiable_subset(t) where t:castable_subtype(k), k:type).ContainsAny<public>(element_types:[]castable_subtype(k))<reads><decides>:void = external {}
+
+    @experimental
+    # Returns a new set that is the union of all elements in `InSetL` set and `InSetR`.
+    operator'+'<native><public>((InSetL:classifiable_subset(t), InSetR:classifiable_subset(t)) where t:type)<transacts>:classifiable_subset(t)
+
+    @available {MinUploadedAtFNVersion := 3800}
+    @experimental
+    # Returns a new set that contains all the elements in `InSet` that are of type `element_type`.
+    (InSet:classifiable_subset(t) where t:castable_subtype(k), k:type).FilterByType<native><public>(element_type:castable_subtype(k))<transacts>:classifiable_subset(t)
+
     # An opaque diagnostic message that only shows up in diagnostic logs. The format of the diagnostic may change at any time without warning and may not be inspected by Verse code.
     diagnostic<native><public> := class<computes><epic_internal>:
 
@@ -1294,6 +1368,8 @@ Verse<public> := module:
 
     # A *recurring*, successively signaled parametric `event` with a `payload` allowing a simple mechanism to coordinate between concurrent tasks.
     event<native><public>(t:type) := class(signalable(t), awaitable(t)):
+        (/Verse.org/Verse/event:)Verse_event_Variance<private>:?type {_(:t):tuple(t)} = external {}
+
         # Suspends the current task until another task calls `Signal`.
         # If called during another invocation of `Signal`, the the task will still suspend and resume during the next call to `Signal`.
         Await<native><override>()<suspends>:t
@@ -1338,6 +1414,7 @@ Verse<public> := module:
 
     # A parametric interface combining `awaitable` and `subscribable`.
     listenable<public>(payload:type) := interface(awaitable(payload), subscribable(payload)):
+        (/Verse.org/Verse/listenable:)Verse_listenable_Variance<private>:?type {_():tuple()} = external {}
 
     # A parameterless interface combining `awaitable` and `subscribable`.
     listenable<public>() := listenable(tuple())
@@ -1397,67 +1474,82 @@ Verse<public> := module:
     # Returns `NaN` if either `X` or `Y` are `NaN`.
     Max<public>(X:float, Y:float)<computes>:float = external {}
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the square root of `X` if `X >= 0.0`.
     # Returns `NaN` if `X < 0.0`.
     Sqrt<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the sine of `X` if `IsFinite(X)`.
     # Returns `NaN` if `not IsFinite(X)
     Sin<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the cosine of `X` if `IsFinite(X)`.
     # Returns `NaN` if `not IsFinite(X)
     Cos<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the tangent of `X` if `IsFinite(X)`.
     # Returns `NaN` if `not IsFinite(X).
     Tan<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse sine (arcsine) of `X` if `-1.0 <= X <= 1.0`.
     ArcSin<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse cosine (arccosine) of `X` if `-1.0 <= X <= 1.0`.
     ArcCos<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse tangent (arctangent) of `X` such that:`-PiFloat/2.0 <= ArcTan(x) <= PiFloat/2.0`.
     ArcTan<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the angle in radians at the origin between a ray pointing to `(X, Y)` and the positive `X` axis such that `-PiFloat < ArcTan(Y, X) <= PiFloat`.
     # Returns 0.0 if `X=0.0 and Y=0.0`.
     ArcTan<native><public>(Y:float, X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the hyperbolic sine of `X`.
     Sinh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the hyperbolic cosine of `X`.
     Cosh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the hyperbolic tangent of `X`.
     Tanh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse hyperbolic sine of `X` if `IsFinite(X)`.
     ArSinh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse hyperbolic cosine of `X` if `1.0 <= X`.
     ArCosh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the inverse hyperbolic tangent of `X` if `IsFinite(X)`.
     ArTanh<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns `A` to the power of `B`.
     Pow<native><public>(A:float, B:float)<reads>:float
@@ -1484,10 +1576,12 @@ Verse<public> := module:
     # Fails if `Y=0`.
     Mod<native><public>(X:int, Y:int)<computes><decides>:int
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the natural exponent of `X`.
     Exp<native><public>(X:float)<reads>:float
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Returns the natural logarithm of `X`.
     Ln<native><public>(X:float)<reads>:float
@@ -1495,6 +1589,7 @@ Verse<public> := module:
     # Returns the base `B` logarithm of `X`.
     Log<public>(B:float, X:float)<reads>:float = external {}
 
+    @vm_no_effect_token
     @rtfm_always_open
     # Used to linearly interpolate/extrapolate between `From` (when `Parameter = 0.0`) and `To` (when `Parameter = 1.0`). Expects that all arguments are finite.
     # Returns `From*(1 - Parameter) + To*Parameter`.
@@ -1519,9 +1614,34 @@ Verse<public> := module:
     # Succeeds if `Val1` and `Val2` are within `AbsoluteTolerance` of each other.
     IsAlmostEqual<public>(Val1:float, Val2:float, AbsoluteTolerance:float)<computes><decides>:void = external {}
 
+    @available {MinUploadedAtFNVersion := 3800}
+    # Implemented by classes that provide a result for an operation, which can fail or be successful
+    result<public>(success_type:type, error_type:type) := interface<internal>:
+        (/Verse.org/Verse/result:)Verse_result_Variance<private>:?type {_():tuple(success_type, error_type)} = external {}
+
+        # Returns the success data of the specified type.
+        GetSuccess<native_callable><public>()<computes><decides>:success_type
+
+        # Returns the error data of the specified type.
+        GetError<native_callable><public>()<computes><decides>:error_type
+
+    @available {MinUploadedAtFNVersion := 3800}
+    MakeSuccess<public>(Result:success_type where success_type:type):result(success_type, false) = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    MakeError<public>(Result:error_type where error_type:type):result(false, error_type) = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    # Implemented by classes whose instances can change visibility to be shown or hidden.
+    showable<native><public> := interface:
+        # Set this value to hide or show the class.
+        var Show<public>:logic
+
     # A parametric interface implemented by events with a `payload` that can be signaled.
     # Can be used with `awaitable`, `subscribable`, or both (see: `listenable`).
     signalable<public>(payload:type) := interface:
+        (/Verse.org/Verse/signalable:)Verse_signalable_Variance<private>:?type {_(:payload):tuple()} = external {}
+
         # Concurrently resumes the tasks waiting for this event in `awaitable.Await` and synchronously invokes any callbacks added to this event by `subscribable.Subscribe`.
         Signal<native_callable><public>(Val:payload):void
 
@@ -1537,6 +1657,8 @@ Verse<public> := module:
     # A parametric interface implemented by events with a `payload` that can be subscribed to.
     # Matched with `signalable.`
     subscribable<public>(t:type) := interface:
+        (/Verse.org/Verse/subscribable:)Verse_subscribable_Variance<private>:?type {_():tuple(t)} = external {}
+
         # Registers `Callback` to be invoked on matching calls to `signable.Signal`.
         # Returns an unsubscriber object. Call `cancelable.Cancel` on the unsubscriber to unregister `Callback`.
         Subscribe<public>(Callback:type {_(:t):void})<transacts>:cancelable
@@ -1546,6 +1668,8 @@ Verse<public> := module:
 
 # Module import path: /Verse.org/Colors
 Colors<public> := module:
+    using {/Verse.org/Native}
+    using {/Verse.org/Simulation}
     # Represents colors as RGB triples in the ACES 2065-1 color space.
     # Component values are linear (i.e. `*gamma* = 1.0`).
     color<native><public> := struct<concrete><computes><persistable>:
@@ -1921,13 +2045,40 @@ Colors<public> := module:
 
         YellowGreen<public>:color = external {}
 
-using {/Verse.org/Native}
+    @available {MinUploadedAtFNVersion := 3800}
+    # Represents colors as RGB triples in the ACES 2065-1 color space with an additional alpha channel A.
+    # This reasons about the `Color` and alpha (`A`) as separate concepts instead of as a single concept.
+    # All values are stored strictly as unopinionated floats but, when interpreted as a color with alpha,
+    # ranges for `A` are `0.0` (transparent) to `1.0` (opaque). Color values are not premultiplied.
+    # Component values are linear (i.e. `*gamma* = 1.0`).
+    color_alpha<native><public> := struct<concrete><computes><persistable>:
+        @editable
+        # `Color` component of this `color_alpha`.
+        Color<native><public>:color = external {}
+
+        @editable
+        # Alpha component of this `color_alpha`.
+        A<native><public>:float = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    # Makes a new `color_alpha` from individual `R`, `G`, `B`, `A` component values.
+    MakeColorAlpha<public>(R:float, G:float, B:float, ?A:float = external {})<computes>:color_alpha = external {}
+
+    @available {MinUploadedAtFNVersion := 3800}
+    # Blend colors `CA1` and `CA2` with `CA1` over `CA2` using two non-premultiplied `color_alpha` values.
+    # Alpha components are clamped between `0.0` and `1.0`. Fails if the value of both clamped Alpha components are `0.0`.
+    Over<public>(CA1:color_alpha, CA2:color_alpha)<reads><decides>:color_alpha = external {}
+
 # Module import path: /Verse.org/SpatialMath
 SpatialMath<public> := module:
+    using {/Verse.org/Simulation}
+    using {/Verse.org/Native}
+
     @import_as("/*.FVRotation")
     rotation<native><public> := struct<concrete>:
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Makes a `rotation` from `Axis` and `Angle` in radians using a right-handed sign convention (e.g. a positive rotation around Up takes Forward to Left).
     MakeRotationRadians<native><public>(Axis:vector3, Angle:float)<reads><converges>:rotation
 
@@ -1942,10 +2093,12 @@ SpatialMath<public> := module:
     #  * *roll* is right-handed rotation about the Forward axis.
     MakeRotationFromYawPitchRollRadians<public>(YawAngle:float, PitchAngle:float, RollAngle:float)<reads>:rotation = external {}
 
+    @vm_no_effect_token
     # Degrees version of `MakeRotationFromYawPitchRollRadians`
     MakeRotationFromYawPitchRollDegrees<native><public>(YawAngle:float, PitchAngle:float, RollAngle:float)<reads><converges>:rotation
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Makes a `rotation` by applying a post-rotation of `LeftAxisAngle` followed by `UpAxisAngle` and then `ForwardAxisAngle `in that order. Right-handed convention (e.g. a positive rotation around Up takes +Forward to Left).
     MakeRotationFromEulerRadians<native><public>(LeftAxisAngle:float, UpAxisAngle:float, ForwardAxisAngle:float)<reads><converges>:rotation
 
@@ -1956,12 +2109,14 @@ SpatialMath<public> := module:
     # Makes the identity `rotation`.
     IdentityRotation<native><public>()<converges>:rotation
 
+    @vm_no_effect_token
     # Returns the distance between `Rotation1` and `Rotation2`. The result will be between:
     #  * `0.0`, representing equivalent rotations and
     #  * `1.0` representing rotations which are 180 degrees apart (i.e., the shortest rotation between them is 180 degrees around some axis).
     Distance<native><public>(Rotation1:rotation, Rotation2:rotation)<reads><converges>:float
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Returns the smallest angular distance between `Rotation1` and `Rotation2` in radians.
     AngularDistanceRadians<native><public>(Rotation1:rotation, Rotation2:rotation)<reads><converges>:float
 
@@ -1970,6 +2125,7 @@ SpatialMath<public> := module:
     AngularDistanceDegrees<public>(Rotation1:rotation, Rotation2:rotation)<reads>:float = external {}
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Apply a `PreRotation` to `PostRotation` as `v * PreRotation * PostRotation`.
     (/Verse.org/SpatialMath:)operator'*'<native><public>(PreRotation:rotation, PostRotation:rotation)<reads><converges>:rotation
 
@@ -1982,10 +2138,12 @@ SpatialMath<public> := module:
     (Rotation:rotation).GetYawPitchRollRadians<public>()<reads>:tuple(float, float, float) = external {}
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Degrees version of `GetYawPitchRollRadians`.
     (Rotation:rotation).GetYawPitchRollDegrees<native><public>()<reads><converges>:tuple(float, float, float)
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Makes a `tuple(float, float, float)` with three elements:
     #  * *left axis* `rotation` in radians
     #  * *up axis* of `rotation` in radians
@@ -1997,11 +2155,13 @@ SpatialMath<public> := module:
     # Degrees version of `GetEulerRadians`.
     (Rotation:rotation).GetEulerDegrees<public>()<reads>:tuple(float, float, float) = external {}
 
+    @vm_no_effect_token
     # Makes a `vector3` from the axis of `rotation` for an right-handed angle.
     # If `rotation` is nearly identity, this will return the +Forward axis. See also `GetAngleRadians`.
     (Rotation:rotation).GetAxis<native><public>()<reads><converges>:vector3
 
     @available {MinUploadedAtFNVersion := 3600}
+    @vm_no_effect_token
     # Returns the radians of right-handed `rotation` around the axis of `rotation`. See also `GetAxis`.
     (Rotation:rotation).GetAngleRadians<native><public>()<reads><converges>:float
 
@@ -2009,17 +2169,21 @@ SpatialMath<public> := module:
     # Degrees version of GetAngleRadians
     (Rotation:rotation).GetAngleDegrees<public>()<reads>:float = external {}
 
+    @vm_no_effect_token
     # Makes the smallest angular `rotation` from `InitialVector` to `FinalVector` two vectors of arbitrary length such that:
     # `InitialVector * MakeShortestRotationBetween(InitialVector, FinalVector) = FinalVector` and
     # `MakeShortestRotationBetween(InitialVector, FinalVector)?.GetAngleRadians()` is as small as possible.
     MakeShortestRotationBetween<native><public>(InitialVector:vector3, FinalVector:vector3)<reads><converges>:rotation
 
+    @vm_no_effect_token
     # Used to perform spherical linear interpolation between `From` (when `Ratio = 0.0`) and `To` (when `Ratio = 1.0`). Expects `0.0 <= Ratio <= 1.0`.
     Slerp<native><public>(InitialRotation:rotation, FinalRotation:rotation, Ratio:float)<reads><converges>:rotation
 
+    @vm_no_effect_token
     # Makes a `vector3` by applying `Rotation` to `Vector`.
     (/Verse.org/SpatialMath:)operator'*'<native><public>(Vector:vector3, Rotation:rotation)<reads><converges>:vector3
 
+    @vm_no_effect_token
     # Makes a `rotation` by inverting `Rotation` such that `ApplyRotation(Rotation, Rotation.Invert())) = IdentityRotation`.
     (Rotation:rotation).Invert<native><public>()<reads><converges>:rotation
 
@@ -2166,7 +2330,6 @@ SpatialMath<public> := module:
     # Succeeds when each component of `V1` and `V2` are within `AbsoluteTolerance` of each other.
     (/Verse.org/SpatialMath:)IsAlmostEqual<public>(V1:vector3, V2:vector3, AbsoluteTolerance:float)<computes><decides>:void = external {}
 
-using {/Verse.org/Concurrency}
 # Module import path: /Verse.org/Random
 Random<public> := module:
     # Returns a random `float` between `Low` and `High`, inclusive.
@@ -2193,11 +2356,14 @@ Native<public> := module:
 Concurrency<public> := module:
     # A parametric interface implemented by events with a `payload` that can be waited on. Matched with `signalable.`
     awaitable<public>(payload:type) := interface:
+        (/Verse.org/Concurrency/awaitable:)Concurrency_awaitable_Variance<private>:?type {_():tuple(payload)} = external {}
+
         # Suspends the current task until resumed by a matching call to `signalable.Signal`. Returns the event `payload`.
         Await<public>()<suspends>:payload
 
     awaitable<public>() := awaitable(void)
 
     task<native><public>(t:type) := class<abstract><final>(awaitable(t)):
-        Await<native><override>()<suspends>:t
+        (/Verse.org/Concurrency/task:)Concurrency_task_Variance<private>:?type {_():tuple(t)} = external {}
 
+        Await<native><override>()<suspends>:t

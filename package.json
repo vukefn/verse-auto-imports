@@ -83,6 +83,14 @@
             {
                 "command": "verseAutoImports.exportDebugLogs",
                 "title": "Verse: Export Debug Logs"
+            },
+            {
+                "command": "verseAutoImports.rebuildPathCache",
+                "title": "Verse: Rebuild Project Path Cache"
+            },
+            {
+                "command": "verseAutoImports.showCacheStatus",
+                "title": "Verse: Show Cache Status"
             }
         ],
         "configuration": {
@@ -240,18 +248,40 @@
                     "default": "disabled",
                     "description": "⚠️ Strategy for resolving unknown identifiers: 'digest_only' uses only digest files, 'digest_and_inference' adds pattern-based guessing, 'disabled' turns off unknown identifier resolution",
                     "order": 41
+                },
+                "verseAutoImports.cache.enableProjectCache": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable project path tree caching for faster module resolution",
+                    "order": 50
+                },
+                "verseAutoImports.cache.autoRebuildOnStartup": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically rebuild the project cache when VS Code starts (slower startup but ensures fresh cache)",
+                    "order": 51
+                },
+                "verseAutoImports.cache.watcherDebounceMs": {
+                    "type": "number",
+                    "default": 500,
+                    "minimum": 100,
+                    "maximum": 5000,
+                    "description": "Debounce delay in milliseconds for file watcher updates",
+                    "order": 52
                 }
             }
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "npm run parse-digest && npm run compile",
         "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./"
+        "watch": "tsc -watch -p ./",
+        "parse-digest": "ts-node src/scripts/parseDigestFiles.ts"
     },
     "devDependencies": {
         "@types/vscode": "^1.85.0",
         "@types/node": "^25.0.9",
+        "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
     },
     "publisher": "vukefn",

@@ -1,0 +1,42 @@
+name: Parse Digest Files
+
+on:
+  push:
+    paths:
+      - 'src/utils/*.digest.verse'
+    branches: [develop, main]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  parse-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Parse digest files
+        run: npm run parse-digest
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet src/data/ || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/
+          git commit -m "chore: update pre-parsed digest files [skip ci]"
+          git push

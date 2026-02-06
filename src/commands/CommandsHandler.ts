@@ -1,9 +1,16 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportHandler } from "../imports";
+import { ProjectPathCache, DigestParser } from "../services";
 
 export class CommandsHandler {
-    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}
+    private digestParser: DigestParser | null = null;
+
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        private importHandler: ImportHandler,
+        private projectPathCache?: ProjectPathCache
+    ) {}
 
     async optimizeImports() {
         logger.info("CommandsHandler", "Optimizing imports command triggered");
@@ -98,5 +105,62 @@ export class CommandsHandler {
             logger.error("CommandsHandler", "Error optimizing imports", error);
             vscode.window.showErrorMessage(`Failed to optimize imports: ${error}`);
         }
+    }
+
+    /**
+     * Rebuilds the project path cache.
+     */
+    async rebuildPathCache(): Promise<void> {
+        if (!this.projectPathCache) {
+            vscode.window.showWarningMessage("Project path cache is not enabled");
+            return;
+        }
+
+        logger.info("CommandsHandler", "Rebuilding project path cache");
+
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: "Rebuilding project path cache...",
+                cancellable: false,
+            },
+            async () => {
+                await this.projectPathCache!.rebuildCache();
+            }
+        );
+
+        const stats = this.projectPathCache.getStats();
+        vscode.window.showInformationMessage(
+            `Project path cache rebuilt: ${stats.identifiers} identifiers from ${stats.files} files`
+        );
+    }
+
+    /**
+     * Shows the current cache status.
+     */
+    async showCacheStatus(): Promise<void> {
+        const cacheStats = this.projectPathCache?.getStats();
+
+        const lines: string[] = [];
+
+        if (cacheStats) {
+            lines.push(`Project Cache: ${cacheStats.loaded ? "Loaded" : "Not loaded"}`);
+            if (cacheStats.loaded) {
+                lines.push(`  Identifiers: ${cacheStats.identifiers}`);
+                lines.push(`  Files: ${cacheStats.files}`);
+                if (cacheStats.generatedAt) {
+                    const age = Date.now() - cacheStats.generatedAt;
+                    const ageMinutes = Math.floor(age / 60000);
+                    lines.push(`  Age: ${ageMinutes} minutes`);
+                }
+            }
+        } else {
+            lines.push("Project Cache: Disabled");
+        }
+
+        lines.push("");
+        lines.push("Cache Location: VS Code Workspace Storage");
+
+        vscode.window.showInformationMessage(lines.join("\n"), { modal: true });
     }
 }

@@ -1,5 +1,6 @@
 # Source files (compiled output in out/ is included)
 src/**
+!src/data/**
 **/*.ts
 !out/**
 

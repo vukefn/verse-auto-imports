@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils";
+import { PrecompiledDigestLoader } from "./PrecompiledDigestLoader";
 
 export interface DigestEntry {
     identifier: string;
@@ -15,17 +16,43 @@ export class DigestParser {
     private digestCache: Map<string, DigestEntry> = new Map();
     private lastParsed: number = 0;
     private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    private precompiledLoader: PrecompiledDigestLoader | null = null;
+    private usePrecompiled: boolean = true;
 
-    constructor(private outputChannel: vscode.OutputChannel) {}
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        private extensionContext?: vscode.ExtensionContext
+    ) {
+        if (extensionContext) {
+            this.precompiledLoader = new PrecompiledDigestLoader(extensionContext);
+        }
+    }
 
     async getDigestIndex(): Promise<Map<string, DigestEntry>> {
+        // Try precompiled loader first
+        if (this.usePrecompiled && this.precompiledLoader) {
+            try {
+                if (!this.precompiledLoader.isLoaded()) {
+                    await this.precompiledLoader.loadPrecompiledDigests();
+                }
+                if (this.precompiledLoader.isLoaded()) {
+                    logger.debug("DigestParser", "Using pre-compiled digest index");
+                    return this.precompiledLoader.getAllEntries();
+                }
+            } catch (error) {
+                logger.warn("DigestParser", "Pre-compiled digests not available, falling back to runtime parsing");
+                this.usePrecompiled = false;
+            }
+        }
+
+        // Fallback to runtime parsing
         const now = Date.now();
         if (this.digestCache.size > 0 && now - this.lastParsed < this.CACHE_DURATION) {
-            logger.debug("DigestParser", "Using cached digest index");
+            logger.debug("DigestParser", "Using cached digest index (runtime parsed)");
             return this.digestCache;
         }
 
-        logger.debug("DigestParser", "Parsing digest files...");
+        logger.debug("DigestParser", "Parsing digest files at runtime...");
         await this.parseDigestFiles();
         this.lastParsed = now;
         return this.digestCache;
@@ -192,6 +219,42 @@ export class DigestParser {
     clearCache(): void {
         this.digestCache.clear();
         this.lastParsed = 0;
+        if (this.precompiledLoader) {
+            this.precompiledLoader.clear();
+        }
         logger.debug("DigestParser", "Digest cache cleared");
+    }
+
+    /**
+     * Force reparse of digest files at runtime.
+     * This bypasses the precompiled loader and parses the raw .verse files.
+     * Useful if user suspects the precompiled data is outdated.
+     */
+    async forceReparse(): Promise<void> {
+        logger.info("DigestParser", "Forcing runtime reparse of digest files...");
+        this.usePrecompiled = false;
+        this.digestCache.clear();
+        await this.parseDigestFiles();
+        this.lastParsed = Date.now();
+        logger.info("DigestParser", `Runtime reparse complete: ${this.digestCache.size} entries`);
+    }
+
+    /**
+     * Get statistics about the current digest data
+     */
+    getStats(): { entries: number; source: "precompiled" | "runtime"; loaded: boolean } {
+        if (this.usePrecompiled && this.precompiledLoader?.isLoaded()) {
+            const stats = this.precompiledLoader.getStats();
+            return {
+                entries: stats.entries,
+                source: "precompiled",
+                loaded: stats.loaded,
+            };
+        }
+        return {
+            entries: this.digestCache.size,
+            source: "runtime",
+            loaded: this.digestCache.size > 0,
+        };
     }
 }

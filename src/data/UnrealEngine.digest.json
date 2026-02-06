@@ -1,0 +1,133 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-06T00:12:07.861Z",
+  "sourceFile": "UnrealEngine.digest.verse",
+  "sourceBuild": "++Fortnite+Release-39.40-CL-50341043",
+  "entries": {
+    "Itemization": {
+      "identifier": "Itemization",
+      "modulePath": "/Itemization",
+      "type": "module",
+      "isPublic": true
+    },
+    "has_item_merge_rules": {
+      "identifier": "has_item_merge_rules",
+      "modulePath": "/Itemization",
+      "type": "variable",
+      "isPublic": true
+    },
+    "WebAPI": {
+      "identifier": "WebAPI",
+      "modulePath": "/WebAPI",
+      "type": "module",
+      "isPublic": true
+    },
+    "Temporary": {
+      "identifier": "Temporary",
+      "modulePath": "/UnrealEngine.com/SceneGraph",
+      "type": "module",
+      "isPublic": true
+    },
+    "UI": {
+      "identifier": "UI",
+      "modulePath": "/UnrealEngine.com/Temporary/UI",
+      "type": "module",
+      "isPublic": true
+    },
+    "Curves": {
+      "identifier": "Curves",
+      "modulePath": "/UnrealEngine.com/Temporary/Curves",
+      "type": "module",
+      "isPublic": true
+    },
+    "Diagnostics": {
+      "identifier": "Diagnostics",
+      "modulePath": "/UnrealEngine.com/Temporary/Diagnostics",
+      "type": "module",
+      "isPublic": true
+    },
+    "JSON": {
+      "identifier": "JSON",
+      "modulePath": "/UnrealEngine.com/Temporary/SpatialMath",
+      "type": "module",
+      "isPublic": true
+    },
+    "ControlInput": {
+      "identifier": "ControlInput",
+      "modulePath": "/UnrealEngine.com/ControlInput",
+      "type": "module",
+      "isPublic": true
+    },
+    "BasicShapes": {
+      "identifier": "BasicShapes",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "module",
+      "isPublic": true
+    },
+    "cube": {
+      "identifier": "cube",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "class",
+      "isPublic": true
+    },
+    "sphere": {
+      "identifier": "sphere",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "class",
+      "isPublic": true
+    },
+    "plane": {
+      "identifier": "plane",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "class",
+      "isPublic": true
+    },
+    "cone": {
+      "identifier": "cone",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "class",
+      "isPublic": true
+    },
+    "cylinder": {
+      "identifier": "cylinder",
+      "modulePath": "/UnrealEngine.com/BasicShapes",
+      "type": "class",
+      "isPublic": true
+    }
+  },
+  "moduleIndex": {
+    "/Itemization": [
+      "Itemization",
+      "has_item_merge_rules"
+    ],
+    "/WebAPI": [
+      "WebAPI"
+    ],
+    "/UnrealEngine.com/SceneGraph": [
+      "Temporary"
+    ],
+    "/UnrealEngine.com/Temporary/UI": [
+      "UI"
+    ],
+    "/UnrealEngine.com/Temporary/Curves": [
+      "Curves"
+    ],
+    "/UnrealEngine.com/Temporary/Diagnostics": [
+      "Diagnostics"
+    ],
+    "/UnrealEngine.com/Temporary/SpatialMath": [
+      "JSON"
+    ],
+    "/UnrealEngine.com/ControlInput": [
+      "ControlInput"
+    ],
+    "/UnrealEngine.com/BasicShapes": [
+      "BasicShapes",
+      "cube",
+      "sphere",
+      "plane",
+      "cone",
+      "cylinder"
+    ]
+  }
+}

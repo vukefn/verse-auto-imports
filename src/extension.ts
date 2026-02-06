@@ -5,7 +5,7 @@ import { ImportHandler, ImportPathConverter, ImportCodeActionProvider, ImportCod
 import { CommandsHandler } from "./commands";
 import { StatusBarHandler } from "./ui";
 import { ProjectPathHandler } from "./project";
-import { AssetsDigestParser } from "./services";
+import { AssetsDigestParser, ProjectPathCache } from "./services";
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the logger
@@ -34,17 +34,26 @@ export function activate(context: vscode.ExtensionContext) {
     logger.debug("Extension", "Creating handlers");
     const projectPathHandler = new ProjectPathHandler(outputChannel);
     const assetsDigestParser = new AssetsDigestParser(outputChannel, projectPathHandler);
-    const importHandler = new ImportHandler(outputChannel, assetsDigestParser);
+    const projectPathCache = new ProjectPathCache(context, outputChannel, projectPathHandler);
+    const importHandler = new ImportHandler(outputChannel, assetsDigestParser, context);
     const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
-    const commandsHandler = new CommandsHandler(outputChannel, importHandler);
+    const commandsHandler = new CommandsHandler(outputChannel, importHandler, projectPathCache);
     const statusBarHandler = new StatusBarHandler(outputChannel, importHandler);
-    const importPathConverter = new ImportPathConverter(outputChannel);
+    const importPathConverter = new ImportPathConverter(outputChannel, projectPathCache);
     const importCodeLensProvider = new ImportCodeLensProvider(outputChannel);
 
     // Initialize assets digest cache asynchronously
     assetsDigestParser.ensureCachePopulated().catch((err) => {
         logger.warn("Extension", `Failed to initialize assets digest cache: ${err}`);
     });
+
+    // Initialize project path cache asynchronously (if enabled)
+    const cacheEnabled = config.get<boolean>("cache.enableProjectCache", true);
+    if (cacheEnabled) {
+        projectPathCache.initialize().catch((err) => {
+            logger.warn("Extension", `Failed to initialize project path cache: ${err}`);
+        });
+    }
 
     // Handle backward compatibility: use legacy setting if configured, otherwise use new setting
     const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
@@ -64,6 +73,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Set up file watcher for Assets.digest.verse changes
     context.subscriptions.push(assetsDigestParser.setupFileWatcher());
+
+    // Set up file watcher for project path cache (if enabled)
+    if (cacheEnabled) {
+        context.subscriptions.push(projectPathCache.setupFileWatchers());
+    }
 
     context.subscriptions.push(
         vscode.commands.registerCommand("verseAutoImports.addSingleImport", async (document: vscode.TextDocument, importStatement: string) => {
@@ -146,6 +160,13 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (error) {
                 vscode.window.showErrorMessage(`Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`);
             }
+        }),
+        // Cache management commands
+        vscode.commands.registerCommand("verseAutoImports.rebuildPathCache", () => {
+            commandsHandler.rebuildPathCache();
+        }),
+        vscode.commands.registerCommand("verseAutoImports.showCacheStatus", () => {
+            commandsHandler.showCacheStatus();
         }),
         // Command to convert a single import to absolute path
         vscode.commands.registerCommand("verseAutoImports.convertToFullPath", async (document: vscode.TextDocument, importStatement: string, lineNumber: number) => {
