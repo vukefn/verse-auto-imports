@@ -315,18 +315,6 @@ export class ImportSuggestionExtractor {
     }
 
     /**
-     * Legacy method for backward compatibility.
-     * @deprecated Use extractImportSuggestions instead
-     */
-    async extractImportStatement(errorMessage: string): Promise<string | null> {
-        const suggestions = await this.extractImportSuggestions(errorMessage);
-        if (suggestions.length > 0) {
-            return suggestions[0].importStatement;
-        }
-        return null;
-    }
-
-    /**
      * Extracts import suggestions from VS Code diagnostics.
      * Parses error messages to find missing imports.
      */

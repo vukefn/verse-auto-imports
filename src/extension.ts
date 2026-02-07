@@ -7,6 +7,16 @@ import { StatusBarHandler } from "./ui";
 import { ProjectPathHandler } from "./project";
 import { AssetsDigestParser, ProjectPathCache } from "./services";
 
+/**
+ * Gets the configured debounce delay, handling backward compatibility
+ * with the deprecated diagnosticDelay setting.
+ */
+function getConfiguredDebounceDelay(config: vscode.WorkspaceConfiguration): number {
+    const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
+    const newDelay = config.get<number>("general.autoImportDebounceDelay", 3000);
+    return legacyDelay !== undefined ? legacyDelay : newDelay;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     // Initialize the logger
     logger.initialize(context);
@@ -55,11 +65,8 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }
 
-    // Handle backward compatibility: use legacy setting if configured, otherwise use new setting
-    const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
-    const newDelay = config.get<number>("general.autoImportDebounceDelay", 3000);
-    const delayMs = legacyDelay !== undefined ? legacyDelay : newDelay;
-
+    // Set initial debounce delay (handles backward compat with deprecated setting)
+    const delayMs = getConfiguredDebounceDelay(config);
     diagnosticsHandler.setDelay(delayMs);
     logger.info("Extension", `Initial debounce delay set to ${delayMs}ms`);
 
@@ -90,11 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") || event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")) {
                 const newConfig = vscode.workspace.getConfiguration("verseAutoImports");
-                // Handle backward compatibility
-                const legacyDelay = newConfig.get<number | undefined>("general.diagnosticDelay", undefined);
-                const autoImportDebounceDelay = newConfig.get<number>("general.autoImportDebounceDelay", 3000);
-                const finalDelay = legacyDelay !== undefined ? legacyDelay : autoImportDebounceDelay;
-
+                const finalDelay = getConfiguredDebounceDelay(newConfig);
                 diagnosticsHandler.setDelay(finalDelay);
                 logger.info("Extension", `Debounce delay updated to ${finalDelay}ms`);
             }

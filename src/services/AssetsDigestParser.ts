@@ -15,7 +15,7 @@ export class AssetsDigestParser {
     private lastParsed: number = 0;
     private fileWatcher: vscode.FileSystemWatcher | null = null;
     private cachedDigestPath: string | null = null;
-    private readonly CACHE_DURATION = 30 * 1000; // 30 seconds
+    private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes (aligned with DigestParser)
 
     constructor(
         private outputChannel: vscode.OutputChannel,

@@ -44,14 +44,6 @@ export class ImportHandler {
     }
 
     /**
-     * Legacy method for backward compatibility.
-     * @deprecated Use extractImportSuggestions instead
-     */
-    async extractImportStatement(errorMessage: string): Promise<string | null> {
-        return this.suggestionExtractor.extractImportStatement(errorMessage);
-    }
-
-    /**
      * Adds import statements to a document.
      */
     async addImportsToDocument(document: vscode.TextDocument, importStatements: string[]): Promise<boolean> {
