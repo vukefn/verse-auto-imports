@@ -12,12 +12,15 @@ interface ImportConversionResult {
     possiblePaths?: string[];
 }
 
+/** Content folder name constant */
+const CONTENT_FOLDER = "Content";
+
 export class ImportPathConverter {
-    private projectPathHandler: ProjectPathHandler;
+    private readonly projectPathHandler: ProjectPathHandler;
     private projectPathCache: ProjectPathCache | null = null;
 
     constructor(
-        private outputChannel: vscode.OutputChannel,
+        private readonly outputChannel: vscode.OutputChannel,
         projectPathCache?: ProjectPathCache
     ) {
         this.projectPathHandler = new ProjectPathHandler(outputChannel);
@@ -122,8 +125,151 @@ export class ImportPathConverter {
         return modules;
     }
 
+    /**
+     * Phase 1: Search for folders (implicit modules) relative to the current file.
+     * Searches sibling folders, ascending directories, and Content root.
+     */
+    private async searchImplicitModules(
+        modulePath: string,
+        currentFileUri: vscode.Uri,
+        locations: string[]
+    ): Promise<void> {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(currentFileUri);
+        if (!workspaceFolder) return;
+
+        const currentFilePath = path.relative(workspaceFolder.uri.fsPath, currentFileUri.fsPath).replace(/\\/g, "/");
+        let currentFileDir = path.dirname(currentFilePath).replace(/\\/g, "/");
+
+        // Check if workspace IS the Content folder
+        const workspaceFolderName = path.basename(workspaceFolder.uri.fsPath);
+        const workspaceFolderIsContent = workspaceFolderName === CONTENT_FOLDER;
+
+        // Normalize paths when workspace IS Content
+        if (workspaceFolderIsContent) {
+            currentFileDir = currentFileDir === "" || currentFileDir === "." ? CONTENT_FOLDER : `${CONTENT_FOLDER}/${currentFileDir}`;
+        }
+
+        if (!currentFileDir.startsWith(`${CONTENT_FOLDER}/`) && currentFileDir !== CONTENT_FOLDER) {
+            return;
+        }
+
+        const dirSegments = currentFileDir.split("/");
+
+        // Helper to adjust path for filesystem checks
+        const getFsCheckPath = (logicalPath: string): string => {
+            if (workspaceFolderIsContent && logicalPath.startsWith(`${CONTENT_FOLDER}/`)) {
+                return logicalPath.substring(CONTENT_FOLDER.length + 1);
+            }
+            return logicalPath;
+        };
+
+        // Check sibling modules
+        if (dirSegments.length > 1) {
+            const parentPath = dirSegments.slice(0, dirSegments.length - 1).join("/");
+            const siblingTestPath = `${parentPath}/${modulePath}`;
+
+            if (siblingTestPath.startsWith(`${CONTENT_FOLDER}/`)) {
+                if (await this.folderExists(workspaceFolder, getFsCheckPath(siblingTestPath))) {
+                    const relativePath = parentPath === CONTENT_FOLDER ? "" : "/" + parentPath.substring(CONTENT_FOLDER.length + 1);
+                    if (!locations.includes(relativePath)) locations.push(relativePath);
+                }
+            }
+        }
+
+        // Ascending directory traversal
+        for (let i = dirSegments.length - 2; i >= 0; i--) {
+            const checkPath = dirSegments.slice(0, i + 1).join("/");
+            const testPath = `${checkPath}/${modulePath}`;
+
+            if (testPath.startsWith(`${CONTENT_FOLDER}/`)) {
+                if (await this.folderExists(workspaceFolder, getFsCheckPath(testPath))) {
+                    const relativePath = checkPath === CONTENT_FOLDER ? "" : "/" + checkPath.substring(CONTENT_FOLDER.length + 1);
+                    if (!locations.includes(relativePath)) locations.push(relativePath);
+                }
+            }
+        }
+
+        // Check direct Content children
+        const contentDirectChild = `${CONTENT_FOLDER}/${modulePath}`;
+        if (await this.folderExists(workspaceFolder, getFsCheckPath(contentDirectChild))) {
+            if (!locations.includes("")) locations.push("");
+        }
+    }
+
+    /**
+     * Phase 2: Search for explicit module definitions in .verse files.
+     * Scans workspace for files containing module := module declarations.
+     */
+    private async searchExplicitModuleDefinitions(
+        modulePath: string,
+        moduleName: string,
+        pathSegments: string[],
+        locations: string[]
+    ): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) return;
+
+        let searchPattern = `${CONTENT_FOLDER}/**/*.verse`;
+        const workspaceFolderName = path.basename(workspaceFolders[0].uri.fsPath);
+        const workspaceIsContent = workspaceFolderName === CONTENT_FOLDER;
+        if (workspaceIsContent) searchPattern = "**/*.verse";
+
+        const verseFiles = await vscode.workspace.findFiles(searchPattern, null, 100);
+        const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const modulePattern = new RegExp(
+            `\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`,
+            "gm"
+        );
+
+        for (const file of verseFiles) {
+            const content = await vscode.workspace.fs.readFile(file).then(
+                (buffer) => Buffer.from(buffer).toString("utf8"),
+                () => null
+            );
+
+            if (!content || !modulePattern.test(content)) continue;
+
+            logger.debug("ImportPathConverter", `Found module definition in: ${file.fsPath}`);
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
+            if (!workspaceFolder) continue;
+
+            let relativePath = path.relative(workspaceFolder.uri.fsPath, file.fsPath).replace(/\\/g, "/");
+            relativePath = path.dirname(relativePath).replace(/\\/g, "/");
+
+            // Normalize path when workspace IS Content
+            if (workspaceIsContent) {
+                relativePath = relativePath === "" || relativePath === "." ? CONTENT_FOLDER : `${CONTENT_FOLDER}/${relativePath}`;
+            }
+
+            if (!relativePath.startsWith(CONTENT_FOLDER)) continue;
+
+            // Remove Content prefix
+            relativePath = relativePath.startsWith(`${CONTENT_FOLDER}/`)
+                ? relativePath.substring(CONTENT_FOLDER.length + 1)
+                : relativePath === CONTENT_FOLDER
+                  ? ""
+                  : relativePath;
+
+            // For nested paths, verify parent path matches
+            if (pathSegments.length > 1) {
+                const parentPath = pathSegments.slice(0, -1).join("/");
+                if (!relativePath.endsWith(parentPath)) continue;
+
+                relativePath = relativePath.substring(0, relativePath.length - parentPath.length);
+                if (relativePath.endsWith("/")) relativePath = relativePath.substring(0, relativePath.length - 1);
+            }
+
+            // Format path
+            if (!relativePath.startsWith("/") && relativePath !== "") relativePath = "/" + relativePath;
+
+            if (!locations.includes(relativePath)) {
+                locations.push(relativePath);
+            }
+        }
+    }
+
     /** Scans the workspace for possible locations of a module */
-    async findModuleLocations(modulePath: string, currentFileUri?: vscode.Uri, maxDepth: number = 5): Promise<string[]> {
+    async findModuleLocations(modulePath: string, currentFileUri?: vscode.Uri, _maxDepth: number = 5): Promise<string[]> {
         const locations: string[] = [];
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) return locations;
@@ -141,134 +287,24 @@ export class ImportPathConverter {
             logger.debug("ImportPathConverter", `No cache hit for '${modulePath}', falling back to filesystem scan`);
         }
 
+        logger.debug("ImportPathConverter", `Searching for module '${modulePath}'`);
+
         // Phase 1: Search for folders (implicit modules) in Content folder
-        try {
-            logger.debug("ImportPathConverter", `Searching for module '${modulePath}'`);
-
-            if (currentFileUri) {
-                const workspaceFolder = vscode.workspace.getWorkspaceFolder(currentFileUri);
-                if (workspaceFolder) {
-                    const currentFilePath = path.relative(workspaceFolder.uri.fsPath, currentFileUri.fsPath).replace(/\\/g, "/");
-                    let currentFileDir = path.dirname(currentFilePath).replace(/\\/g, "/");
-
-                    // Check if workspace IS the Content folder
-                    const workspaceFolderName = path.basename(workspaceFolder.uri.fsPath);
-                    const workspaceFolderIsContent = workspaceFolderName === "Content";
-
-                    // Normalize paths when workspace IS Content
-                    if (workspaceFolderIsContent) {
-                        currentFileDir = currentFileDir === "" || currentFileDir === "." ? "Content" : "Content/" + currentFileDir;
-                    }
-
-                    if (currentFileDir.startsWith("Content/") || currentFileDir === "Content") {
-                        const dirSegments = currentFileDir.split("/");
-
-                        // Helper to adjust path for filesystem checks
-                        const getFsCheckPath = (logicalPath: string): string => {
-                            if (workspaceFolderIsContent && logicalPath.startsWith("Content/")) {
-                                return logicalPath.substring("Content/".length);
-                            }
-                            return logicalPath;
-                        };
-
-                        // Check sibling modules
-                        if (dirSegments.length > 1) {
-                            const parentPath = dirSegments.slice(0, dirSegments.length - 1).join("/");
-                            const siblingTestPath = `${parentPath}/${modulePath}`;
-
-                            if (siblingTestPath.startsWith("Content/")) {
-                                if (await this.folderExists(workspaceFolder, getFsCheckPath(siblingTestPath))) {
-                                    const relativePath = parentPath === "Content" ? "" : "/" + parentPath.substring("Content/".length);
-                                    if (!locations.includes(relativePath)) locations.push(relativePath);
-                                }
-                            }
-                        }
-
-                        // Ascending directory traversal
-                        for (let i = dirSegments.length - 2; i >= 0; i--) {
-                            const checkPath = dirSegments.slice(0, i + 1).join("/");
-                            const testPath = `${checkPath}/${modulePath}`;
-
-                            if (testPath.startsWith("Content/")) {
-                                if (await this.folderExists(workspaceFolder, getFsCheckPath(testPath))) {
-                                    const relativePath = checkPath === "Content" ? "" : "/" + checkPath.substring("Content/".length);
-                                    if (!locations.includes(relativePath)) locations.push(relativePath);
-                                }
-                            }
-                        }
-
-                        // Check direct Content children
-                        const contentDirectChild = `Content/${modulePath}`;
-                        if (await this.folderExists(workspaceFolder, getFsCheckPath(contentDirectChild))) {
-                            if (!locations.includes("")) locations.push("");
-                        }
-                    }
-                }
+        if (currentFileUri) {
+            try {
+                await this.searchImplicitModules(modulePath, currentFileUri, locations);
+            } catch (error) {
+                logger.debug("ImportPathConverter", `Error in Phase 1 (implicit modules): ${error}`);
             }
-        } catch (error) {
-            logger.debug("ImportPathConverter", `Error in Phase 1: ${error}`);
         }
 
         // Phase 2: Search for explicit module definitions in .verse files
         if (locations.length === 0) {
             logger.debug("ImportPathConverter", `Phase 2: Searching explicit module definitions`);
             try {
-                let searchPattern = "Content/**/*.verse";
-                let phase2WorkspaceIsContent = false;
-
-                if (workspaceFolders && workspaceFolders.length > 0) {
-                    const workspaceFolderName = path.basename(workspaceFolders[0].uri.fsPath);
-                    phase2WorkspaceIsContent = workspaceFolderName === "Content";
-                    if (phase2WorkspaceIsContent) searchPattern = "**/*.verse";
-                }
-
-                const verseFiles = await vscode.workspace.findFiles(searchPattern, null, 100);
-                const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                const modulePattern = new RegExp(`\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`, "gm");
-
-                for (const file of verseFiles) {
-                    const content = await vscode.workspace.fs.readFile(file).then(
-                        (buffer) => Buffer.from(buffer).toString("utf8"),
-                        () => null
-                    );
-
-                    if (content && modulePattern.test(content)) {
-                        logger.debug("ImportPathConverter", `Found module definition in: ${file.fsPath}`);
-                        const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
-                        if (workspaceFolder) {
-                            let relativePath = path.relative(workspaceFolder.uri.fsPath, file.fsPath).replace(/\\/g, "/");
-                            relativePath = path.dirname(relativePath).replace(/\\/g, "/");
-
-                            // Normalize path when workspace IS Content
-                            if (phase2WorkspaceIsContent) {
-                                relativePath = relativePath === "" || relativePath === "." ? "Content" : "Content/" + relativePath;
-                            }
-
-                            if (!relativePath.startsWith("Content")) continue;
-
-                            // Remove Content prefix
-                            relativePath = relativePath.startsWith("Content/") ? relativePath.substring("Content/".length) : relativePath === "Content" ? "" : relativePath;
-
-                            // For nested paths, verify parent path matches
-                            if (pathSegments.length > 1) {
-                                const parentPath = pathSegments.slice(0, -1).join("/");
-                                if (!relativePath.endsWith(parentPath)) continue;
-
-                                relativePath = relativePath.substring(0, relativePath.length - parentPath.length);
-                                if (relativePath.endsWith("/")) relativePath = relativePath.substring(0, relativePath.length - 1);
-                            }
-
-                            // Format path
-                            if (!relativePath.startsWith("/") && relativePath !== "") relativePath = "/" + relativePath;
-
-                            if (!locations.includes(relativePath)) {
-                                locations.push(relativePath);
-                            }
-                        }
-                    }
-                }
+                await this.searchExplicitModuleDefinitions(modulePath, moduleName, pathSegments, locations);
             } catch (error) {
-                logger.debug("ImportPathConverter", `Error searching for explicit module definitions: ${error}`);
+                logger.debug("ImportPathConverter", `Error in Phase 2 (explicit modules): ${error}`);
             }
         }
 

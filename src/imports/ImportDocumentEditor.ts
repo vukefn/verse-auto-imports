@@ -2,14 +2,62 @@ import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportFormatter } from "./ImportFormatter";
 
+/** Represents a contiguous block of import statements in the document. */
+interface ImportBlock {
+    start: number;
+    end: number;
+    imports: string[];
+}
+
+/** Represents a single line edit for syntax conversion. */
+interface LineEdit {
+    line: number;
+    oldText: string;
+    newText: string;
+}
+
 /**
  * Handles all document modifications for imports.
  */
 export class ImportDocumentEditor {
-    private formatter: ImportFormatter;
+    private readonly formatter: ImportFormatter;
 
     constructor(private outputChannel: vscode.OutputChannel, formatter: ImportFormatter) {
         this.formatter = formatter;
+    }
+
+    /**
+     * Creates an edit to replace an import block with combined and formatted imports.
+     */
+    private createBlockReplacementEdit(
+        edit: vscode.WorkspaceEdit,
+        document: vscode.TextDocument,
+        block: ImportBlock,
+        newPaths: string[],
+        preferDotSyntax: boolean,
+        sortAlphabetically: boolean
+    ): void {
+        // Get existing paths in this block for combined sorting
+        const existingBlockPaths = block.imports
+            .map((imp) => this.formatter.extractPathFromImport(imp))
+            .filter((p): p is string => p !== null);
+
+        const combinedPaths = [...existingBlockPaths, ...newPaths];
+        if (sortAlphabetically) {
+            combinedPaths.sort((a, b) => a.localeCompare(b));
+        }
+
+        // Format all imports for this block
+        const formattedImports = combinedPaths.map((path) =>
+            this.formatter.formatImportStatement(path, preferDotSyntax)
+        );
+
+        // Replace the entire block
+        edit.replace(
+            document.uri,
+            new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)),
+            formattedImports.join("\n") + "\n"
+        );
     }
 
     /**
@@ -54,8 +102,8 @@ export class ImportDocumentEditor {
         const lines = text.split("\n");
         const existingImports = new Set<string>();
 
-        const importBlocks: { start: number; end: number; imports: string[] }[] = [];
-        let currentBlock: { start: number; end: number; imports: string[] } | null = null;
+        const importBlocks: ImportBlock[] = [];
+        let currentBlock: ImportBlock | null = null;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -151,38 +199,26 @@ export class ImportDocumentEditor {
 
                 // Add digest imports to digest block
                 if (newDigestPaths.length > 0 && digestBlockIndex >= 0) {
-                    const block = importBlocks[digestBlockIndex];
-                    // Get existing paths in this block for combined sorting
-                    const existingBlockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p) as string[];
-
-                    const combinedPaths = [...existingBlockPaths, ...newDigestPaths];
-                    if (sortAlphabetically) {
-                        combinedPaths.sort((a, b) => a.localeCompare(b));
-                    }
-
-                    // Format all imports for this block
-                    const formattedImports = combinedPaths.map((path) => this.formatter.formatImportStatement(path, preferDotSyntax));
-
-                    // Replace the entire block
-                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                    this.createBlockReplacementEdit(
+                        edit,
+                        document,
+                        importBlocks[digestBlockIndex],
+                        newDigestPaths,
+                        preferDotSyntax,
+                        sortAlphabetically
+                    );
                 }
 
                 // Add local imports to local block
                 if (newLocalPaths.length > 0 && localBlockIndex >= 0) {
-                    const block = importBlocks[localBlockIndex];
-                    // Get existing paths in this block for combined sorting
-                    const existingBlockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p) as string[];
-
-                    const combinedPaths = [...existingBlockPaths, ...newLocalPaths];
-                    if (sortAlphabetically) {
-                        combinedPaths.sort((a, b) => a.localeCompare(b));
-                    }
-
-                    // Format all imports for this block
-                    const formattedImports = combinedPaths.map((path) => this.formatter.formatImportStatement(path, preferDotSyntax));
-
-                    // Replace the entire block
-                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                    this.createBlockReplacementEdit(
+                        edit,
+                        document,
+                        importBlocks[localBlockIndex],
+                        newLocalPaths,
+                        preferDotSyntax,
+                        sortAlphabetically
+                    );
                 }
 
                 // Handle imports that don't have a matching block
@@ -449,7 +485,7 @@ export class ImportDocumentEditor {
 
         const text = document.getText();
         const lines = text.split("\n");
-        const edits: { line: number; oldText: string; newText: string }[] = [];
+        const edits: LineEdit[] = [];
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
