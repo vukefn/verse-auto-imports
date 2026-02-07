@@ -108,21 +108,12 @@ export class AssetsDigestParser {
                     continue;
                 }
 
-                // Match class declarations: ClassName<public> := class or ClassName<internal> := class
-                const classMatch = trimmedLine.match(/^(\w+)<(?:public|internal|private)>\s*:=\s*class/);
-                if (classMatch) {
-                    const className = classMatch[1];
-                    this.classNames.add(className);
-                    logger.trace("AssetsDigestParser", `Found asset class: ${className}`);
-                    continue;
-                }
-
-                // Also match struct declarations as they behave similarly
-                const structMatch = trimmedLine.match(/^(\w+)<(?:public|internal|private)>\s*:=\s*struct/);
-                if (structMatch) {
-                    const structName = structMatch[1];
-                    this.classNames.add(structName);
-                    logger.trace("AssetsDigestParser", `Found asset struct: ${structName}`);
+                // Match class or struct declarations: Name<visibility> := class/struct
+                const typeMatch = trimmedLine.match(/^(\w+)<(?:public|internal|private)>\s*:=\s*(?:class|struct)/);
+                if (typeMatch) {
+                    const typeName = typeMatch[1];
+                    this.classNames.add(typeName);
+                    logger.trace("AssetsDigestParser", `Found asset type: ${typeName}`);
                 }
             }
 

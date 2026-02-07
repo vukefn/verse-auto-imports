@@ -136,9 +136,9 @@ export class ProjectPathTreeBuilder {
         const nodes: ProjectPathNode[] = [];
         const lines = content.split("\n");
 
-        // Track current module context
+        // Track current module context with indentation levels
         let currentModulePath = "";
-        const moduleStack: string[] = [];
+        const moduleStack: { name: string; indent: number }[] = [];
 
         // Visibility specifiers in Verse: public, protected, private, internal, scoped
         const visibilitySpecifiers = "public|protected|private|internal|scoped";
@@ -148,6 +148,22 @@ export class ProjectPathTreeBuilder {
             if (!specifiers) return undefined;
             const match = specifiers.match(new RegExp(`<(${visibilitySpecifiers})>`));
             return match ? match[1] : undefined;
+        };
+
+        // Helper to check if a declaration should be skipped based on visibility
+        const shouldSkipDeclaration = (visibility: string | undefined, isModuleType: boolean = false): boolean => {
+            if (!options.includePrivate && visibility === "private") {
+                return true;
+            }
+            // Modules have special logic: include public and internal (no visibility = internal)
+            if (isModuleType) {
+                const isPublic = visibility === "public";
+                const isInternal = !visibility || visibility === "internal";
+                if (!options.includePrivate && !isPublic && !isInternal) {
+                    return true;
+                }
+            }
+            return false;
         };
 
         // Patterns for declarations
@@ -165,7 +181,8 @@ export class ProjectPathTreeBuilder {
         const variablePattern = /^(\w+)((?:<[^>]+>)*)\s*:/;
 
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+            const rawLine = lines[i];
+            const line = rawLine.trim();
 
             // Skip comments and empty lines
             if (line === "" || line.startsWith("#") || line.startsWith("//")) {
@@ -177,25 +194,29 @@ export class ProjectPathTreeBuilder {
                 continue;
             }
 
+            // Calculate indentation (spaces or tabs converted to spaces)
+            const indentMatch = rawLine.match(/^(\s*)/);
+            const indent = indentMatch ? indentMatch[1].replace(/\t/g, "    ").length : 0;
+
+            // Pop modules from stack when indentation decreases
+            while (moduleStack.length > 0 && indent <= moduleStack[moduleStack.length - 1].indent) {
+                moduleStack.pop();
+            }
+            currentModulePath = moduleStack.length > 0 ? moduleStack[moduleStack.length - 1].name : "";
+
             // Check for module declaration
             const moduleMatch = line.match(modulePattern);
             if (moduleMatch) {
                 const [, name, specifiers] = moduleMatch;
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
-                const isInternal = !visibility || visibility === "internal";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
-                    continue;
-                }
-                // By default, include public and internal (no visibility = internal)
-                if (!options.includePrivate && !isPublic && !isInternal) {
+                if (shouldSkipDeclaration(visibility, true)) {
                     continue;
                 }
 
                 const fullPath = currentModulePath ? `${currentModulePath}.${name}` : name;
-                moduleStack.push(fullPath);
+                moduleStack.push({ name: fullPath, indent });
                 currentModulePath = fullPath;
 
                 nodes.push({
@@ -217,8 +238,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -243,8 +263,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -269,8 +288,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -295,8 +313,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -321,8 +338,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -347,8 +363,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
@@ -373,8 +388,7 @@ export class ProjectPathTreeBuilder {
                 const visibility = extractVisibility(specifiers);
                 const isPublic = visibility === "public";
 
-                // Skip private declarations unless includePrivate is set
-                if (!options.includePrivate && visibility === "private") {
+                if (shouldSkipDeclaration(visibility)) {
                     continue;
                 }
 
