@@ -279,7 +279,7 @@
         "parse-digest": "ts-node src/scripts/parseDigestFiles.ts"
     },
     "devDependencies": {
-        "@types/vscode": "^1.85.0",
+        "@types/vscode": "^1.109.0",
         "@types/node": "^25.0.9",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
