@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { logger } from "../utils";
 import { ProjectPathHandler } from "../project";
+import { ImportFormatter } from "./ImportFormatter";
 
 interface ImportConversionResult {
     originalImport: string;
@@ -326,7 +327,7 @@ export class ImportPathConverter {
             const line = lines[i];
             const trimmedLine = line.trim();
 
-            if (trimmedLine.startsWith("using")) {
+            if (ImportFormatter.isModuleImport(trimmedLine)) {
                 if (this.isFullPathImport(trimmedLine) && !this.isBuiltinModule(trimmedLine)) {
                     const result = await this.convertFromFullPath(trimmedLine);
                     if (result) {
@@ -418,7 +419,7 @@ export class ImportPathConverter {
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (line.trim().startsWith("using")) {
+            if (ImportFormatter.isModuleImport(line.trim())) {
                 const result = await this.convertToFullPath(line.trim(), document.uri);
                 if (result) {
                     results.push(result);
