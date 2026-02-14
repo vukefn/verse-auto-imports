@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-02-14
+
+### Fixed
+
+-   **Indented Using Detection**: `using:` followed by an indented bare identifier (local-scope) was incorrectly treated as a module import. Now uses content-based detection across all three Verse syntactic styles (braced, dotted, indented)
+
 ## [0.6.3] - 2026-02-14
 
 ### Fixed
