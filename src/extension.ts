@@ -330,9 +330,10 @@ export function activate(context: vscode.ExtensionContext) {
 
                     const line = document.lineAt(position.line);
                     const text = line.text.trim();
+                    const nextLineText = position.line + 1 < document.lineCount ? document.lineAt(position.line + 1).text : undefined;
 
                     // Check if hovering over a module import line (skip local-scope using)
-                    if (ImportFormatter.isModuleImport(text)) {
+                    if (ImportFormatter.isModuleImport(text, nextLineText)) {
                         // Set hover state to show CodeLens
                         importCodeLensProvider.setHoverState(document.uri.toString(), true, position.line);
 

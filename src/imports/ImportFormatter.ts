@@ -7,42 +7,72 @@ export class ImportFormatter {
     /**
      * Determines if a line is a module import (as opposed to a local-scope `using`).
      *
-     * In Verse, `using` has two distinct meanings:
-     * - Module import: `using { /Verse.org/Simulation }`, `using { Module.Sub }`, `using. /Path`
-     * - Local-scope using: `using{Variable}` — brings a class instance's members into scope
+     * `using` has two meanings in Verse:
+     * - Module import: `using { /Verse.org/Simulation }`, `using { game_systems.inventory }`
+     * - Local-scope using: `using{Variable}` — brings an instance's members into scope
      *
-     * Module imports contain paths (starting with `/`) or dot-notation module paths.
-     * Local-scope using contains bare identifiers (variable/parameter names).
+     * Verse supports three equivalent syntactic styles for `using`:
+     * - Braced:   `using { /Verse.org/Simulation }`
+     * - Dotted:   `using. /Verse.org/Simulation`
+     * - Indented: `using:` followed by an indented path on the next line
+     *
+     * All three styles can express either a module import or a local-scope using.
+     * Detection is content-based: paths (starting with `/`) and dot-notation module
+     * references (containing `.`) indicate module imports. Bare identifiers indicate
+     * local-scope using.
+     *
+     * @param line The line to check
+     * @param nextLine The following line in the document (needed for indented style
+     *   where the content is on the next line). When not provided and the line is
+     *   `using:`, conservatively returns `true`.
      */
-    static isModuleImport(line: string): boolean {
+    static isModuleImport(line: string, nextLine?: string): boolean {
         const trimmed = line.trim();
         if (!trimmed.startsWith("using")) {
             return false;
         }
 
-        // Dot syntax is exclusively for module imports: using. /path
-        if (/^using\.\s/.test(trimmed)) {
-            return true;
-        }
-
-        // Multi-line syntax is exclusively for module imports: using:
+        // Indented style: using:
+        //     /Verse.org/Simulation
+        // Content is on the next line — use nextLine for content-based detection.
         if (/^using\s*:\s*$/.test(trimmed)) {
+            if (nextLine !== undefined) {
+                const content = nextLine.trim();
+                if (content.startsWith("/")) {
+                    return true;
+                }
+                if (content.includes(".")) {
+                    return true;
+                }
+                return false;
+            }
+            // Without next line context, conservatively assume module import
             return true;
         }
 
-        // Curly syntax: check if content looks like a module path
-        const curlyMatch = trimmed.match(/^using\s*\{\s*([^}]+)\s*\}/);
-        if (curlyMatch) {
-            const content = curlyMatch[1].trim();
-            // Absolute module paths start with /
+        // Dotted style: using. <content>
+        const dotMatch = trimmed.match(/^using\.\s+(.+)/);
+        if (dotMatch) {
+            const content = dotMatch[1].trim();
             if (content.startsWith("/")) {
                 return true;
             }
-            // Dot-notation module paths contain .
             if (content.includes(".")) {
                 return true;
             }
-            // Bare identifier without / or . is local-scope using
+            return false;
+        }
+
+        // Braced style: using { /path } or using{Variable}
+        const curlyMatch = trimmed.match(/^using\s*\{\s*([^}]+)\s*\}/);
+        if (curlyMatch) {
+            const content = curlyMatch[1].trim();
+            if (content.startsWith("/")) {
+                return true;
+            }
+            if (content.includes(".")) {
+                return true;
+            }
             return false;
         }
 
@@ -92,14 +122,10 @@ export class ImportFormatter {
 
         // Get configurable digest prefixes
         const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const digestPrefixes = config.get<string[]>("behavior.digestImportPrefixes", [
-            "/Verse.org/",
-            "/Fortnite.com/",
-            "/UnrealEngine.com/"
-        ]);
+        const digestPrefixes = config.get<string[]>("behavior.digestImportPrefixes", ["/Verse.org/", "/Fortnite.com/", "/UnrealEngine.com/"]);
 
         // Check if it's a digest import
-        return digestPrefixes.some(prefix => path.startsWith(prefix));
+        return digestPrefixes.some((prefix) => path.startsWith(prefix));
     }
 
     /**

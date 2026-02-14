@@ -350,7 +350,8 @@ export class ImportPathConverter {
             const line = lines[i];
             const trimmedLine = line.trim();
 
-            if (ImportFormatter.isModuleImport(trimmedLine)) {
+            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
+            if (ImportFormatter.isModuleImport(trimmedLine, nextLine)) {
                 if (this.isFullPathImport(trimmedLine) && !this.isBuiltinModule(trimmedLine)) {
                     const result = await this.convertFromFullPath(trimmedLine);
                     if (result) {
@@ -442,7 +443,8 @@ export class ImportPathConverter {
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (ImportFormatter.isModuleImport(line.trim())) {
+            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
+            if (ImportFormatter.isModuleImport(line.trim(), nextLine)) {
                 const result = await this.convertToFullPath(line.trim(), document.uri);
                 if (result) {
                     results.push(result);
