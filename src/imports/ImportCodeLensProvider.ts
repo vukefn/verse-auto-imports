@@ -144,7 +144,8 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             const trimmedLine = line.trim();
 
             // Check if this is a module import line (skip local-scope using)
-            if (ImportFormatter.isModuleImport(trimmedLine)) {
+            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
+            if (ImportFormatter.isModuleImport(trimmedLine, nextLine)) {
                 const range = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i, line.length));
 
                 // Check if it's a full path import that can be converted to relative
@@ -165,9 +166,10 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
 
                             // Check if there are multiple full path imports (non-builtin) in the file
                             const hasMultipleFullPathImports =
-                                lines.filter((l) => {
+                                lines.filter((l, idx) => {
                                     const trimmed = l.trim();
-                                    return ImportFormatter.isModuleImport(trimmed) && this.importPathConverter.isFullPathImport(trimmed) && !this.importPathConverter.isBuiltinModule(trimmed);
+                                    const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
+                                    return ImportFormatter.isModuleImport(trimmed, next) && this.importPathConverter.isFullPathImport(trimmed) && !this.importPathConverter.isBuiltinModule(trimmed);
                                 }).length > 1;
 
                             // Add "Use relative paths for all" option if there are multiple full path imports
@@ -197,7 +199,10 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(convertSingleLens);
 
                         // Check if there are multiple relative imports in the file
-                        const hasMultipleRelativeImports = lines.filter((l) => ImportFormatter.isModuleImport(l.trim()) && !this.importPathConverter.isFullPathImport(l.trim())).length > 1;
+                        const hasMultipleRelativeImports = lines.filter((l, idx) => {
+                            const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
+                            return ImportFormatter.isModuleImport(l.trim(), next) && !this.importPathConverter.isFullPathImport(l.trim());
+                        }).length > 1;
 
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {
