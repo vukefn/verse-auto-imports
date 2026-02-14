@@ -5,6 +5,51 @@ import * as vscode from "vscode";
  */
 export class ImportFormatter {
     /**
+     * Determines if a line is a module import (as opposed to a local-scope `using`).
+     *
+     * In Verse, `using` has two distinct meanings:
+     * - Module import: `using { /Verse.org/Simulation }`, `using { Module.Sub }`, `using. /Path`
+     * - Local-scope using: `using{Variable}` — brings a class instance's members into scope
+     *
+     * Module imports contain paths (starting with `/`) or dot-notation module paths.
+     * Local-scope using contains bare identifiers (variable/parameter names).
+     */
+    static isModuleImport(line: string): boolean {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("using")) {
+            return false;
+        }
+
+        // Dot syntax is exclusively for module imports: using. /path
+        if (/^using\.\s/.test(trimmed)) {
+            return true;
+        }
+
+        // Multi-line syntax is exclusively for module imports: using:
+        if (/^using\s*:\s*$/.test(trimmed)) {
+            return true;
+        }
+
+        // Curly syntax: check if content looks like a module path
+        const curlyMatch = trimmed.match(/^using\s*\{\s*([^}]+)\s*\}/);
+        if (curlyMatch) {
+            const content = curlyMatch[1].trim();
+            // Absolute module paths start with /
+            if (content.startsWith("/")) {
+                return true;
+            }
+            // Dot-notation module paths contain .
+            if (content.includes(".")) {
+                return true;
+            }
+            // Bare identifier without / or . is local-scope using
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
      * Formats an import statement using the specified syntax.
      * @param path The module path to import
      * @param useDotSyntax Whether to use dot syntax (using. /path) or curly syntax (using { /path })

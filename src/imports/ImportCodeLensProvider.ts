@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
+import { ImportFormatter } from "./ImportFormatter";
 import { ImportPathConverter } from "./ImportPathConverter";
 
 export class ImportCodeLensProvider implements vscode.CodeLensProvider {
@@ -142,8 +143,8 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
             const line = lines[i];
             const trimmedLine = line.trim();
 
-            // Check if this is an import line
-            if (trimmedLine.startsWith("using")) {
+            // Check if this is a module import line (skip local-scope using)
+            if (ImportFormatter.isModuleImport(trimmedLine)) {
                 const range = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i, line.length));
 
                 // Check if it's a full path import that can be converted to relative
@@ -166,7 +167,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                             const hasMultipleFullPathImports =
                                 lines.filter((l) => {
                                     const trimmed = l.trim();
-                                    return trimmed.startsWith("using") && this.importPathConverter.isFullPathImport(trimmed) && !this.importPathConverter.isBuiltinModule(trimmed);
+                                    return ImportFormatter.isModuleImport(trimmed) && this.importPathConverter.isFullPathImport(trimmed) && !this.importPathConverter.isBuiltinModule(trimmed);
                                 }).length > 1;
 
                             // Add "Use relative paths for all" option if there are multiple full path imports
@@ -196,7 +197,7 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(convertSingleLens);
 
                         // Check if there are multiple relative imports in the file
-                        const hasMultipleRelativeImports = lines.filter((l) => l.trim().startsWith("using") && !this.importPathConverter.isFullPathImport(l.trim())).length > 1;
+                        const hasMultipleRelativeImports = lines.filter((l) => ImportFormatter.isModuleImport(l.trim()) && !this.importPathConverter.isFullPathImport(l.trim())).length > 1;
 
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {

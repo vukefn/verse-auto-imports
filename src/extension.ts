@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { logger } from "./utils";
 import { DiagnosticsHandler } from "./diagnostics";
-import { ImportHandler, ImportPathConverter, ImportCodeActionProvider, ImportCodeLensProvider } from "./imports";
+import { ImportHandler, ImportPathConverter, ImportCodeActionProvider, ImportCodeLensProvider, ImportFormatter } from "./imports";
 import { CommandsHandler } from "./commands";
 import { StatusBarHandler } from "./ui";
 import { ProjectPathHandler } from "./project";
@@ -331,8 +331,8 @@ export function activate(context: vscode.ExtensionContext) {
                     const line = document.lineAt(position.line);
                     const text = line.text.trim();
 
-                    // Check if hovering over an import line
-                    if (text.startsWith("using")) {
+                    // Check if hovering over a module import line (skip local-scope using)
+                    if (ImportFormatter.isModuleImport(text)) {
                         // Set hover state to show CodeLens
                         importCodeLensProvider.setHoverState(document.uri.toString(), true, position.line);
 
