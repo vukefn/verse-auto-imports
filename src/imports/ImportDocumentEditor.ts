@@ -23,7 +23,7 @@ export class ImportDocumentEditor {
 
         for (const line of lines) {
             const trimmed = line.trim();
-            if (trimmed.startsWith("using")) {
+            if (ImportFormatter.isModuleImport(trimmed)) {
                 logger.trace("ImportDocumentEditor", `Found import: ${trimmed}`);
                 imports.add(trimmed);
             }
@@ -59,7 +59,7 @@ export class ImportDocumentEditor {
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (line.startsWith("using")) {
+            if (ImportFormatter.isModuleImport(line)) {
                 logger.debug("ImportDocumentEditor", `Found existing import at line ${i}: ${line}`);
 
                 existingImports.add(line);
@@ -287,8 +287,8 @@ export class ImportDocumentEditor {
             const line = lines[i];
             const trimmedLine = line.trim();
 
-            // Check for single-line imports (curly or dot syntax)
-            if (trimmedLine.match(/^using\s*\{[^}]+\}/) || trimmedLine.match(/^using\.\s+.+/)) {
+            // Check for single-line imports (curly or dot syntax) — skip local-scope using
+            if (ImportFormatter.isModuleImport(trimmedLine) && (trimmedLine.match(/^using\s*\{[^}]+\}/) || trimmedLine.match(/^using\.\s+.+/))) {
                 logger.trace("ImportDocumentEditor", `Removing single-line import at line ${i + 1}: ${trimmedLine}`);
                 removedCount++;
                 i++;
@@ -296,7 +296,7 @@ export class ImportDocumentEditor {
             }
 
             // Check for multi-line import start
-            if (trimmedLine.match(/^using\s*:\s*$/)) {
+            if (ImportFormatter.isModuleImport(trimmedLine) && trimmedLine.match(/^using\s*:\s*$/)) {
                 logger.trace("ImportDocumentEditor", `Found multi-line import start at line ${i + 1}`);
                 removedCount++;
                 i++;
@@ -352,11 +352,11 @@ export class ImportDocumentEditor {
         const text = document.getText();
         const lines = text.split("\n");
 
-        // Find the last import line
+        // Find the last import line (only module imports, not local-scope using)
         let lastImportLine = -1;
         for (let i = 0; i < lines.length; i++) {
             const trimmed = lines[i].trim();
-            if (trimmed.startsWith("using")) {
+            if (ImportFormatter.isModuleImport(trimmed)) {
                 lastImportLine = i;
 
                 // Handle multi-line imports (using: format)
@@ -454,6 +454,11 @@ export class ImportDocumentEditor {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
+
+            // Skip local-scope using statements (e.g., using{Variable})
+            if (trimmedLine.startsWith("using") && !ImportFormatter.isModuleImport(trimmedLine)) {
+                continue;
+            }
 
             // Check for single-line curly syntax
             const curlyMatch = trimmedLine.match(/^(using\s*\{\s*)([^}]+)(\s*\})/);
