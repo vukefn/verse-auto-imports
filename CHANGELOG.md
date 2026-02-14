@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-02-14
+
 ### Fixed
 
 -   **Local-Scope Using Conflicts**: Local-scope `using` statements (e.g., `using{Variable}`) inside function bodies were incorrectly treated as module imports, causing them to be grouped with actual imports, deleted during import optimization, or shown in CodeLens path conversion (#23)
