@@ -3,10 +3,12 @@ node_modules/
 
 # Build outputs
 out/
+*.tsbuildinfo
 
-# VS Code extension testing
+# VS Code extension
 .vscode-test/
 .vscode/
+*.vsix
 
 # Package releases
 releases/
@@ -16,10 +18,24 @@ dev-notes/
 
 # Testing
 test/
+coverage/
 
 # Logs
+*.log
 npm-debug.log*
 
-# Claude Code
+# Environment / secrets
+.env
+.env.*
+
+# Local files
+*.local.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI
 .claude
-CLAUDE.md
+.codex
+.gemini
