@@ -49,26 +49,32 @@ export class PrecompiledDigestLoader {
         try {
             const extensionPath = this.extensionContext.extensionPath;
             const dataDir = path.join(extensionPath, "src", "data");
+            let successCount = 0;
 
             // Check if data directory exists
             if (!fs.existsSync(dataDir)) {
                 // Try out directory for compiled extension
                 const outDataDir = path.join(extensionPath, "out", "data");
                 if (fs.existsSync(outDataDir)) {
-                    await this.loadFromDirectory(outDataDir);
+                    successCount = await this.loadFromDirectory(outDataDir);
                 } else {
                     throw new Error(`Pre-compiled digest directory not found: ${dataDir}`);
                 }
             } else {
-                await this.loadFromDirectory(dataDir);
+                successCount = await this.loadFromDirectory(dataDir);
             }
 
-            this.loaded = true;
-            const elapsed = Date.now() - startTime;
-            logger.info(
-                "PrecompiledDigestLoader",
-                `Loaded ${this.digestCache.size} entries from pre-compiled digests in ${elapsed}ms`
-            );
+            // Only mark as loaded if at least one file was successfully parsed
+            if (successCount > 0) {
+                this.loaded = true;
+                const elapsed = Date.now() - startTime;
+                logger.info(
+                    "PrecompiledDigestLoader",
+                    `Loaded ${this.digestCache.size} entries from ${successCount} pre-compiled digest file(s) in ${elapsed}ms`
+                );
+            } else {
+                throw new Error("No digest files were successfully loaded");
+            }
         } catch (error) {
             this.loadError = error instanceof Error ? error : new Error(String(error));
             logger.error("PrecompiledDigestLoader", "Failed to load pre-compiled digests", error);
@@ -78,8 +84,11 @@ export class PrecompiledDigestLoader {
 
     /**
      * Load digest files from a directory
+     * @returns number of successfully loaded files
      */
-    private async loadFromDirectory(dataDir: string): Promise<void> {
+    private async loadFromDirectory(dataDir: string): Promise<number> {
+        let successCount = 0;
+
         for (const fileName of PrecompiledDigestLoader.DIGEST_FILES) {
             const filePath = path.join(dataDir, fileName);
 
@@ -99,12 +108,16 @@ export class PrecompiledDigestLoader {
                     }
                 }
 
-                // Merge module index
+                // Merge module index using Set for efficiency
                 for (const [modulePath, identifiers] of Object.entries(digest.moduleIndex)) {
-                    const existing = this.moduleIndex.get(modulePath) || [];
-                    this.moduleIndex.set(modulePath, [...new Set([...existing, ...identifiers])]);
+                    const existingSet = new Set(this.moduleIndex.get(modulePath) || []);
+                    for (const id of identifiers) {
+                        existingSet.add(id);
+                    }
+                    this.moduleIndex.set(modulePath, Array.from(existingSet));
                 }
 
+                successCount++;
                 logger.trace(
                     "PrecompiledDigestLoader",
                     `Loaded ${Object.keys(digest.entries).length} entries from ${fileName}`
@@ -113,6 +126,8 @@ export class PrecompiledDigestLoader {
                 logger.error("PrecompiledDigestLoader", `Failed to parse ${fileName}`, error);
             }
         }
+
+        return successCount;
     }
 
     /**

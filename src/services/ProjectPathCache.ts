@@ -167,6 +167,7 @@ export class ProjectPathCache {
 
     /**
      * Invalidate cache for specific files.
+     * Uses transaction-like pattern: parse first, then swap old for new only on success.
      */
     async invalidateFiles(filePaths: string[]): Promise<void> {
         if (!this.tree) {
@@ -175,7 +176,31 @@ export class ProjectPathCache {
 
         logger.debug("ProjectPathCache", `Invalidating ${filePaths.length} files`);
 
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        const treeBuilder = new ProjectPathTreeBuilder(this.outputChannel, this.projectPathHandler);
+
+        // Phase 1: Parse all files first and collect new nodes (transaction preparation)
+        const parsedResults: Map<string, ProjectPathNode[]> = new Map();
+        const failedFiles: string[] = [];
+
         for (const filePath of filePaths) {
+            try {
+                const fileUri = vscode.Uri.joinPath(workspaceFolders[0].uri, filePath);
+                const nodes = await treeBuilder.parseVerseFile(fileUri, workspaceFolders[0]);
+                parsedResults.set(filePath, nodes);
+            } catch (error) {
+                logger.error("ProjectPathCache", `Failed to reparse ${filePath}`, error);
+                failedFiles.push(filePath);
+                // Keep old data for failed files - don't add to parsedResults
+            }
+        }
+
+        // Phase 2: Apply changes only for successfully parsed files (transaction commit)
+        for (const [filePath, newNodes] of parsedResults) {
             // Remove old entries for this file
             const oldIdentifiers = this.tree.fileIndex[filePath] || [];
             for (const identifier of oldIdentifiers) {
@@ -196,36 +221,24 @@ export class ProjectPathCache {
             );
 
             delete this.tree.fileIndex[filePath];
-        }
 
-        // Reparse the files
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            return;
-        }
+            // Add new nodes
+            if (newNodes.length > 0) {
+                this.tree.fileIndex[filePath] = newNodes.map((n) => n.name);
+                this.tree.root.children.push(...newNodes);
 
-        const treeBuilder = new ProjectPathTreeBuilder(this.outputChannel, this.projectPathHandler);
-
-        for (const filePath of filePaths) {
-            try {
-                const fileUri = vscode.Uri.joinPath(workspaceFolders[0].uri, filePath);
-                const nodes = await treeBuilder.parseVerseFile(fileUri, workspaceFolders[0]);
-
-                if (nodes.length > 0) {
-                    this.tree.fileIndex[filePath] = nodes.map((n) => n.name);
-                    this.tree.root.children.push(...nodes);
-
-                    // Update identifier index
-                    for (const node of nodes) {
-                        const key = node.name.toLowerCase();
-                        const existing = this.identifierIndex.get(key) || [];
-                        existing.push(node);
-                        this.identifierIndex.set(key, existing);
-                    }
+                // Update identifier index
+                for (const node of newNodes) {
+                    const key = node.name.toLowerCase();
+                    const existing = this.identifierIndex.get(key) || [];
+                    existing.push(node);
+                    this.identifierIndex.set(key, existing);
                 }
-            } catch (error) {
-                logger.error("ProjectPathCache", `Failed to reparse ${filePath}`, error);
             }
+        }
+
+        if (failedFiles.length > 0) {
+            logger.warn("ProjectPathCache", `Kept old cache for ${failedFiles.length} failed file(s): ${failedFiles.join(", ")}`);
         }
 
         this.tree.generatedAt = Date.now();
@@ -233,7 +246,7 @@ export class ProjectPathCache {
     }
 
     /**
-     * Set up file watchers for .verse files.
+     * Set up file watchers for .verse files and project files.
      */
     setupFileWatchers(): vscode.Disposable {
         const disposables: vscode.Disposable[] = [];
@@ -246,6 +259,17 @@ export class ProjectPathCache {
         this.fileWatcher.onDidDelete((uri) => this.handleFileDelete(uri));
 
         disposables.push(this.fileWatcher);
+
+        // Watch for .uefnproject changes to trigger full cache rebuild
+        const projectWatcher = vscode.workspace.createFileSystemWatcher("**/*.uefnproject");
+        projectWatcher.onDidChange(() => {
+            logger.debug("ProjectPathCache", "Project file changed, triggering cache rebuild");
+            this.clear();
+            this.rebuildCache().catch((error) => {
+                logger.error("ProjectPathCache", "Failed to rebuild cache after project change", error);
+            });
+        });
+        disposables.push(projectWatcher);
 
         logger.debug("ProjectPathCache", "File watchers set up");
 

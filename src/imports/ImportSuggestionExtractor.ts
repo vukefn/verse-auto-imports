@@ -4,13 +4,35 @@ import { ImportSuggestion, ImportSuggestionSource, ImportConfidence } from "../t
 import { DigestParser, AssetsDigestParser } from "../services";
 import { ImportFormatter } from "./ImportFormatter";
 
+// Regex patterns for error message parsing
+const PATTERNS = {
+    /** "Did you mean any of:\n<options>" */
+    DID_YOU_MEAN_ANY: /Did you mean any of:\s*\n(.+)/s,
+    /** "Did you forget to specify one of:\nusing { /Path }" */
+    FORGET_ONE_OF: /Did you forget to specify one of:\s*\n((?:using \{[^}]+\}\s*\n?)+)/s,
+    /** "Identifier X could be one of many types: (/Path1:)X or (/Path2:)X" */
+    IDENTIFIER_MANY_TYPES: /Identifier \w+ could be one of many types:\s*(.+)/,
+    /** "Did you forget to specify using { /Path }" */
+    FORGET_SINGLE: /Did you forget to specify using \{ (\/[^}]+) \}/,
+    /** "Unknown identifier `x`. Did you forget to specify using { /Path }" */
+    UNKNOWN_WITH_SUGGESTION: /Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s,
+    /** "Unknown identifier `x`" */
+    UNKNOWN_IDENTIFIER: /Unknown identifier `([^`]+)`/,
+    /** "Did you mean X" (single suggestion) */
+    DID_YOU_MEAN_SINGLE: /Did you mean ([^`\n]+)/,
+    /** Extracts path from "using { /Path }" */
+    USING_PATH: /using \{ (\/[^}]+) \}/g,
+    /** Extracts path from "(/Path:)" format */
+    PATH_IN_PARENS: /\((\/[^:)]+):\)/g,
+} as const;
+
 /**
  * Handles parsing error messages and diagnostics to extract import suggestions.
  */
 export class ImportSuggestionExtractor {
-    private digestParser: DigestParser;
-    private formatter: ImportFormatter;
-    private assetsDigestParser: AssetsDigestParser | null;
+    private readonly digestParser: DigestParser;
+    private readonly formatter: ImportFormatter;
+    private readonly assetsDigestParser: AssetsDigestParser | null;
 
     constructor(
         outputChannel: vscode.OutputChannel,
@@ -21,6 +43,32 @@ export class ImportSuggestionExtractor {
         this.digestParser = new DigestParser(outputChannel, extensionContext);
         this.formatter = formatter;
         this.assetsDigestParser = assetsDigestParser || null;
+    }
+
+    /**
+     * Extracts paths from "using { /Path }" format.
+     */
+    private extractUsingPaths(text: string): string[] {
+        const paths: string[] = [];
+        const pattern = new RegExp(PATTERNS.USING_PATH.source, "g");
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(text)) !== null) {
+            paths.push(match[1]);
+        }
+        return paths;
+    }
+
+    /**
+     * Extracts paths from "(/Path:)" format (used in "Identifier could be one of many types").
+     */
+    private extractParenPaths(text: string): string[] {
+        const paths: string[] = [];
+        const pattern = new RegExp(PATTERNS.PATH_IN_PARENS.source, "g");
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(text)) !== null) {
+            paths.push(match[1]);
+        }
+        return paths;
     }
 
     /**
@@ -74,77 +122,33 @@ export class ImportSuggestionExtractor {
      */
     private parseMultiOptionSuggestions(errorMessage: string): string[] {
         // Pattern 1: "Did you mean any of:\n<options>"
-        const multiOptionPattern1 = /Did you mean any of:\s*\n(.+)/s;
-        const match1 = errorMessage.match(multiOptionPattern1);
-
+        const match1 = errorMessage.match(PATTERNS.DID_YOU_MEAN_ANY);
         if (match1) {
-            const optionsText = match1[1];
-            const options = optionsText
+            const options = match1[1]
                 .split("\n")
                 .map((line) => line.trim())
                 .filter((line) => line.length > 0);
-
             logger.debug("ImportSuggestionExtractor", `Found ${options.length} multi-options (pattern 1): ${options.join(", ")}`);
             return options;
         }
 
         // Pattern 2: "Did you forget to specify one of:\nusing { /Path }\nusing { /Path }"
-        const multiOptionPattern2 = /Did you forget to specify one of:\s*\n((?:using \{[^}]+\}\s*\n?)+)/s;
-        const match2 = errorMessage.match(multiOptionPattern2);
-
+        const match2 = errorMessage.match(PATTERNS.FORGET_ONE_OF);
         if (match2) {
-            const optionsText = match2[1];
-            const options: string[] = [];
-
-            // Extract all "using { /Path }" patterns
-            const usingPattern = /using \{ (\/[^}]+) \}/g;
-            let usingMatch;
-            while ((usingMatch = usingPattern.exec(optionsText)) !== null) {
-                options.push(usingMatch[1]);
-            }
-
+            const options = this.extractUsingPaths(match2[1]);
             logger.debug("ImportSuggestionExtractor", `Found ${options.length} multi-options (pattern 2): ${options.join(", ")}`);
             return options;
         }
 
         // Pattern 3: "Identifier X could be one of many types: (/Path1:)X or (/Path2:)X"
-        const multiOptionPattern3 = /Identifier \w+ could be one of many types:\s*(.+)/;
-        const match3 = errorMessage.match(multiOptionPattern3);
-
+        const match3 = errorMessage.match(PATTERNS.IDENTIFIER_MANY_TYPES);
         if (match3) {
-            const optionsText = match3[1];
-            const options: string[] = [];
-
-            // Extract all "(/Path:)" patterns
-            const pathPattern = /\((\/[^:)]+):\)/g;
-            let pathMatch;
-            while ((pathMatch = pathPattern.exec(optionsText)) !== null) {
-                options.push(pathMatch[1]);
-            }
-
+            const options = this.extractParenPaths(match3[1]);
             logger.debug("ImportSuggestionExtractor", `Found ${options.length} multi-options (pattern 3): ${options.join(", ")}`);
             return options;
         }
 
         return [];
-    }
-
-    /**
-     * Selects the best option from multiple import options based on configuration.
-     */
-    private selectBestOption(options: string[]): string {
-        const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const strategy = config.get<string>("behavior.multiOptionStrategy", "auto_shortest");
-
-        switch (strategy) {
-            case "auto_shortest":
-                // Return the option with the shortest path
-                return options.reduce((shortest, current) => (current.length < shortest.length ? current : shortest));
-            case "auto_first":
-                return options[0];
-            default:
-                return options[0]; // fallback
-        }
     }
 
     /**
@@ -255,13 +259,12 @@ export class ImportSuggestionExtractor {
         }
 
         // Check for unknown identifier with ambiguous mapping or digest lookup
-        const classNameMatch = errorMessage.match(/Unknown identifier `([^`]+)`/);
+        const classNameMatch = errorMessage.match(PATTERNS.UNKNOWN_IDENTIFIER);
         if (classNameMatch) {
             const className = classNameMatch[1];
 
             // Check if this unknown identifier error also includes a specific import suggestion
-            // Pattern: "Unknown identifier `editable`. Did you forget to specify using { /Verse.org/Simulation }"
-            const specificSuggestionMatch = errorMessage.match(/Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s);
+            const specificSuggestionMatch = errorMessage.match(PATTERNS.UNKNOWN_WITH_SUGGESTION);
             if (specificSuggestionMatch) {
                 const path = specificSuggestionMatch[1];
                 const importStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
@@ -286,21 +289,19 @@ export class ImportSuggestionExtractor {
             }
         }
 
-        // Pattern 1: "Did you forget to specify using { /Path }"
-        let match = errorMessage.match(/Did you forget to specify (using \{ \/[^}]+ \})/);
-        if (match) {
-            const path = match[1].match(/using \{ (\/[^}]+) \}/)?.[1];
-            if (path) {
-                const importStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
-                logger.debug("ImportSuggestionExtractor", `Found import statement: ${importStatement}`);
-                return [this.createImportSuggestion(importStatement, "error_message", "high", `Standard import for ${path}`)];
-            }
+        // Pattern: "Did you forget to specify using { /Path }"
+        const forgetMatch = errorMessage.match(PATTERNS.FORGET_SINGLE);
+        if (forgetMatch) {
+            const path = forgetMatch[1];
+            const importStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
+            logger.debug("ImportSuggestionExtractor", `Found import statement: ${importStatement}`);
+            return [this.createImportSuggestion(importStatement, "error_message", "high", `Standard import for ${path}`)];
         }
 
-        // Pattern 2: "Did you mean Namespace.Component" (single option)
-        match = errorMessage.match(/Did you mean ([^`\n]+)/);
-        if (match) {
-            const fullName = match[1].trim();
+        // Pattern: "Did you mean Namespace.Component" (single option)
+        const didYouMeanMatch = errorMessage.match(PATTERNS.DID_YOU_MEAN_SINGLE);
+        if (didYouMeanMatch) {
+            const fullName = didYouMeanMatch[1].trim();
             const result = this.findCorrectModulePath(fullName);
             logger.trace("ImportSuggestionExtractor", `Finding module path for: ${fullName}`);
             if (result && result.modulePath) {
@@ -331,62 +332,49 @@ export class ImportSuggestionExtractor {
                 continue;
             }
 
-            // Pattern 0: "Unknown identifier `x`. Did you forget to specify using { /Path }" (combined pattern)
-            const unknownWithSuggestionMatch = errorMessage.match(/Unknown identifier `[^`]+`.*Did you forget to specify using \{ (\/[^}]+) \}/s);
+            // Pattern: "Unknown identifier `x`. Did you forget to specify using { /Path }"
+            const unknownWithSuggestionMatch = errorMessage.match(PATTERNS.UNKNOWN_WITH_SUGGESTION);
             if (unknownWithSuggestionMatch) {
                 suggestedPaths.add(unknownWithSuggestionMatch[1]);
                 logger.debug("ImportSuggestionExtractor", `Found path from unknown identifier with suggestion: ${unknownWithSuggestionMatch[1]}`);
                 continue;
             }
 
-            // Pattern 1: "Did you forget to specify using { /Path }"
-            const forgetMatch = errorMessage.match(/Did you forget to specify using \{ (\/[^}]+) \}/);
+            // Pattern: "Did you forget to specify using { /Path }"
+            const forgetMatch = errorMessage.match(PATTERNS.FORGET_SINGLE);
             if (forgetMatch) {
                 suggestedPaths.add(forgetMatch[1]);
                 logger.debug("ImportSuggestionExtractor", `Found path from 'forget' pattern: ${forgetMatch[1]}`);
                 continue;
             }
 
-            // Pattern 2: Multiple options "Did you forget to specify one of:"
-            const multiMatch = errorMessage.match(/Did you forget to specify one of:\s*\n((?:using \{[^}]+\}\s*\n?)+)/s);
+            // Pattern: "Did you forget to specify one of:" (multiple options)
+            const multiMatch = errorMessage.match(PATTERNS.FORGET_ONE_OF);
             if (multiMatch) {
-                const optionsText = multiMatch[1];
-                const usingPattern = /using \{ (\/[^}]+) \}/g;
-                let usingMatch;
-                while ((usingMatch = usingPattern.exec(optionsText)) !== null) {
-                    suggestedPaths.add(usingMatch[1]);
-                    logger.debug("ImportSuggestionExtractor", `Found path from multi-option: ${usingMatch[1]}`);
+                for (const path of this.extractUsingPaths(multiMatch[1])) {
+                    suggestedPaths.add(path);
+                    logger.debug("ImportSuggestionExtractor", `Found path from multi-option: ${path}`);
                 }
                 continue;
             }
 
-            // Pattern 3: "Identifier X could be one of many types: (/Path1:)X or (/Path2:)X"
-            const identifierMatch = errorMessage.match(/Identifier \w+ could be one of many types:\s*(.+)/);
+            // Pattern: "Identifier X could be one of many types: (/Path1:)X or (/Path2:)X"
+            const identifierMatch = errorMessage.match(PATTERNS.IDENTIFIER_MANY_TYPES);
             if (identifierMatch) {
-                const optionsText = identifierMatch[1];
-                const pathPattern = /\((\/[^:)]+):\)/g;
-                let pathMatch;
-                while ((pathMatch = pathPattern.exec(optionsText)) !== null) {
-                    suggestedPaths.add(pathMatch[1]);
-                    logger.debug("ImportSuggestionExtractor", `Found path from identifier pattern: ${pathMatch[1]}`);
+                for (const path of this.extractParenPaths(identifierMatch[1])) {
+                    suggestedPaths.add(path);
+                    logger.debug("ImportSuggestionExtractor", `Found path from identifier pattern: ${path}`);
                 }
                 continue;
             }
 
-            // Pattern 4: "Did you mean Module.Class" - extract module
-            const didYouMeanMatch = errorMessage.match(/Did you mean ([^`\n]+)/);
+            // Pattern: "Did you mean Module.Class" - extract module
+            const didYouMeanMatch = errorMessage.match(PATTERNS.DID_YOU_MEAN_SINGLE);
             if (didYouMeanMatch) {
                 const fullName = didYouMeanMatch[1].trim();
                 const result = this.findCorrectModulePath(fullName);
                 if (result && result.modulePath) {
-                    // Check if it's an absolute path or relative module
-                    if (result.modulePath.startsWith("/")) {
-                        suggestedPaths.add(result.modulePath);
-                    } else {
-                        // For relative modules, we might need to handle them differently
-                        // For now, add as-is
-                        suggestedPaths.add(result.modulePath);
-                    }
+                    suggestedPaths.add(result.modulePath);
                     logger.debug("ImportSuggestionExtractor", `Found path from 'did you mean': ${result.modulePath}`);
                 }
             }
