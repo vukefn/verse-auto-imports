@@ -20,6 +20,10 @@ test/
 # Logs
 npm-debug.log*
 
-# Claude Code
+# AI
 .claude
-CLAUDE.md
+.gemini
+*.local.*
+
+# Patch files
+*.patch
