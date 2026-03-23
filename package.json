@@ -282,7 +282,7 @@
         "@types/vscode": "^1.85.0",
         "@types/node": "^25.2.3",
         "ts-node": "^10.9.2",
-        "typescript": "^5.9.3"
+        "typescript": "^6.0.2"
     },
     "publisher": "vukefn",
     "repository": {
