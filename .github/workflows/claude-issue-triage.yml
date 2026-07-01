@@ -1,0 +1,52 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    # Issues that mention @claude are handled by claude.yml instead
+    if: |
+      !contains(github.event.issue.body, '@claude') &&
+      !contains(github.event.issue.title, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Triage issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Triage GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}.
+
+            Steps:
+            1. Read the issue with `gh issue view ${{ github.event.issue.number }}`.
+            2. Check for duplicates among open and recently closed issues
+               (`gh issue list --state all --limit 30`). If it is a duplicate,
+               comment with a link to the original and apply the "duplicate" label.
+            3. Classify the issue and apply exactly one type label: "bug",
+               "enhancement", "question", or "documentation". Check available
+               labels first with `gh label list` and use the closest match;
+               do not create new labels.
+            4. For bugs: check whether the report includes the extension version,
+               VS Code version, and a sample Verse snippet or compiler error text.
+               If any of these are missing, post one polite comment asking for the
+               specific missing items.
+            5. If the report includes a Verse compiler error message, inspect
+               src/imports/ImportSuggestionExtractor.ts and note in a comment which
+               extraction pattern is involved (or that none matches), to speed up
+               the eventual fix.
+
+            Rules:
+            - Follow the conventions in CLAUDE.md (no emojis, short factual comments).
+            - Post at most two comments total; prefer one.
+            - Never close the issue. Never assign anyone.
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh search:*),Read,Grep,Glob"'

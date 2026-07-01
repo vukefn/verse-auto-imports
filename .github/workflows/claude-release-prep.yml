@@ -1,0 +1,70 @@
+name: Release Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.7.0). Leave empty to infer from unreleased changes."
+        required: false
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v6
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Prepare release
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Prepare a release of this VS Code extension. Read CLAUDE.md first.
+            The checkout is the develop branch.
+
+            Requested version: "${{ inputs.version }}". If empty, determine the
+            correct semver bump yourself from the nature of the unreleased changes
+            (features -> minor, fixes only -> patch).
+
+            Steps:
+            1. Verify the tree is releasable: `npm ci && npm run compile && npm test`.
+               If anything fails, stop and report the failure instead of releasing.
+            2. Review changes since the last release:
+               `git log $(git describe --tags --abbrev=0 origin/main)..HEAD --oneline`
+               plus the diff summary. Identify user-facing changes.
+            3. Update CHANGELOG.md following Keep a Changelog: create a section for
+               the new version dated today (UTC), grouped under Added / Changed /
+               Fixed as appropriate, written for end users (what changed in the
+               editor experience, not internal refactor details). Keep an empty
+               [Unreleased] section on top.
+            4. Set the new version in package.json (version field only; do not
+               touch other fields or package-lock.json by hand - run
+               `npm install --package-lock-only` after the bump to sync it).
+            5. Create branch release/vX.Y.Z from develop, commit everything as
+               "chore: prepare release vX.Y.Z", and push it.
+            6. Open a PR from release/vX.Y.Z to main titled "release: vX.Y.Z".
+               Body: the new changelog section, plus a checklist reminding the
+               maintainer that merging will produce a draft GitHub Release which
+               they publish to ship to the Marketplace.
+            7. Also open a PR from release/vX.Y.Z to develop if main and develop
+               have diverged, or note in the first PR that develop should be
+               synced after the release merge.
+
+            Rules: no emojis, no AI attribution in commits, conventional commit
+            prefixes only.
+          claude_args: '--allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(npm install --package-lock-only),Bash(git:*),Bash(gh pr:*),Bash(gh api:*),Read,Write,Edit,Grep,Glob"'
