@@ -1,0 +1,69 @@
+name: Weekly Maintenance
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      actions: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Run maintenance sweep
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are the weekly maintenance agent for ${{ github.repository }},
+            a VS Code extension for the Verse language. Read CLAUDE.md first.
+            The checkout is the develop branch.
+
+            Inspect the repository and produce a short maintenance report:
+
+            1. Repo health: run `npm ci`, `npm run compile`, and `npm test` on
+               develop. Report any failure with the relevant output.
+            2. Open issues: list open issues; flag any with no activity for more
+               than 30 days, any unanswered questions, and any missing triage labels.
+            3. Open PRs: list open PRs and their CI state; flag stale ones and any
+               Dependabot majors waiting on a decision.
+            4. Release readiness: compare develop against the latest release tag
+               (`git log $(git describe --tags --abbrev=0 origin/main)..HEAD --oneline`).
+               If there are user-facing changes, summarize them and state whether a
+               release is worth cutting, and whether CHANGELOG.md's [Unreleased]
+               section reflects them.
+            5. Quality drift: check for obvious problems introduced recently
+               (untested new modules under src/, TODO/FIXME comments added in the
+               last month, files that grew past ~600 lines).
+
+            Then publish the report:
+            - Find an open issue labeled "maintenance" titled "Weekly maintenance report"
+              (`gh issue list --label maintenance`). If it exists, post the new report
+              as a comment. If not, create it with the report as body (create the
+              "maintenance" label first if missing).
+            - Format: a dated heading, then short sections. Only include sections
+              with findings; write "All clear" if nothing needs attention.
+            - End the report with a "Suggested actions" list, each phrased so the
+              maintainer can reply "@claude do item N" to delegate it.
+
+            Rules: no emojis; do not modify any code or open PRs from this run;
+            do not close or edit other issues.
+          claude_args: '--allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(git log:*),Bash(git describe:*),Bash(git diff:*),Bash(gh issue:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh label:*),Bash(gh api:*),Read,Grep,Glob"'
