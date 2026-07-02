@@ -8,6 +8,10 @@ on:
         required: false
         type: string
 
+# Never prepare two releases at once
+concurrency:
+  group: release-prep
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -67,4 +71,6 @@ jobs:
 
             Rules: no emojis, no AI attribution in commits, conventional commit
             prefixes only.
-          claude_args: '--allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(npm install --package-lock-only),Bash(git:*),Bash(gh pr:*),Bash(gh api:*),Read,Write,Edit,Grep,Glob"'
+          claude_args: |
+            --allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(npm install --package-lock-only),Bash(git:*),Bash(gh pr:*),Bash(gh api:*),Read,Write,Edit,Grep,Glob"
+            --max-turns 30
