@@ -70,6 +70,17 @@ export class ImportPathConverter {
         return location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
     }
 
+    /**
+     * Builds a regex matching an explicit `Name := module:` declaration for the
+     * given module name. Non-global on purpose: this pattern is reused with
+     * `.test()` across many files, and a global flag would carry `lastIndex`
+     * between calls and skip valid definitions depending on file order.
+     */
+    static buildModuleDefinitionRegex(moduleName: string): RegExp {
+        const escaped = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`\\b${escaped}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`, "m");
+    }
+
     /** Extracts the path string from an import statement */
     private extractPathFromImport(importStatement: string): string {
         const curlyMatch = importStatement.match(/using\s*\{\s*([^}]+)\s*\}/);
@@ -232,8 +243,7 @@ export class ImportPathConverter {
         if (workspaceIsContent) searchPattern = "**/*.verse";
 
         const verseFiles = await vscode.workspace.findFiles(searchPattern, null, 100);
-        const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const modulePattern = new RegExp(`\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`, "gm");
+        const modulePattern = ImportPathConverter.buildModuleDefinitionRegex(moduleName);
 
         for (const file of verseFiles) {
             const content = await vscode.workspace.fs.readFile(file).then(
