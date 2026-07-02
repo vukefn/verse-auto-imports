@@ -46,5 +46,5 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(npx jest:*),Bash(gh issue:*),Bash(gh pr:*),Bash(gh search:*)"
+            --allowedTools "Bash(git:*),Bash(gh:*),Bash(npm ci),Bash(npm install:*),Bash(npm run compile),Bash(npm test),Bash(npx jest:*)"
             --max-turns 30
