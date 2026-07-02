@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Module names are matched exactly: unrelated identifiers like `MyUtils` no longer match `Utils`, and class or struct names are never offered as module locations
   - Cached results are validated against the filesystem before use, with automatic fallback to a full scan when the cache is stale
   - The search near the current file runs first again, so the nearest module is preferred over project-wide matches
+- **Optimize Imports Reliability**: with auto-import enabled (the default), "Optimize Imports" could momentarily strip every import, report success, and leave the file unorganized while the imports reappeared a moment later. The command now organizes imports in a single step and never leaves the file without them; behavior no longer depends on the auto-import debounce delay
 
 ### Changed
 

@@ -35,8 +35,6 @@ export class CommandsHandler {
     // Named constants for timing delays
     private static readonly STATUS_MESSAGE_DURATION_MS = 3000;
     private static readonly SNOOZE_DURATION_MINUTES = 5;
-    private static readonly DIAGNOSTICS_REFRESH_DELAY_MS = 200;
-    private static readonly AUTO_IMPORT_WAIT_DELAY_MS = 500;
 
     constructor(private readonly deps: CommandsDependencies) {}
 
@@ -95,10 +93,7 @@ export class CommandsHandler {
      */
     async addSingleImport(document: vscode.TextDocument, importStatement: string): Promise<void> {
         await this.deps.importHandler.addImportsToDocument(document, [importStatement]);
-        vscode.window.setStatusBarMessage(
-            `Added import: ${importStatement}`,
-            CommandsHandler.STATUS_MESSAGE_DURATION_MS
-        );
+        vscode.window.setStatusBarMessage(`Added import: ${importStatement}`, CommandsHandler.STATUS_MESSAGE_DURATION_MS);
     }
 
     /**
@@ -122,60 +117,19 @@ export class CommandsHandler {
 
         try {
             const document = editor.document;
-            const config = vscode.workspace.getConfiguration("verseAutoImports");
-            const autoImportEnabled = config.get<boolean>("general.autoImport", true);
-            const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
 
-            logger.debug("CommandsHandler", `Auto-import: ${autoImportEnabled}, Preferred syntax: ${preferDotSyntax ? "dot" : "curly"}`);
-
-            // Step 1: Remove all imports from the document
-            logger.debug("CommandsHandler", "Step 1: Removing all imports");
-            await this.deps.importHandler.removeAllImports(document);
-
-            // Step 2: Save the document to trigger diagnostics refresh
-            logger.debug("CommandsHandler", "Step 2: Saving document to trigger diagnostics");
-            await document.save();
-
-            // Step 3: Wait for diagnostics to update
-            logger.debug("CommandsHandler", "Step 3: Waiting for diagnostics to update");
-            await this.delay(CommandsHandler.DIAGNOSTICS_REFRESH_DELAY_MS);
-
-            // Step 4: Get diagnostics for the document
+            // Anything the compiler currently reports as a missing import gets
+            // added during the rebuild. No waiting: the command does not race
+            // the auto-import debounce, it computes the result itself.
             const diagnostics = vscode.languages.getDiagnostics(document.uri);
-            logger.debug("CommandsHandler", `Found ${diagnostics.length} diagnostics`);
+            const missingImportPaths = this.deps.importHandler.extractImportsFromDiagnostics(diagnostics);
+            logger.debug("CommandsHandler", `Found ${missingImportPaths.length} missing import(s) in current diagnostics`);
 
-            if (autoImportEnabled) {
-                // Step 5a: Auto-import is ON - wait for it to handle missing imports
-                logger.debug("CommandsHandler", "Step 5a: Auto-import is enabled, waiting for automatic imports");
-                await this.delay(CommandsHandler.AUTO_IMPORT_WAIT_DELAY_MS);
-            } else {
-                // Step 5b: Auto-import is OFF - manually add missing imports
-                logger.debug("CommandsHandler", "Step 5b: Auto-import is disabled, manually processing diagnostics");
+            // Rebuild the import block in one atomic edit: existing imports plus
+            // missing ones, deduplicated, grouped, sorted, and written in the
+            // preferred syntax. The document is never left import-less.
+            await this.deps.importHandler.organizeImports(document, missingImportPaths);
 
-                const missingImportPaths = this.deps.importHandler.extractImportsFromDiagnostics(diagnostics);
-
-                if (missingImportPaths.length > 0) {
-                    logger.debug("CommandsHandler", `Found ${missingImportPaths.length} missing imports to add`);
-
-                    const importStatements = missingImportPaths.map((path) => {
-                        const statement = preferDotSyntax ? `using. ${path}` : `using { ${path} }`;
-                        logger.trace("CommandsHandler", `Formatting import: ${statement}`);
-                        return statement;
-                    });
-
-                    await this.deps.importHandler.addImportsToDocument(document, importStatements);
-                }
-            }
-
-            // Step 6: Convert scattered imports to preferred syntax (common to both paths)
-            logger.debug("CommandsHandler", "Step 6: Converting scattered imports to preferred syntax");
-            await this.deps.importHandler.convertScatteredImportsToPreferredSyntax(document);
-
-            // Step 7: Ensure proper spacing after imports (common to both paths)
-            logger.debug("CommandsHandler", "Step 7: Ensuring proper spacing after imports");
-            await this.deps.importHandler.ensureEmptyLinesAfterImports(document);
-
-            // Save the document again to ensure all changes are persisted
             await document.save();
 
             logger.info("CommandsHandler", "Successfully optimized imports");
@@ -255,11 +209,7 @@ export class CommandsHandler {
         try {
             const uri = await logger.exportDebugLogs();
             if (uri) {
-                const action = await vscode.window.showInformationMessage(
-                    `Debug logs exported to ${uri.fsPath}`,
-                    "Open File",
-                    "Open Folder"
-                );
+                const action = await vscode.window.showInformationMessage(`Debug logs exported to ${uri.fsPath}`, "Open File", "Open Folder");
                 if (action === "Open File") {
                     await vscode.commands.executeCommand("vscode.open", uri);
                 } else if (action === "Open Folder") {
@@ -267,9 +217,7 @@ export class CommandsHandler {
                 }
             }
         } catch (error) {
-            vscode.window.showErrorMessage(
-                `Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`
-            );
+            vscode.window.showErrorMessage(`Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -296,7 +244,7 @@ export class CommandsHandler {
             },
             async () => {
                 await this.deps.projectPathCache!.rebuildCache();
-            }
+            },
         );
 
         const stats = this.deps.projectPathCache.getStats();
@@ -484,16 +432,5 @@ export class CommandsHandler {
 
         vscode.window.showInformationMessage(`Using relative paths for ${convertedCount} import${convertedCount !== 1 ? "s" : ""}.`);
         this.finalizeConversion(documentUri);
-    }
-
-    //==========================================================================
-    // Private Utilities
-    //==========================================================================
-
-    /**
-     * Promise-based delay helper.
-     */
-    private delay(ms: number): Promise<void> {
-        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 }
