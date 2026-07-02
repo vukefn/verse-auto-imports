@@ -281,7 +281,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.2.3",
+    "@types/node": "^26.1.0",
     "@types/vscode": "^1.85.0",
     "jest": "^30.3.0",
     "ts-jest": "^29.4.6",
