@@ -1,0 +1,90 @@
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  gate:
+    # Decide whether this PR warrants an automatic Claude review:
+    # community PRs always; Dependabot PRs only for major version bumps.
+    # The maintainer's own PRs are reviewed on demand via an @claude comment.
+    runs-on: ubuntu-latest
+    outputs:
+      review: ${{ steps.decide.outputs.review }}
+    steps:
+      - name: Fetch Dependabot metadata
+        if: github.actor == 'dependabot[bot]'
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide
+        id: decide
+        env:
+          ACTOR: ${{ github.actor }}
+          AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          if [ "$ACTOR" = "dependabot[bot]" ]; then
+            if [ "$UPDATE_TYPE" = "version-update:semver-major" ]; then
+              echo "review=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "review=false" >> "$GITHUB_OUTPUT"
+            fi
+          elif [ "$AUTHOR_ASSOCIATION" = "OWNER" ]; then
+            echo "review=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "review=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    needs: gate
+    if: needs.gate.outputs.review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Review PR
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_sticky_comment: true
+          prompt: |
+            Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            This repository is a VS Code extension for the Verse language (UEFN).
+            Read CLAUDE.md first for architecture and conventions, then review the
+            diff for:
+            - Correctness bugs, especially in compiler-error pattern matching
+              (ImportSuggestionExtractor) and document editing (ImportDocumentEditor)
+            - Violations of the architecture (bypassing the ImportHandler facade,
+              services called from the wrong layer)
+            - Missing CHANGELOG entry for user-facing changes
+            - Missing or broken tests (run `npm ci && npm run compile && npm test`
+              to verify)
+            - For dependency major bumps: scan the changelog/release notes of the
+              dependency for breaking changes that affect this codebase and say
+              explicitly whether the bump is safe to merge
+
+            Post the review as a single sticky comment: a short verdict first
+            (safe to merge / needs changes), then only the findings that matter.
+            No emojis. Do not approve or request changes formally; comment only.
+          claude_args: '--allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh api:*),Read,Grep,Glob"'
