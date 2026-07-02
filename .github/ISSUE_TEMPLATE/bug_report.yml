@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a problem with the extension
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: e.g. saved a file with an unknown identifier and the wrong using statement was added
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Extensions panel -> Verse Auto Imports -> version number
+      placeholder: e.g. 0.6.4
+    validations:
+      required: true
+
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      description: Help -> About
+      placeholder: e.g. 1.101.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: compiler-error
+    attributes:
+      label: Verse compiler error text
+      description: If the problem involves an error message, paste the exact compiler diagnostic from the Problems panel.
+      render: text
+
+  - type: textarea
+    id: sample-code
+    attributes:
+      label: Sample Verse code
+      description: A minimal snippet that reproduces the problem.
+      render: text
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Any verseAutoImports.* settings you changed from their defaults.
