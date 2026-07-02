@@ -159,10 +159,11 @@ export class AssetsDigestParser {
 
         // Watch for Assets.digest.verse in the VerseProject folder
         const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
-        const watchPattern = path.join(localAppData, "UnrealEditorFortnite", "Saved", "VerseProject", "**", "Assets.digest.verse");
-
-        // Use a glob pattern for the watcher
-        const watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
+        // The digest lives outside the workspace. A plain string glob is only
+        // honored inside workspace folders, so watch the external VerseProject
+        // directory recursively via a RelativePattern anchored to its Uri.
+        const verseProjectDir = path.join(localAppData, "UnrealEditorFortnite", "Saved", "VerseProject");
+        const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(verseProjectDir), "**/Assets.digest.verse"));
 
         const handleChange = (uri: vscode.Uri) => {
             logger.debug("AssetsDigestParser", `Assets.digest.verse changed: ${uri.fsPath}`);

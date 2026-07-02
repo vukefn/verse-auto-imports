@@ -183,6 +183,10 @@ export class ProjectPathCache {
         });
         disposables.push(projectWatcher);
 
+        // Clear any pending debounced update on teardown so it cannot run
+        // against a disposed extension context after deactivation.
+        disposables.push({ dispose: () => this.clear() });
+
         logger.debug("ProjectPathCache", "File watchers set up");
 
         return vscode.Disposable.from(...disposables);

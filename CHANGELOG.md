@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Cached results are validated against the filesystem before use, with automatic fallback to a full scan when the cache is stale
   - The search near the current file runs first again, so the nearest module is preferred over project-wide matches
 - **Optimize Imports Reliability**: with auto-import enabled (the default), "Optimize Imports" could momentarily strip every import, report success, and leave the file unorganized while the imports reappeared a moment later. The command now organizes imports in a single step and never leaves the file without them; behavior no longer depends on the auto-import debounce delay
+- **Auto-Import Asset Class Names**: automatic imports now exclude asset class names from the import path, matching the quick-fix behavior. Previously the automatic path could import `using { A.B.ClassName }` where the quick fix correctly used `using { A.B }`
+- **Asset Changes Detected Promptly**: adding or renaming assets in UEFN is now picked up as soon as the assets digest regenerates, instead of after a delay. The file watcher for the out-of-workspace assets digest was not firing
+- **Ambiguous Module Detection**: when a module is defined in several files, path conversion no longer drops valid locations depending on the order files are scanned
+- **Snooze Timer**: repeatedly starting snooze from the command palette no longer leaves extra countdown timers running, and an active snooze is cleaned up when the extension is disabled or reloaded
 
 ### Changed
 
