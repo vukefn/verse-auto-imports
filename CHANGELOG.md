@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Project Path Caching**: the extension now caches your project's module structure so relative-to-absolute path conversion resolves faster, especially in large projects. Enabled by default.
+  - New setting `cache.enableProjectCache` (default: on) to toggle caching
+  - New setting `cache.autoRebuildOnStartup` (default: off) to rebuild the cache when VS Code starts
+  - New setting `cache.watcherDebounceMs` (default: 500) to tune how quickly file changes refresh the cache
+  - New command **Verse: Rebuild Project Path Cache** to refresh the cache on demand
+  - New command **Verse: Show Cache Status** to inspect the current cache state
+
+### Changed
+
+- **Faster Cache Rebuilds**: project files are scanned concurrently when rebuilding the path cache. The cache storage format changed; existing caches are rebuilt automatically on first use after updating.
+
 ### Fixed
 
 - **Path Conversion with Project Cache**: "Use Absolute Path" and related commands produced malformed import paths or wrong module suggestions when the project path cache was enabled (the default)
@@ -18,10 +31,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Asset Changes Detected Promptly**: adding or renaming assets in UEFN is now picked up as soon as the assets digest regenerates, instead of after a delay. The file watcher for the out-of-workspace assets digest was not firing
 - **Ambiguous Module Detection**: when a module is defined in several files, path conversion no longer drops valid locations depending on the order files are scanned
 - **Snooze Timer**: repeatedly starting snooze from the command palette no longer leaves extra countdown timers running, and an active snooze is cleaned up when the extension is disabled or reloaded
-
-### Changed
-
-- **Faster Cache Rebuilds**: project files are scanned concurrently when rebuilding the path cache. The cache storage format changed; existing caches are rebuilt automatically on first use after updating
 
 ## [0.6.4] - 2026-02-14
 
