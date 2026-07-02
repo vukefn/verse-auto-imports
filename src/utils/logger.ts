@@ -179,7 +179,7 @@ export class Logger {
      */
     public getDebugLogsAsString(): string {
         const header = ["Verse Auto Imports - Debug Log Export", `Exported: ${new Date().toISOString()}`, `Entries: ${this.logBuffer.length}`, "-------------------------------------------", ""].join(
-            "\n"
+            "\n",
         );
 
         return header + this.logBuffer.join("\n");

@@ -4,7 +4,10 @@ import { ImportSuggestion } from "../types";
 import { ImportHandler } from "./ImportHandler";
 
 export class ImportCodeActionProvider implements vscode.CodeActionProvider {
-    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {}
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        private importHandler: ImportHandler,
+    ) {}
 
     async provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): Promise<vscode.CodeAction[] | undefined> {
         const codeActions: vscode.CodeAction[] = [];
@@ -31,7 +34,7 @@ export class ImportCodeActionProvider implements vscode.CodeActionProvider {
                     diagnostic,
                     document,
                     index === 0, // Mark first as preferred
-                    showDescriptions
+                    showDescriptions,
                 );
                 codeActions.push(action);
             });

@@ -26,11 +26,7 @@ export class PrecompiledDigestLoader {
     private loaded: boolean = false;
     private loadError: Error | null = null;
 
-    private static readonly DIGEST_FILES = [
-        "Fortnite.digest.json",
-        "UnrealEngine.digest.json",
-        "Verse.digest.json",
-    ];
+    private static readonly DIGEST_FILES = ["Fortnite.digest.json", "UnrealEngine.digest.json", "Verse.digest.json"];
 
     constructor(private extensionContext: vscode.ExtensionContext) {}
 
@@ -68,10 +64,7 @@ export class PrecompiledDigestLoader {
             if (successCount > 0) {
                 this.loaded = true;
                 const elapsed = Date.now() - startTime;
-                logger.info(
-                    "PrecompiledDigestLoader",
-                    `Loaded ${this.digestCache.size} entries from ${successCount} pre-compiled digest file(s) in ${elapsed}ms`
-                );
+                logger.info("PrecompiledDigestLoader", `Loaded ${this.digestCache.size} entries from ${successCount} pre-compiled digest file(s) in ${elapsed}ms`);
             } else {
                 throw new Error("No digest files were successfully loaded");
             }
@@ -118,10 +111,7 @@ export class PrecompiledDigestLoader {
                 }
 
                 successCount++;
-                logger.trace(
-                    "PrecompiledDigestLoader",
-                    `Loaded ${Object.keys(digest.entries).length} entries from ${fileName}`
-                );
+                logger.trace("PrecompiledDigestLoader", `Loaded ${Object.keys(digest.entries).length} entries from ${fileName}`);
             } catch (error) {
                 logger.error("PrecompiledDigestLoader", `Failed to parse ${fileName}`, error);
             }

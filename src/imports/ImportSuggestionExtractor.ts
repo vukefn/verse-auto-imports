@@ -34,12 +34,7 @@ export class ImportSuggestionExtractor {
     private readonly formatter: ImportFormatter;
     private readonly assetsDigestParser: AssetsDigestParser | null;
 
-    constructor(
-        outputChannel: vscode.OutputChannel,
-        formatter: ImportFormatter,
-        assetsDigestParser?: AssetsDigestParser,
-        extensionContext?: vscode.ExtensionContext
-    ) {
+    constructor(outputChannel: vscode.OutputChannel, formatter: ImportFormatter, assetsDigestParser?: AssetsDigestParser, extensionContext?: vscode.ExtensionContext) {
         this.digestParser = new DigestParser(outputChannel, extensionContext);
         this.formatter = formatter;
         this.assetsDigestParser = assetsDigestParser || null;
@@ -95,10 +90,7 @@ export class ImportSuggestionExtractor {
                 const modulePath = parts.slice(0, i).join(".");
                 const className = parts[parts.length - 1];
 
-                logger.debug(
-                    "ImportSuggestionExtractor",
-                    `Found asset class '${segment}' in path '${fullName}'. Module: ${modulePath}, Class: ${className}`
-                );
+                logger.debug("ImportSuggestionExtractor", `Found asset class '${segment}' in path '${fullName}'. Module: ${modulePath}, Class: ${className}`);
 
                 return { modulePath, className };
             }

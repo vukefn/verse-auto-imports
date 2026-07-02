@@ -21,7 +21,7 @@ export class DigestParser {
 
     constructor(
         private outputChannel: vscode.OutputChannel,
-        private extensionContext?: vscode.ExtensionContext
+        private extensionContext?: vscode.ExtensionContext,
     ) {
         if (extensionContext) {
             this.precompiledLoader = new PrecompiledDigestLoader(extensionContext);
