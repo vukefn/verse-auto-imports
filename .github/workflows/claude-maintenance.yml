@@ -5,6 +5,10 @@ on:
     - cron: "0 9 * * 1" # Mondays 09:00 UTC
   workflow_dispatch:
 
+# Never run two sweeps at once (cron + manual dispatch)
+concurrency:
+  group: maintenance
+
 jobs:
   maintenance:
     runs-on: ubuntu-latest
@@ -66,4 +70,6 @@ jobs:
 
             Rules: no emojis; do not modify any code or open PRs from this run;
             do not close or edit other issues.
-          claude_args: '--allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(git log:*),Bash(git describe:*),Bash(git diff:*),Bash(gh issue:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh label:*),Bash(gh api:*),Read,Grep,Glob"'
+          claude_args: |
+            --allowedTools "Bash(npm ci),Bash(npm run compile),Bash(npm test),Bash(git log:*),Bash(git describe:*),Bash(git diff:*),Bash(gh issue:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh label:*),Bash(gh api:*),Read,Grep,Glob"
+            --max-turns 25
