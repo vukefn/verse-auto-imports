@@ -39,11 +39,28 @@ jobs:
                "enhancement", "question", or "documentation". Check available
                labels first with `gh label list` and use the closest match;
                do not create new labels.
-            4. For bugs: check whether the report includes the extension version,
+            4. Apply exactly one module/area label identifying the part of the
+               extension involved:
+               - "module: imports" - wrong/missing/duplicated using statement,
+                 quick fix content, import formatting or placement
+               - "module: diagnostics" - when auto-import triggers (e.g. fires
+                 mid-typing), debounce, compiler error processing
+               - "module: digest" - digest lookup, Assets.digest.verse parsing,
+                 unknown identifier resolution from API data
+               - "module: project-detection" - .uefnproject not found, wrong
+                 project name or Verse path
+               - "module: path-conversion" - the path conversion CodeLens
+               - "module: config" - settings behavior, defaults, migration
+               - "module: ui" - status bar, commands, quick fix menu appearance
+               - "area: ci" - workflows, releases, repo automation
+               - "area: docs" - README, wiki, changelog
+               If the area is genuinely unclear from the report, skip this label
+               rather than guessing.
+            5. For bugs: check whether the report includes the extension version,
                VS Code version, and a sample Verse snippet or compiler error text.
                If any of these are missing, post one polite comment asking for the
                specific missing items.
-            5. If the report includes a Verse compiler error message, inspect
+            6. If the report includes a Verse compiler error message, inspect
                src/imports/ImportSuggestionExtractor.ts and note in a comment which
                extraction pattern is involved (or that none matches), to speed up
                the eventual fix.
