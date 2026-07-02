@@ -10,8 +10,13 @@ export class DiagnosticsHandler {
     private pendingTimers: Map<string, NodeJS.Timeout> = new Map();
     private delayMs: number = 1000;
 
-    constructor(private outputChannel: vscode.OutputChannel) {
-        this.importHandler = new ImportHandler(outputChannel);
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        importHandler: ImportHandler,
+    ) {
+        // Use the shared, fully-wired ImportHandler so the auto-import path has
+        // the same asset-class detection and precompiled digests as quick fixes.
+        this.importHandler = importHandler;
         logger.debug("DiagnosticsHandler", `Initialized with ${this.delayMs}ms delay`);
     }
 

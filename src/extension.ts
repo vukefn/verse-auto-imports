@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Create handlers and providers
     const importHandler = new ImportHandler(outputChannel, assetsDigestParser, context);
-    const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
+    const diagnosticsHandler = new DiagnosticsHandler(outputChannel, importHandler);
     const statusBarHandler = new StatusBarHandler(outputChannel);
     const importPathConverter = new ImportPathConverter(outputChannel, projectPathCache);
     const importCodeLensProvider = new ImportCodeLensProvider(outputChannel);
@@ -124,8 +124,9 @@ export function activate(context: vscode.ExtensionContext) {
         ),
     );
 
-    // Register status bar item
-    context.subscriptions.push(statusBarHandler.getStatusBarItem());
+    // Register the status bar handler for disposal (clears the snooze timer
+    // and disposes the status bar item on deactivation).
+    context.subscriptions.push(statusBarHandler);
 
     // Configuration change listener for debounce delay
     context.subscriptions.push(

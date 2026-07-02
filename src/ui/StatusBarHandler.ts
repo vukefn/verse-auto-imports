@@ -44,10 +44,6 @@ export class StatusBarHandler {
         });
     }
 
-    getStatusBarItem(): vscode.StatusBarItem {
-        return this.statusBarItem;
-    }
-
     updateDisplay(): void {
         if (this.snoozeEndTime !== null) {
             // Snooze is active - show text with countdown
@@ -424,6 +420,10 @@ export class StatusBarHandler {
 
     startSnooze(minutes: number): void {
         logger.debug("StatusBarHandler", `Starting snooze for ${minutes} minutes`);
+
+        // Clear any existing snooze first so re-invoking (e.g. the command
+        // palette while already snoozed) cannot orphan a running interval.
+        this.clearSnoozeState();
 
         // Set snooze end time
         this.snoozeEndTime = Date.now() + minutes * MS_PER_MINUTE;
