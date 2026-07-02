@@ -205,10 +205,11 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(convertSingleLens);
 
                         // Check if there are multiple relative imports in the file
-                        const hasMultipleRelativeImports = lines.filter((l, idx) => {
-                            const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
-                            return ImportFormatter.isModuleImport(l.trim(), next) && !this.importPathConverter.isFullPathImport(l.trim());
-                        }).length > 1;
+                        const hasMultipleRelativeImports =
+                            lines.filter((l, idx) => {
+                                const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
+                                return ImportFormatter.isModuleImport(l.trim(), next) && !this.importPathConverter.isFullPathImport(l.trim());
+                            }).length > 1;
 
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {
