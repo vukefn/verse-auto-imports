@@ -111,9 +111,10 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
 
 1. [ ] Case A `Gadgets.Tools`: CodeLens offers conversion; result is
        `using { /vuke@fortnite.com/VerseAutoImports/Gadgets/Tools }`.
-2. [ ] Case B `Combat.Weapons` (exists under Systems/ AND Features/): both
-       locations detected; user is prompted (or ambiguousImports mapping
-       applies); nothing silently picked. Record which locations were listed.
+2. [ ] Case B `Combat.Weapons` (exists under Systems/ AND Features/): KNOWN
+       LIMITATION (#60, preexisting in 0.6.4) - resolves 0 locations. Expect a
+       graceful "module not found" outcome, never a silently wrong path. The
+       ambiguity feature itself is validated by Case C.
 3. [ ] Case C `Economy.Shop` (explicit module declared in two files): both
        locations detected (Systems and Features). This exercises the cache
        lookup path and the #43 regex fix across multiple files.

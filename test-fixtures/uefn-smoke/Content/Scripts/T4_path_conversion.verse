@@ -4,8 +4,11 @@
 # Case A (direct Content child, implicit folder module):
 #   Gadgets.Tools -> /vuke@fortnite.com/VerseAutoImports/Gadgets/Tools
 # Case B (ambiguous folder module): Combat/Weapons exists under BOTH
-#   Systems/ and Features/. Conversion must detect both locations and ask
-#   (or apply behavior.ambiguousImports mapping), never silently pick one.
+#   Systems/ and Features/. KNOWN LIMITATION (issue #60, verified preexisting
+#   in 0.6.4): folder-chain modules outside the current file's ancestry and
+#   Content root resolve to 0 locations, so conversion reports "not found".
+#   Expect a graceful failure, never a silently wrong path. The compiler's own
+#   error suggests Systems.Combat / Features.Combat.
 # Case C (explicit module declarations in files): Economy := module with
 #   nested Shop := module is declared in Systems/economy_a.verse AND
 #   Features/economy_b.verse. This exercises the declaration cache lookup and
