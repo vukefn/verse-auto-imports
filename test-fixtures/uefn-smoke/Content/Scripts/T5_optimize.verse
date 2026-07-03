@@ -2,13 +2,15 @@
 # 0.6.4 local-scope regressions.
 #
 # This file deliberately contains: a duplicate import, imports scattered
-# mid-file, a missing import (vector3), a local-scope using inside a function
-# body, and an indented-style using block at the bottom.
+# mid-file, a missing import (fort_character, single-option suggestion), a
+# local-scope using inside a function body, and an indented-style using block
+# at the bottom.
 #
 # Run "Verse: Optimize Imports" with general.autoImport ON, then again on a
-# reset copy with it OFF. Expected in both cases, as ONE atomic edit:
+# re-synced copy with it OFF. Expected in both cases, as ONE atomic edit:
 #   - all module imports consolidated at the top, deduplicated
-#   - using { /Verse.org/SpatialMath } ADDED (from the vector3 diagnostic)
+#   - using { /Fortnite.com/Characters } ADDED (from the fort_character
+#     diagnostic; must be single-option so optimize can apply it)
 #   - the indented "using:" block absorbed into the top block
 #   - the local-scope "using { Helper }" inside Describe() left untouched
 #   - no code between the scattered imports deleted
@@ -23,11 +25,11 @@ using { /Fortnite.com/Devices }
 using { /Verse.org/Simulation }
 
 t5_device := class(creative_device):
-    var Position:vector3 = vector3{}
+    var MaybeCharacter:?fort_character = false
 
     Describe(Helper:t5_helper):string =
         using { Helper }
-        GetLabel()
+        Helper.GetLabel()
 
 using:
     /Fortnite.com/Playspaces
