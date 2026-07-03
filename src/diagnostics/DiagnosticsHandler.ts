@@ -20,6 +20,21 @@ export class DiagnosticsHandler {
         logger.debug("DiagnosticsHandler", `Initialized with ${this.delayMs}ms delay`);
     }
 
+    /**
+     * Decides whether a diagnostics URI should be processed at all, before any
+     * document is opened. Diagnostics events also carry VS Code internal
+     * documents (e.g. private: replace-preview buffers, git: views) that throw
+     * on openTextDocument, and Epic's generated *.digest.verse files, which
+     * hold permanent LSP errors and must never be edited by the extension.
+     */
+    static shouldProcessUri(uri: { scheme: string; fsPath: string }): boolean {
+        if (uri.scheme !== "file") {
+            return false;
+        }
+        const fsPath = uri.fsPath.toLowerCase();
+        return fsPath.endsWith(".verse") && !fsPath.endsWith(".digest.verse");
+    }
+
     async handle(document: vscode.TextDocument) {
         const documentKey = path.basename(document.uri.fsPath);
 

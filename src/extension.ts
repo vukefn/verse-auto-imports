@@ -157,6 +157,9 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.languages.onDidChangeDiagnostics(async (e) => {
             for (const uri of e.uris) {
+                if (!DiagnosticsHandler.shouldProcessUri(uri)) {
+                    continue;
+                }
                 try {
                     const document = await vscode.workspace.openTextDocument(uri);
                     if (document.languageId === "verse") {
