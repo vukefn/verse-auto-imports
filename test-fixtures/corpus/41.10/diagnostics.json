@@ -1,0 +1,107 @@
+{
+    "uefnVersion": "41.10",
+    "capturedAt": "2026-07-03",
+    "notes": "Captured entries come verbatim from the 2026-07-03 smoke session debug logs (real Verse LSP against the VerseAutoImports test project). Book entries are compiler output preserved in the Book of Verse sources. Synthetic entries are hand-written shapes awaiting live capture.",
+    "entries": [
+        {
+            "id": "unknown-with-suggestion-class-context",
+            "source": "captured",
+            "context": "uefn-smoke T1: identifier used inside a class",
+            "message": "Unknown identifier `button_device`.\nUsed inside class /vuke@fortnite.com/VerseAutoImports/Scripts/t1_device.\n Did you forget to specify using { /Fortnite.com/Devices }",
+            "expected": {
+                "suggestions": ["using { /Fortnite.com/Devices }"],
+                "optimizePaths": ["/Fortnite.com/Devices"]
+            }
+        },
+        {
+            "id": "unknown-with-suggestion-module-context",
+            "source": "captured",
+            "context": "uefn-smoke T1: identifier used inside a module",
+            "message": "Unknown identifier `editable`.\nUsed inside module /vuke@fortnite.com/VerseAutoImports/Scripts.\n Did you forget to specify using { /Verse.org/Simulation }",
+            "expected": {
+                "suggestions": ["using { /Verse.org/Simulation }"],
+                "optimizePaths": ["/Verse.org/Simulation"]
+            }
+        },
+        {
+            "id": "unknown-with-suggestion-function-context",
+            "source": "captured",
+            "context": "uefn-smoke T3: identifier used inside a function",
+            "message": "Unknown identifier `texture`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you forget to specify using { /Verse.org/Assets }",
+            "expected": {
+                "suggestions": ["using { /Verse.org/Assets }"],
+                "optimizePaths": ["/Verse.org/Assets"]
+            }
+        },
+        {
+            "id": "did-you-mean-any-of-qualified-options",
+            "source": "captured",
+            "context": "uefn-smoke T4: module name exists under two parents; note the trailing space after 'any of: '",
+            "message": "Unknown identifier `Combat`.\nUsed inside module /vuke@fortnite.com/VerseAutoImports/Scripts.\n Did you mean any of: \nSystems.Combat\nFeatures.Combat",
+            "expected": {
+                "suggestions": ["using { Systems }", "using { Features }"],
+                "optimizePaths": []
+            }
+        },
+        {
+            "id": "did-you-mean-single-asset",
+            "source": "captured",
+            "context": "uefn-smoke T3: asset reference; the import must not embed the asset name",
+            "message": "Unknown identifier `image2`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you mean Folder1.image2",
+            "expected": {
+                "suggestions": ["using { Folder1 }"],
+                "optimizePaths": ["Folder1"]
+            }
+        },
+        {
+            "id": "did-you-mean-single-asset-nested",
+            "source": "captured",
+            "context": "uefn-smoke T3: asset two folders deep",
+            "message": "Unknown identifier `image3`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetInnerImage.\n Did you mean Folder1.InnerFolder.image3",
+            "expected": {
+                "suggestions": ["using { Folder1.InnerFolder }"],
+                "optimizePaths": ["Folder1.InnerFolder"]
+            }
+        },
+        {
+            "id": "did-you-mean-any-of-bare-option",
+            "source": "book",
+            "context": "Book of Verse 16_modules (Script Error 3506): option list echoes a local definition; the bare option must not become an import. The one importable candidate left is treated as unambiguous, so Optimize adds it too",
+            "message": "Unknown identifier `item`. Did you mean any of:\nInventoryModule.item\nitem",
+            "expected": {
+                "suggestions": ["using { InventoryModule }"],
+                "optimizePaths": ["InventoryModule"]
+            }
+        },
+        {
+            "id": "set-assignment-hint",
+            "source": "synthetic",
+            "context": "assignment hint, never an import problem; guards the greedy Did-you-mean fallback",
+            "message": "This variable can only be modified with 'set'. Did you mean to write 'set Foo.Bar = 1'?",
+            "expected": {
+                "suggestions": [],
+                "optimizePaths": []
+            }
+        },
+        {
+            "id": "forget-one-of-two-paths",
+            "source": "synthetic",
+            "context": "ambiguous inline list; Optimize must not bulk-add both",
+            "message": "Unknown identifier `thing`. Did you forget to specify one of:\nusing { /GameA/Combat }\nusing { /GameB/Combat }",
+            "expected": {
+                "suggestions": ["using { /GameA/Combat }", "using { /GameB/Combat }"],
+                "optimizePaths": []
+            }
+        },
+        {
+            "id": "identifier-many-types",
+            "source": "synthetic",
+            "context": "ambiguous type identifier; Optimize must not bulk-add both",
+            "message": "Identifier vector3 could be one of many types: (/Verse.org/SpatialMath:)vector3 or (/UnrealEngine.com/Temporary/SpatialMath:)vector3",
+            "expected": {
+                "suggestions": ["using { /Verse.org/SpatialMath }", "using { /UnrealEngine.com/Temporary/SpatialMath }"],
+                "optimizePaths": []
+            }
+        }
+    ]
+}

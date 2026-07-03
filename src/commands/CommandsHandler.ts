@@ -67,6 +67,7 @@ export class CommandsHandler {
 
             // Debug/Logs
             ["verseAutoImports.exportDebugLogs", this.exportDebugLogs.bind(this)],
+            ["verseAutoImports.captureDiagnosticsCorpus", this.captureDiagnosticsCorpus.bind(this)],
 
             // Cache
             ["verseAutoImports.rebuildPathCache", this.rebuildPathCache.bind(this)],
@@ -218,6 +219,58 @@ export class CommandsHandler {
             }
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to export debug logs: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Captures the current Verse compiler diagnostics of all open documents to
+     * a JSON file. Used to maintain the message-format regression corpus in
+     * test-fixtures/corpus (see its README for the curation workflow).
+     */
+    async captureDiagnosticsCorpus(): Promise<void> {
+        try {
+            interface CapturedDocument {
+                file: string;
+                diagnostics: Array<{ severity: number; startLine: number; message: string }>;
+            }
+
+            const documents: CapturedDocument[] = [];
+            for (const [uri, diagnostics] of vscode.languages.getDiagnostics()) {
+                if (!uri.path.endsWith(".verse") || diagnostics.length === 0) {
+                    continue;
+                }
+                documents.push({
+                    file: uri.toString(),
+                    diagnostics: diagnostics.map((diagnostic) => ({
+                        severity: diagnostic.severity,
+                        startLine: diagnostic.range.start.line,
+                        message: diagnostic.message,
+                    })),
+                });
+            }
+
+            if (documents.length === 0) {
+                vscode.window.showInformationMessage("No Verse diagnostics to capture");
+                return;
+            }
+
+            const target = await vscode.window.showSaveDialog({
+                filters: { JSON: ["json"] },
+                saveLabel: "Save diagnostics capture",
+            });
+            if (!target) {
+                return;
+            }
+
+            const payload = { capturedAt: new Date().toISOString(), documents };
+            await vscode.workspace.fs.writeFile(target, Buffer.from(JSON.stringify(payload, null, 4) + "\n", "utf8"));
+
+            const action = await vscode.window.showInformationMessage(`Captured diagnostics from ${documents.length} file(s) to ${target.fsPath}`, "Open File");
+            if (action === "Open File") {
+                await vscode.commands.executeCommand("vscode.open", target);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to capture diagnostics: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
