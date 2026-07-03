@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Optimize Imports Diagnostic Parsing**: "Optimize Imports" no longer inserts a malformed import when the compiler suggests an assignment fix (for example `using { to write 'set Foo }`), and no longer adds every candidate module of an ambiguous "one of" error at once; ambiguous cases are left to the quick-fix menu
+- **Quick Fix Menu Noise**: "Did you mean any of" compiler suggestions no longer produce import options for bare identifiers (such as local definitions echoed in the option list), which generated invalid `using` statements when applied
 - **Path Conversion with Project Cache**: "Use Absolute Path" and related commands produced malformed import paths or wrong module suggestions when the project path cache was enabled (the default)
   - Cache results now use the same location format as the filesystem scan instead of raw declaration paths
   - Module names are matched exactly: unrelated identifiers like `MyUtils` no longer match `Utils`, and class or struct names are never offered as module locations
