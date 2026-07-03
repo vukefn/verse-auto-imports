@@ -7,7 +7,7 @@
             "id": "unknown-with-suggestion-class-context",
             "source": "captured",
             "context": "uefn-smoke T1: identifier used inside a class",
-            "message": "Unknown identifier `button_device`.\nUsed inside class /vuke@fortnite.com/VerseAutoImports/Scripts/t1_device.\n Did you forget to specify using { /Fortnite.com/Devices }",
+            "message": "Unknown identifier `button_device`.\nUsed inside class /vukefn@fortnite.com/VerseAutoImports/Scripts/t1_device.\n Did you forget to specify using { /Fortnite.com/Devices }",
             "expected": {
                 "suggestions": ["using { /Fortnite.com/Devices }"],
                 "optimizePaths": ["/Fortnite.com/Devices"]
@@ -17,7 +17,7 @@
             "id": "unknown-with-suggestion-module-context",
             "source": "captured",
             "context": "uefn-smoke T1: identifier used inside a module",
-            "message": "Unknown identifier `editable`.\nUsed inside module /vuke@fortnite.com/VerseAutoImports/Scripts.\n Did you forget to specify using { /Verse.org/Simulation }",
+            "message": "Unknown identifier `editable`.\nUsed inside module /vukefn@fortnite.com/VerseAutoImports/Scripts.\n Did you forget to specify using { /Verse.org/Simulation }",
             "expected": {
                 "suggestions": ["using { /Verse.org/Simulation }"],
                 "optimizePaths": ["/Verse.org/Simulation"]
@@ -27,7 +27,7 @@
             "id": "unknown-with-suggestion-function-context",
             "source": "captured",
             "context": "uefn-smoke T3: identifier used inside a function",
-            "message": "Unknown identifier `texture`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you forget to specify using { /Verse.org/Assets }",
+            "message": "Unknown identifier `texture`.\nUsed inside function /vukefn@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you forget to specify using { /Verse.org/Assets }",
             "expected": {
                 "suggestions": ["using { /Verse.org/Assets }"],
                 "optimizePaths": ["/Verse.org/Assets"]
@@ -37,7 +37,7 @@
             "id": "did-you-mean-any-of-qualified-options",
             "source": "captured",
             "context": "uefn-smoke T4: module name exists under two parents; note the trailing space after 'any of: '",
-            "message": "Unknown identifier `Combat`.\nUsed inside module /vuke@fortnite.com/VerseAutoImports/Scripts.\n Did you mean any of: \nSystems.Combat\nFeatures.Combat",
+            "message": "Unknown identifier `Combat`.\nUsed inside module /vukefn@fortnite.com/VerseAutoImports/Scripts.\n Did you mean any of: \nSystems.Combat\nFeatures.Combat",
             "expected": {
                 "suggestions": ["using { Systems }", "using { Features }"],
                 "optimizePaths": []
@@ -47,7 +47,7 @@
             "id": "did-you-mean-single-asset",
             "source": "captured",
             "context": "uefn-smoke T3: asset reference; the import must not embed the asset name",
-            "message": "Unknown identifier `image2`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you mean Folder1.image2",
+            "message": "Unknown identifier `image2`.\nUsed inside function /vukefn@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetImage.\n Did you mean Folder1.image2",
             "expected": {
                 "suggestions": ["using { Folder1 }"],
                 "optimizePaths": ["Folder1"]
@@ -57,7 +57,7 @@
             "id": "did-you-mean-single-asset-nested",
             "source": "captured",
             "context": "uefn-smoke T3: asset two folders deep",
-            "message": "Unknown identifier `image3`.\nUsed inside function /vuke@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetInnerImage.\n Did you mean Folder1.InnerFolder.image3",
+            "message": "Unknown identifier `image3`.\nUsed inside function /vukefn@fortnite.com/VerseAutoImports/Scripts/t3_probe/GetInnerImage.\n Did you mean Folder1.InnerFolder.image3",
             "expected": {
                 "suggestions": ["using { Folder1.InnerFolder }"],
                 "optimizePaths": ["Folder1.InnerFolder"]

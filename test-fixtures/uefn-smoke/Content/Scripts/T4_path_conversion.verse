@@ -1,8 +1,8 @@
 # T4: path conversion CodeLens + module location lookup (issue #41 rebuild).
-# projectVersePath for this project: /vuke@fortnite.com/VerseAutoImports
+# projectVersePath for this project: /vukefn@fortnite.com/VerseAutoImports
 #
 # Case A (direct Content child, implicit folder module):
-#   Gadgets.Tools -> /vuke@fortnite.com/VerseAutoImports/Gadgets/Tools
+#   Gadgets.Tools -> /vukefn@fortnite.com/VerseAutoImports/Gadgets/Tools
 # Case B (ambiguous folder module): Combat/Weapons exists under BOTH
 #   Systems/ and Features/. KNOWN LIMITATION (issue #60, verified preexisting
 #   in 0.6.4): folder-chain modules outside the current file's ancestry and
