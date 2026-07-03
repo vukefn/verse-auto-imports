@@ -231,7 +231,7 @@ export class ImportPathConverter {
 
     /**
      * Phase 2: Search for explicit module definitions in .verse files.
-     * Scans workspace for files containing module := module declarations.
+     * Scans the project folder for files containing Name := module declarations.
      */
     private async searchExplicitModuleDefinitions(modulePath: string, moduleName: string, pathSegments: string[], locations: string[]): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -242,7 +242,10 @@ export class ImportPathConverter {
         const workspaceIsContent = workspaceFolderName === CONTENT_FOLDER;
         if (workspaceIsContent) searchPattern = "**/*.verse";
 
-        const verseFiles = await vscode.workspace.findFiles(searchPattern, null, 100);
+        // Scope the scan to the project folder. The UEFN-generated workspace is
+        // multi-root (Content plus Epic's digest folders); a bare string glob
+        // would also read every *.digest.verse on each fallback scan.
+        const verseFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceFolders[0], searchPattern), "**/*.digest.verse", 100);
         const modulePattern = ImportPathConverter.buildModuleDefinitionRegex(moduleName);
 
         for (const file of verseFiles) {

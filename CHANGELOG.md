@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Ambiguous Module Detection**: when a module is defined in several files, path conversion no longer drops valid locations depending on the order files are scanned
 - **Snooze Timer**: repeatedly starting snooze from the command palette no longer leaves extra countdown timers running, and an active snooze is cleaned up when the extension is disabled or reloaded
 - **Diagnostics Noise in UEFN Workspaces**: the auto-import listener no longer tries to open VS Code internal documents (which logged an error on every edit preview) and no longer reprocesses Epic's read-only `*.digest.verse` files, which carry permanent compiler errors in the standard UEFN workspace, on every diagnostics update
+- **Path Conversion Scan Scope**: the fallback scan for explicit module declarations no longer reads Epic's digest files on every lookup in the standard UEFN multi-root workspace; it is now scoped to the project folder
 
 ## [0.6.4] - 2026-02-14
 
