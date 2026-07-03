@@ -5,8 +5,8 @@ real Verse LSP diagnostics, and real 41.10 digest files. Run this before every
 release; it is the gate the automated Jest suite cannot provide (that suite
 mocks the entire VS Code and UEFN environment).
 
-Test project: `C:\Users\abdel\Documents\Fortnite Projects\VerseAutoImports`
-Project Verse path: `/vuke@fortnite.com/VerseAutoImports`
+Test project: `%USERPROFILE%\Documents\Fortnite Projects\VerseAutoImports`
+Project Verse path: `/vukefn@fortnite.com/VerseAutoImports`
 
 Conventions: check the box when the observed behavior matches Expected.
 Anything else goes in the Findings table at the bottom, verbatim (exact error
@@ -50,7 +50,7 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
       Content folder directly except where a step says to.
 - [ ] UEFN stays open the whole session (it is the diagnostics source).
 - [ ] Sync fixtures: `powershell -File test-fixtures/uefn-smoke/sync.ps1
-      -ContentPath "C:\Users\abdel\Documents\Fortnite Projects\VerseAutoImports\Content"`
+      -ContentPath "$env:USERPROFILE\Documents\Fortnite Projects\VerseAutoImports\Content"`
 - [ ] Open both output channels: "Verse Auto Imports" and "Verse Auto
       Imports - Debug".
 
@@ -60,7 +60,7 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
 
 1. [ ] Status bar item appears; extension activates on opening a .verse file.
 2. [ ] Debug channel shows the project detected as
-       `/vuke@fortnite.com/VerseAutoImports` (from .uefnproject found in the
+       `/vukefn@fortnite.com/VerseAutoImports` (from .uefnproject found in the
        parent of Content).
 3. [ ] Run "Verse: Rebuild Project Path Cache". Debug log file count must
        correspond to Content fixtures only -- if it reports scanning
@@ -110,7 +110,7 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
 ### T4 -- path conversion (fixture: Scripts/T4_path_conversion.verse + support folders)
 
 1. [ ] Case A `Gadgets.Tools`: CodeLens offers conversion; result is
-       `using { /vuke@fortnite.com/VerseAutoImports/Gadgets/Tools }`.
+       `using { /vukefn@fortnite.com/VerseAutoImports/Gadgets/Tools }`.
 2. [ ] Case B `Combat.Weapons` (exists under Systems/ AND Features/): KNOWN
        LIMITATION (#60, preexisting in 0.6.4) - resolves 0 locations. Expect a
        graceful "module not found" outcome, never a silently wrong path. The

@@ -112,7 +112,7 @@ export class ProjectPathHandler {
     }
 
     /**
-     * Gets the project's Verse path (e.g., /vuke@fortnite.com/Highjacked)
+     * Gets the project's Verse path (e.g., /vukefn@fortnite.com/MyGame)
      */
     async getProjectVersePath(): Promise<string | null> {
         if (this.projectVersePath) {
