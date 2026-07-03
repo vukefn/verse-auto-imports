@@ -1,0 +1,23 @@
+name: Label PR
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: label-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Apply path-based labels
+        uses: actions/labeler@v5
+        with:
+          # Never remove labels added manually or by other automation
+          sync-labels: false
