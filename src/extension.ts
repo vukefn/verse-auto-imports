@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vector2: "/UnrealEngine.com/Temporary/SpatialMath",
                 rotation: "/UnrealEngine.com/Temporary/SpatialMath",
             },
-            vscode.ConfigurationTarget.Global
+            vscode.ConfigurationTarget.Global,
         );
     }
 
@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Create handlers and providers
     const importHandler = new ImportHandler(outputChannel, assetsDigestParser, context);
-    const diagnosticsHandler = new DiagnosticsHandler(outputChannel);
+    const diagnosticsHandler = new DiagnosticsHandler(outputChannel, importHandler);
     const statusBarHandler = new StatusBarHandler(outputChannel);
     const importPathConverter = new ImportPathConverter(outputChannel, projectPathCache);
     const importCodeLensProvider = new ImportCodeLensProvider(outputChannel);
@@ -85,7 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register providers
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider({ language: "verse" }, new ImportCodeActionProvider(outputChannel, importHandler)),
-        vscode.languages.registerCodeLensProvider({ language: "verse" }, importCodeLensProvider)
+        vscode.languages.registerCodeLensProvider({ language: "verse" }, importCodeLensProvider),
     );
 
     // Set up file watchers
@@ -100,43 +100,44 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register hover provider for CodeLens visibility
     context.subscriptions.push(
-        vscode.languages.registerHoverProvider({ language: "verse" }, {
-            provideHover(document, position) {
-                const config = vscode.workspace.getConfiguration("verseAutoImports");
-                if (!config.get<boolean>("pathConversion.enableCodeLens", true)) {
+        vscode.languages.registerHoverProvider(
+            { language: "verse" },
+            {
+                provideHover(document, position) {
+                    const config = vscode.workspace.getConfiguration("verseAutoImports");
+                    if (!config.get<boolean>("pathConversion.enableCodeLens", true)) {
+                        return null;
+                    }
+
+                    const line = document.lineAt(position.line);
+                    const text = line.text.trim();
+                    const nextLineText = position.line + 1 < document.lineCount ? document.lineAt(position.line + 1).text : undefined;
+
+                    if (ImportFormatter.isModuleImport(text, nextLineText)) {
+                        importCodeLensProvider.setHoverState(document.uri.toString(), true, position.line);
+                    } else {
+                        importCodeLensProvider.setHoverState(document.uri.toString(), false);
+                    }
                     return null;
-                }
-
-                const line = document.lineAt(position.line);
-                const text = line.text.trim();
-                const nextLineText = position.line + 1 < document.lineCount ? document.lineAt(position.line + 1).text : undefined;
-
-                if (ImportFormatter.isModuleImport(text, nextLineText)) {
-                    importCodeLensProvider.setHoverState(document.uri.toString(), true, position.line);
-                } else {
-                    importCodeLensProvider.setHoverState(document.uri.toString(), false);
-                }
-                return null;
+                },
             },
-        })
+        ),
     );
 
-    // Register status bar item
-    context.subscriptions.push(statusBarHandler.getStatusBarItem());
+    // Register the status bar handler for disposal (clears the snooze timer
+    // and disposes the status bar item on deactivation).
+    context.subscriptions.push(statusBarHandler);
 
     // Configuration change listener for debounce delay
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (
-                event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") ||
-                event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")
-            ) {
+            if (event.affectsConfiguration("verseAutoImports.general.diagnosticDelay") || event.affectsConfiguration("verseAutoImports.general.autoImportDebounceDelay")) {
                 const newConfig = vscode.workspace.getConfiguration("verseAutoImports");
                 const finalDelay = getConfiguredDebounceDelay(newConfig);
                 diagnosticsHandler.setDelay(finalDelay);
                 logger.info("Extension", `Debounce delay updated to ${finalDelay}ms`);
             }
-        })
+        }),
     );
 
     // Document save listener for import spacing
@@ -149,13 +150,16 @@ export function activate(context: vscode.ExtensionContext) {
                     await importHandler.ensureEmptyLinesAfterImports(document);
                 }
             }
-        })
+        }),
     );
 
     // Diagnostics change listener for auto-import
     context.subscriptions.push(
         vscode.languages.onDidChangeDiagnostics(async (e) => {
             for (const uri of e.uris) {
+                if (!DiagnosticsHandler.shouldProcessUri(uri)) {
+                    continue;
+                }
                 try {
                     const document = await vscode.workspace.openTextDocument(uri);
                     if (document.languageId === "verse") {
@@ -168,7 +172,7 @@ export function activate(context: vscode.ExtensionContext) {
                     logger.error("Extension", `Error opening document ${uri.toString()}`, error);
                 }
             }
-        })
+        }),
     );
 
     logger.info("Extension", "Verse Auto Imports extension activated successfully");

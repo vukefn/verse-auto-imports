@@ -85,6 +85,10 @@
         "title": "Verse: Export Debug Logs"
       },
       {
+        "command": "verseAutoImports.captureDiagnosticsCorpus",
+        "title": "Verse: Capture Diagnostics Corpus"
+      },
+      {
         "command": "verseAutoImports.rebuildPathCache",
         "title": "Verse: Rebuild Project Path Cache"
       },
@@ -277,13 +281,21 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "parse-digest": "ts-node src/scripts/parseDigestFiles.ts",
-    "test": "jest --verbose"
+    "test": "jest --verbose",
+    "test:integration": "npm run compile && tsc -p tsconfig.integration.json && node out-integration/test-integration/runTests.js",
+    "test:integration:vsix": "npm run compile && tsc -p tsconfig.integration.json && node out-integration/test-integration/runVsixTest.js",
+    "format": "prettier --write \"**/*.ts\"",
+    "format:check": "prettier --check \"**/*.ts\""
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^26.1.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^3.0.0",
     "jest": "^30.3.0",
+    "mocha": "^11.7.6",
+    "prettier": "^3.9.4",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

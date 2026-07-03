@@ -1,0 +1,91 @@
+import * as assert from "assert";
+import * as vscode from "vscode";
+import { WorkspaceSettings, openFixture, runOptimizeImports } from "./helpers";
+
+describe("import styles matrix (playbook T6)", () => {
+    const settings = new WorkspaceSettings();
+    let document: vscode.TextDocument;
+
+    before(async () => {
+        await settings.set("general.autoImport", false);
+        document = await openFixture("t6_styles.verse");
+    });
+
+    after(async () => {
+        await settings.restoreAll();
+    });
+
+    function lineIndexContaining(text: string, fragment: string): number {
+        return text.split("\n").findIndex((line) => line.includes(fragment));
+    }
+
+    it("importSyntax dot rewrites the block; flipping back restores curly", async () => {
+        await settings.set("behavior.importSyntax", "dot");
+        let text = await runOptimizeImports(document);
+        assert.ok(/^using\. \/Verse\.org\/Simulation$/m.test(text), `expected dot syntax, got:\n${text}`);
+        assert.ok(!text.includes("using { /Verse.org/Simulation }"), "curly form must be gone after the dot rewrite");
+
+        await settings.set("behavior.importSyntax", "curly");
+        text = await runOptimizeImports(document);
+        assert.ok(text.includes("using { /Verse.org/Simulation }"), `expected curly syntax back, got:\n${text}`);
+        assert.ok(!/^using\./m.test(text), "dot form must be gone after flipping back");
+    });
+
+    it("importGrouping digestFirst puts digest imports before local ones; localFirst reverses", async () => {
+        await settings.set("behavior.importGrouping", "digestFirst");
+        let text = await runOptimizeImports(document);
+        let digestIndex = lineIndexContaining(text, "/Fortnite.com/Devices");
+        let localIndex = lineIndexContaining(text, "Gadgets.Tools");
+        assert.ok(digestIndex !== -1 && localIndex !== -1, `imports missing after optimize:\n${text}`);
+        assert.ok(digestIndex < localIndex, `digestFirst violated:\n${text}`);
+
+        await settings.set("behavior.importGrouping", "localFirst");
+        text = await runOptimizeImports(document);
+        digestIndex = lineIndexContaining(text, "/Fortnite.com/Devices");
+        localIndex = lineIndexContaining(text, "Gadgets.Tools");
+        assert.ok(digestIndex !== -1 && localIndex !== -1, `imports missing after optimize:\n${text}`);
+        assert.ok(localIndex < digestIndex, `localFirst violated:\n${text}`);
+
+        await settings.set("behavior.importGrouping", "none");
+    });
+
+    it("sortImportsAlphabetically orders the block", async () => {
+        await settings.set("behavior.sortImportsAlphabetically", true);
+        const text = await runOptimizeImports(document);
+        const devices = lineIndexContaining(text, "/Fortnite.com/Devices");
+        const simulation = lineIndexContaining(text, "/Verse.org/Simulation");
+        assert.ok(devices !== -1 && simulation !== -1, `imports missing after optimize:\n${text}`);
+        assert.ok(devices < simulation, `alphabetical sort violated (/Fortnite.com/Devices must precede /Verse.org/Simulation):\n${text}`);
+    });
+
+    it("emptyLinesAfterImports is honored after optimize", async () => {
+        await settings.set("behavior.emptyLinesAfterImports", 2);
+
+        // The spacing pass runs on save, and Optimize only saves a dirty
+        // document; after the previous subtests the block is already organized
+        // so the rewrite itself is a no-op. Dirty the document the way a real
+        // edit session would before optimizing.
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(document.uri, new vscode.Position(document.lineCount, 0), "\n# spacing probe\n");
+        assert.ok(await vscode.workspace.applyEdit(edit), "probe edit failed");
+
+        const text = await runOptimizeImports(document);
+        const lines = text.split("\n");
+
+        let lastImport = -1;
+        lines.forEach((line, index) => {
+            if (line.startsWith("using")) {
+                lastImport = index;
+            }
+        });
+        assert.ok(lastImport !== -1, `no import block found:\n${text}`);
+
+        let blanks = 0;
+        let cursor = lastImport + 1;
+        while (cursor < lines.length && lines[cursor].trim() === "") {
+            blanks++;
+            cursor++;
+        }
+        assert.strictEqual(blanks, 2, `expected exactly 2 blank lines after the import block:\n${text}`);
+    });
+});

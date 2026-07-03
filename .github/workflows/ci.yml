@@ -21,8 +21,44 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Compile TypeScript
         run: npm run compile
 
       - name: Run tests
         run: npm test
+
+  test-integration:
+    # windows-latest matches the platform the extension is developed and used
+    # on; the extension-host suite needs no display server there.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache VS Code test install
+        uses: actions/cache@v4
+        with:
+          path: .vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Package VSIX
+        run: npx --yes @vscode/vsce package --out itest.vsix
+
+      - name: Run packaged VSIX activation test
+        run: npm run test:integration:vsix -- itest.vsix

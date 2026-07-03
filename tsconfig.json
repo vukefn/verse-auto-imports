@@ -4,8 +4,14 @@
         "target": "ES2020",
         "outDir": "out",
         "rootDir": "src",
-        "sourceMap": true
+        "sourceMap": true,
+        // Restrict ambient type packages: @types/jest and @types/mocha (used
+        // by the integration harness) both declare describe/it globals and
+        // conflict when auto-included together.
+        "types": ["node", "jest"]
     },
     "include": ["src/**/*"],
-    "exclude": ["node_modules"]
+    // src/test-integration compiles via tsconfig.integration.json (mocha,
+    // @vscode/test-electron); including it here would break npm run compile.
+    "exclude": ["node_modules", "src/test-integration"]
 }

@@ -1,37 +1,33 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { logger } from "../utils";
 import { ProjectPathHandler } from "../project";
-import { ProjectPathTreeBuilder } from "./ProjectPathTreeBuilder";
-import {
-    ProjectPathTree,
-    ProjectPathNode,
-    CacheMetadata,
-    CacheLookupResult,
-    SerializedProjectPathTree,
-} from "../types";
+import { ProjectPathScanner } from "./ProjectPathScanner";
+import { PROJECT_CACHE_VERSION, ProjectPathData, ProjectPathNode, SerializedProjectPathCache } from "../types";
+import { buildProjectIndexes, resolveModuleLocations, ModuleLocationCandidate, ProjectIndexes } from "./moduleLocationLookup";
 
 /**
- * Manages the project path tree cache with VS Code workspace storage.
- * Provides fast lookups and automatic cache invalidation via file watchers.
+ * Caches the project's scanned declarations in VS Code workspace storage and
+ * serves module-location lookups from derived in-memory indexes. Data is a
+ * flat node list; all indexes are rebuilt from it on load and after updates.
  */
 export class ProjectPathCache {
-    private tree: ProjectPathTree | null = null;
-    private metadata: CacheMetadata | null = null;
+    private data: ProjectPathData | null = null;
+    private indexes: ProjectIndexes = buildProjectIndexes([]);
     private fileWatcher: vscode.FileSystemWatcher | null = null;
     private pendingUpdates: Set<string> = new Set();
     private updateDebounceTimer: NodeJS.Timeout | null = null;
-    private identifierIndex: Map<string, ProjectPathNode[]> = new Map();
     private initialized: boolean = false;
 
     private static readonly CACHE_KEY = "projectPathTree";
-    private static readonly METADATA_KEY = "projectPathTreeMeta";
-    private static readonly CACHE_VERSION = "1.0.0";
+    /** Storage key of the pre-2 metadata payload; cleared on save. */
+    private static readonly LEGACY_METADATA_KEY = "projectPathTreeMeta";
     private static readonly DEBOUNCE_MS = 500;
 
     constructor(
         private context: vscode.ExtensionContext,
         private outputChannel: vscode.OutputChannel,
-        private projectPathHandler: ProjectPathHandler
+        private projectPathHandler: ProjectPathHandler,
     ) {}
 
     /**
@@ -46,13 +42,11 @@ export class ProjectPathCache {
         logger.info("ProjectPathCache", "Initializing project path cache...");
 
         try {
-            // Try to load from storage first
             const loaded = await this.loadFromStorage();
 
             if (loaded) {
                 logger.info("ProjectPathCache", `Loaded cache from storage in ${Date.now() - startTime}ms`);
             } else {
-                // Build fresh cache
                 logger.info("ProjectPathCache", "No valid cache found, building fresh...");
                 await this.rebuildCache();
             }
@@ -64,72 +58,23 @@ export class ProjectPathCache {
     }
 
     /**
-     * Get the cached path tree.
+     * Look up the possible locations of a module import path.
+     *
+     * Returns candidates in the same location contract the converter's
+     * filesystem scan produces ("" or "/Dir/Sub", Content-relative), each
+     * with the source file that declares the module so callers can validate
+     * against the filesystem before trusting the (possibly stale) cache.
+     * Only explicit module declarations are known to the cache; implicit
+     * folder modules are the filesystem scan's job.
      */
-    getTree(): ProjectPathTree | null {
-        return this.tree;
-    }
-
-    /**
-     * Look up an identifier in the path tree.
-     */
-    lookupIdentifier(identifier: string): CacheLookupResult {
-        const matches = this.identifierIndex.get(identifier.toLowerCase()) || [];
-
-        return {
-            identifier,
-            matches,
-            fromCache: true,
-        };
-    }
-
-    /**
-     * Find all identifiers in a module path.
-     */
-    getModuleContents(modulePath: string): ProjectPathNode[] {
-        if (!this.tree) {
+    lookupModuleLocations(modulePath: string): ModuleLocationCandidate[] {
+        if (!this.data) {
             return [];
         }
 
-        const normalizedPath = modulePath.toLowerCase();
-        const results: ProjectPathNode[] = [];
-
-        const search = (node: ProjectPathNode) => {
-            if (node.fullPath.toLowerCase() === normalizedPath) {
-                results.push(...node.children);
-            }
-            for (const child of node.children) {
-                search(child);
-            }
-        };
-
-        search(this.tree.root);
-        return results;
-    }
-
-    /**
-     * Look up a module path and return matching nodes.
-     */
-    lookupModulePath(modulePath: string): string[] {
-        if (!this.tree) {
-            return [];
-        }
-
-        const normalizedPath = modulePath.toLowerCase().replace(/^\//, "");
-        const results: string[] = [];
-
-        const search = (node: ProjectPathNode) => {
-            const nodePath = node.fullPath.toLowerCase().replace(/^\//, "");
-            if (nodePath === normalizedPath || nodePath.endsWith(normalizedPath)) {
-                results.push(node.fullPath);
-            }
-            for (const child of node.children) {
-                search(child);
-            }
-        };
-
-        search(this.tree.root);
-        return results;
+        return resolveModuleLocations(modulePath, this.indexes.moduleNameIndex, {
+            workspaceIsContent: this.workspaceIsContent(),
+        });
     }
 
     /**
@@ -146,19 +91,15 @@ export class ProjectPathCache {
                 return;
             }
 
-            const treeBuilder = new ProjectPathTreeBuilder(this.outputChannel, this.projectPathHandler);
-            const tree = await treeBuilder.buildFullTree(workspaceFolders[0]);
+            const scanner = new ProjectPathScanner(this.outputChannel, this.projectPathHandler);
+            const data = await scanner.scanProject(workspaceFolders[0]);
 
-            if (tree) {
-                this.tree = tree;
-                this.buildIdentifierIndex();
-                this.updateMetadata();
+            if (data) {
+                this.data = data;
+                this.rebuildIndexes();
                 await this.saveToStorage();
 
-                logger.info(
-                    "ProjectPathCache",
-                    `Cache rebuilt: ${this.identifierIndex.size} identifiers in ${Date.now() - startTime}ms`
-                );
+                logger.info("ProjectPathCache", `Cache rebuilt: ${this.data.nodes.length} declarations in ${Date.now() - startTime}ms`);
             }
         } catch (error) {
             logger.error("ProjectPathCache", "Failed to rebuild cache", error);
@@ -170,7 +111,7 @@ export class ProjectPathCache {
      * Uses transaction-like pattern: parse first, then swap old for new only on success.
      */
     async invalidateFiles(filePaths: string[]): Promise<void> {
-        if (!this.tree) {
+        if (!this.data) {
             return;
         }
 
@@ -181,7 +122,7 @@ export class ProjectPathCache {
             return;
         }
 
-        const treeBuilder = new ProjectPathTreeBuilder(this.outputChannel, this.projectPathHandler);
+        const scanner = new ProjectPathScanner(this.outputChannel, this.projectPathHandler);
 
         // Phase 1: Parse all files first and collect new nodes (transaction preparation)
         const parsedResults: Map<string, ProjectPathNode[]> = new Map();
@@ -190,7 +131,7 @@ export class ProjectPathCache {
         for (const filePath of filePaths) {
             try {
                 const fileUri = vscode.Uri.joinPath(workspaceFolders[0].uri, filePath);
-                const nodes = await treeBuilder.parseVerseFile(fileUri, workspaceFolders[0]);
+                const nodes = await scanner.parseVerseFile(fileUri, workspaceFolders[0]);
                 parsedResults.set(filePath, nodes);
             } catch (error) {
                 logger.error("ProjectPathCache", `Failed to reparse ${filePath}`, error);
@@ -200,48 +141,19 @@ export class ProjectPathCache {
         }
 
         // Phase 2: Apply changes only for successfully parsed files (transaction commit)
-        for (const [filePath, newNodes] of parsedResults) {
-            // Remove old entries for this file
-            const oldIdentifiers = this.tree.fileIndex[filePath] || [];
-            for (const identifier of oldIdentifiers) {
-                const nodes = this.identifierIndex.get(identifier.toLowerCase());
-                if (nodes) {
-                    const filtered = nodes.filter((n) => n.sourceFile !== filePath);
-                    if (filtered.length > 0) {
-                        this.identifierIndex.set(identifier.toLowerCase(), filtered);
-                    } else {
-                        this.identifierIndex.delete(identifier.toLowerCase());
-                    }
-                }
-            }
-
-            // Remove from tree
-            this.tree.root.children = this.tree.root.children.filter(
-                (child) => child.sourceFile !== filePath
-            );
-
-            delete this.tree.fileIndex[filePath];
-
-            // Add new nodes
-            if (newNodes.length > 0) {
-                this.tree.fileIndex[filePath] = newNodes.map((n) => n.name);
-                this.tree.root.children.push(...newNodes);
-
-                // Update identifier index
-                for (const node of newNodes) {
-                    const key = node.name.toLowerCase();
-                    const existing = this.identifierIndex.get(key) || [];
-                    existing.push(node);
-                    this.identifierIndex.set(key, existing);
-                }
-            }
+        const reparsedFiles = new Set(parsedResults.keys());
+        const keptNodes = this.data.nodes.filter((node) => !node.sourceFile || !reparsedFiles.has(node.sourceFile));
+        for (const newNodes of parsedResults.values()) {
+            keptNodes.push(...newNodes);
         }
+        this.data.nodes = keptNodes;
+        this.rebuildIndexes();
 
         if (failedFiles.length > 0) {
             logger.warn("ProjectPathCache", `Kept old cache for ${failedFiles.length} failed file(s): ${failedFiles.join(", ")}`);
         }
 
-        this.tree.generatedAt = Date.now();
+        this.data.generatedAt = Date.now();
         await this.saveToStorage();
     }
 
@@ -271,6 +183,10 @@ export class ProjectPathCache {
         });
         disposables.push(projectWatcher);
 
+        // Clear any pending debounced update on teardown so it cannot run
+        // against a disposed extension context after deactivation.
+        disposables.push({ dispose: () => this.clear() });
+
         logger.debug("ProjectPathCache", "File watchers set up");
 
         return vscode.Disposable.from(...disposables);
@@ -286,10 +202,10 @@ export class ProjectPathCache {
         generatedAt: number | null;
     } {
         return {
-            loaded: this.tree !== null,
-            identifiers: this.identifierIndex.size,
-            files: this.tree ? Object.keys(this.tree.fileIndex).length : 0,
-            generatedAt: this.tree?.generatedAt || null,
+            loaded: this.data !== null,
+            identifiers: this.indexes.identifierIndex.size,
+            files: this.indexes.fileIndex.size,
+            generatedAt: this.data?.generatedAt || null,
         };
     }
 
@@ -297,9 +213,8 @@ export class ProjectPathCache {
      * Clear all cached data.
      */
     clear(): void {
-        this.tree = null;
-        this.metadata = null;
-        this.identifierIndex.clear();
+        this.data = null;
+        this.indexes = buildProjectIndexes([]);
         this.pendingUpdates.clear();
 
         if (this.updateDebounceTimer) {
@@ -314,22 +229,21 @@ export class ProjectPathCache {
      * Save cache to VS Code workspace storage.
      */
     private async saveToStorage(): Promise<void> {
-        if (!this.tree) {
+        if (!this.data) {
             return;
         }
 
         try {
-            const serialized: SerializedProjectPathTree = {
-                version: this.tree.version,
-                projectVersePath: this.tree.projectVersePath,
-                projectName: this.tree.projectName,
-                generatedAt: this.tree.generatedAt,
-                root: this.tree.root,
-                fileIndex: this.tree.fileIndex,
+            const serialized: SerializedProjectPathCache = {
+                version: PROJECT_CACHE_VERSION,
+                projectVersePath: this.data.projectVersePath,
+                projectName: this.data.projectName,
+                generatedAt: this.data.generatedAt,
+                nodes: this.data.nodes,
             };
 
             await this.context.workspaceState.update(ProjectPathCache.CACHE_KEY, serialized);
-            await this.context.workspaceState.update(ProjectPathCache.METADATA_KEY, this.metadata);
+            await this.context.workspaceState.update(ProjectPathCache.LEGACY_METADATA_KEY, undefined);
 
             logger.debug("ProjectPathCache", "Cache saved to workspace storage");
         } catch (error) {
@@ -342,19 +256,14 @@ export class ProjectPathCache {
      */
     private async loadFromStorage(): Promise<boolean> {
         try {
-            const serialized = this.context.workspaceState.get<SerializedProjectPathTree>(
-                ProjectPathCache.CACHE_KEY
-            );
-            const metadata = this.context.workspaceState.get<CacheMetadata>(
-                ProjectPathCache.METADATA_KEY
-            );
+            const serialized = this.context.workspaceState.get<SerializedProjectPathCache>(ProjectPathCache.CACHE_KEY);
 
-            if (!serialized || !metadata) {
+            if (!serialized) {
                 return false;
             }
 
-            // Check version compatibility
-            if (serialized.version !== ProjectPathCache.CACHE_VERSION) {
+            // Check version compatibility (also rejects pre-2 tree-shaped payloads)
+            if (serialized.version !== PROJECT_CACHE_VERSION || !Array.isArray(serialized.nodes)) {
                 logger.info("ProjectPathCache", "Cache version mismatch, will rebuild");
                 return false;
             }
@@ -366,22 +275,16 @@ export class ProjectPathCache {
                 return false;
             }
 
-            this.tree = {
-                version: serialized.version,
+            this.data = {
                 projectVersePath: serialized.projectVersePath,
                 projectName: serialized.projectName,
                 generatedAt: serialized.generatedAt,
-                root: serialized.root,
-                fileIndex: serialized.fileIndex,
+                nodes: serialized.nodes,
             };
-            this.metadata = metadata;
 
-            this.buildIdentifierIndex();
+            this.rebuildIndexes();
 
-            logger.debug(
-                "ProjectPathCache",
-                `Loaded ${this.identifierIndex.size} identifiers from storage`
-            );
+            logger.debug("ProjectPathCache", `Loaded ${this.data.nodes.length} declarations from storage`);
 
             return true;
         } catch (error) {
@@ -391,44 +294,22 @@ export class ProjectPathCache {
     }
 
     /**
-     * Build identifier index from tree for fast lookups.
+     * Rebuild all lookup indexes from the flat node list.
      */
-    private buildIdentifierIndex(): void {
-        this.identifierIndex.clear();
-
-        if (!this.tree) {
-            return;
-        }
-
-        const indexNode = (node: ProjectPathNode) => {
-            const key = node.name.toLowerCase();
-            const existing = this.identifierIndex.get(key) || [];
-            existing.push(node);
-            this.identifierIndex.set(key, existing);
-
-            for (const child of node.children) {
-                indexNode(child);
-            }
-        };
-
-        indexNode(this.tree.root);
+    private rebuildIndexes(): void {
+        this.indexes = buildProjectIndexes(this.data ? this.data.nodes : []);
     }
 
     /**
-     * Update cache metadata.
+     * Whether the workspace folder itself is the Content folder (affects how
+     * source file paths map to Content-relative locations).
      */
-    private updateMetadata(): void {
-        if (!this.tree) {
-            return;
+    private workspaceIsContent(): boolean {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return false;
         }
-
-        this.metadata = {
-            cacheVersion: ProjectPathCache.CACHE_VERSION,
-            lastFullScan: Date.now(),
-            fileCount: Object.keys(this.tree.fileIndex).length,
-            identifierCount: this.identifierIndex.size,
-            fileHashes: {},
-        };
+        return path.basename(workspaceFolders[0].uri.fsPath) === "Content";
     }
 
     /**
@@ -457,29 +338,12 @@ export class ProjectPathCache {
     private handleFileDelete(uri: vscode.Uri): void {
         const relativePath = vscode.workspace.asRelativePath(uri, false);
 
-        if (!this.tree) {
+        if (!this.data) {
             return;
         }
 
-        // Remove from tree
-        const oldIdentifiers = this.tree.fileIndex[relativePath] || [];
-        for (const identifier of oldIdentifiers) {
-            const nodes = this.identifierIndex.get(identifier.toLowerCase());
-            if (nodes) {
-                const filtered = nodes.filter((n) => n.sourceFile !== relativePath);
-                if (filtered.length > 0) {
-                    this.identifierIndex.set(identifier.toLowerCase(), filtered);
-                } else {
-                    this.identifierIndex.delete(identifier.toLowerCase());
-                }
-            }
-        }
-
-        this.tree.root.children = this.tree.root.children.filter(
-            (child) => child.sourceFile !== relativePath
-        );
-
-        delete this.tree.fileIndex[relativePath];
+        this.data.nodes = this.data.nodes.filter((node) => node.sourceFile !== relativePath);
+        this.rebuildIndexes();
 
         // Save asynchronously
         this.saveToStorage().catch((error) => {

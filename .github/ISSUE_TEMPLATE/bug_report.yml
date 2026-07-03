@@ -1,0 +1,96 @@
+name: Bug report
+description: Report a problem with the extension
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. The version and environment
+        fields below are the details we almost always have to ask for, so filling
+        them in up front gets your issue looked at faster.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the open and closed issues and did not find a duplicate.
+          required: true
+        - label: I am on the latest version of the extension (or I note the version below and it still reproduces).
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, and what happened instead? Include the steps to reproduce.
+      placeholder: e.g. saved a file with an unknown identifier and the wrong using statement was added
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Extensions panel -> Verse Auto Imports -> version number.
+      placeholder: e.g. 0.6.4
+    validations:
+      required: true
+
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      description: Help -> About.
+      placeholder: e.g. 1.101.0
+    validations:
+      required: true
+
+  - type: input
+    id: uefn-version
+    attributes:
+      label: UEFN / Fortnite version
+      description: The UEFN build the project is on, from UEFN Help -> About or the Epic Games Launcher. The digest format changes between builds, so this matters for triage.
+      placeholder: e.g. 41.10
+    validations:
+      required: true
+
+  - type: dropdown
+    id: workspace-layout
+    attributes:
+      label: How is the project open in VS Code
+      description: The extension detects the .uefnproject differently depending on how the workspace was opened.
+      options:
+        - Opened from UEFN via "Verse -> Open in VS Code"
+        - Opened the project folder directly in VS Code
+        - Multi-root workspace (several folders)
+        - Other / not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: compiler-error
+    attributes:
+      label: Verse compiler error text
+      description: If the problem involves an error message, paste the exact compiler diagnostic from the Problems panel.
+      render: text
+
+  - type: textarea
+    id: sample-code
+    attributes:
+      label: Sample Verse code
+      description: A minimal snippet that reproduces the problem.
+      render: text
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Any verseAutoImports.* settings you changed from their defaults (Settings -> search "verseAutoImports").
+
+  - type: textarea
+    id: debug-logs
+    attributes:
+      label: Debug logs
+      description: Run the "Export Debug Logs" command from the Command Palette (under the Verse category), or copy the contents of the "Verse Auto Imports - Debug" Output channel, and paste the relevant lines here.
+      render: text

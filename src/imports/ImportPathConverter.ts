@@ -22,7 +22,7 @@ export class ImportPathConverter {
 
     constructor(
         private readonly outputChannel: vscode.OutputChannel,
-        projectPathCache?: ProjectPathCache
+        projectPathCache?: ProjectPathCache,
     ) {
         this.projectPathHandler = new ProjectPathHandler(outputChannel);
         this.projectPathCache = projectPathCache || null;
@@ -49,6 +49,36 @@ export class ImportPathConverter {
             logger.debug("ImportPathConverter", `Folder check failed for: ${folderUri.fsPath} - Error: ${error}`);
             return false;
         }
+    }
+
+    /** Checks whether a workspace-relative file still exists (guards against stale cache entries) */
+    private async sourceFileExists(workspaceFolder: vscode.WorkspaceFolder, relativePath: string): Promise<boolean> {
+        try {
+            const stat = await vscode.workspace.fs.stat(vscode.Uri.joinPath(workspaceFolder.uri, relativePath));
+            return stat.type === vscode.FileType.File;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Builds the absolute Verse path for a module resolved at a location.
+     * `location` follows the location contract ("" or "/Dir/Sub" relative to
+     * the Content root); `modulePath` uses "/" separators.
+     */
+    static buildFullVersePath(projectVersePath: string, location: string, modulePath: string): string {
+        return location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
+    }
+
+    /**
+     * Builds a regex matching an explicit `Name := module:` declaration for the
+     * given module name. Non-global on purpose: this pattern is reused with
+     * `.test()` across many files, and a global flag would carry `lastIndex`
+     * between calls and skip valid definitions depending on file order.
+     */
+    static buildModuleDefinitionRegex(moduleName: string): RegExp {
+        const escaped = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`\\b${escaped}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`, "m");
     }
 
     /** Extracts the path string from an import statement */
@@ -98,10 +128,16 @@ export class ImportPathConverter {
                 .map((s) => s.trim())
                 .filter((s) => s);
             if (simpleSplit.length === 0) return null;
-            return { fullPath: simpleSplit.join("/"), moduleName: simpleSplit[simpleSplit.length - 1] };
+            return {
+                fullPath: simpleSplit.join("/"),
+                moduleName: simpleSplit[simpleSplit.length - 1],
+            };
         }
 
-        return { fullPath: dotSegments.join("/"), moduleName: dotSegments[dotSegments.length - 1] };
+        return {
+            fullPath: dotSegments.join("/"),
+            moduleName: dotSegments[dotSegments.length - 1],
+        };
     }
 
     /** Returns module name for display (shows full dot notation for relative imports) */
@@ -130,11 +166,7 @@ export class ImportPathConverter {
      * Phase 1: Search for folders (implicit modules) relative to the current file.
      * Searches sibling folders, ascending directories, and Content root.
      */
-    private async searchImplicitModules(
-        modulePath: string,
-        currentFileUri: vscode.Uri,
-        locations: string[]
-    ): Promise<void> {
+    private async searchImplicitModules(modulePath: string, currentFileUri: vscode.Uri, locations: string[]): Promise<void> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(currentFileUri);
         if (!workspaceFolder) return;
 
@@ -199,14 +231,9 @@ export class ImportPathConverter {
 
     /**
      * Phase 2: Search for explicit module definitions in .verse files.
-     * Scans workspace for files containing module := module declarations.
+     * Scans the project folder for files containing Name := module declarations.
      */
-    private async searchExplicitModuleDefinitions(
-        modulePath: string,
-        moduleName: string,
-        pathSegments: string[],
-        locations: string[]
-    ): Promise<void> {
+    private async searchExplicitModuleDefinitions(modulePath: string, moduleName: string, pathSegments: string[], locations: string[]): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) return;
 
@@ -215,17 +242,16 @@ export class ImportPathConverter {
         const workspaceIsContent = workspaceFolderName === CONTENT_FOLDER;
         if (workspaceIsContent) searchPattern = "**/*.verse";
 
-        const verseFiles = await vscode.workspace.findFiles(searchPattern, null, 100);
-        const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const modulePattern = new RegExp(
-            `\\b${escapedModuleName}(?:'[^']*')?\\s*(?:<\\s*(?:public|private|internal|protected)\\s*>)?\\s*:=\\s*module\\s*[:>]`,
-            "gm"
-        );
+        // Scope the scan to the project folder. The UEFN-generated workspace is
+        // multi-root (Content plus Epic's digest folders); a bare string glob
+        // would also read every *.digest.verse on each fallback scan.
+        const verseFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceFolders[0], searchPattern), "**/*.digest.verse", 100);
+        const modulePattern = ImportPathConverter.buildModuleDefinitionRegex(moduleName);
 
         for (const file of verseFiles) {
             const content = await vscode.workspace.fs.readFile(file).then(
                 (buffer) => Buffer.from(buffer).toString("utf8"),
-                () => null
+                () => null,
             );
 
             if (!content || !modulePattern.test(content)) continue;
@@ -245,11 +271,7 @@ export class ImportPathConverter {
             if (!relativePath.startsWith(CONTENT_FOLDER)) continue;
 
             // Remove Content prefix
-            relativePath = relativePath.startsWith(`${CONTENT_FOLDER}/`)
-                ? relativePath.substring(CONTENT_FOLDER.length + 1)
-                : relativePath === CONTENT_FOLDER
-                  ? ""
-                  : relativePath;
+            relativePath = relativePath.startsWith(`${CONTENT_FOLDER}/`) ? relativePath.substring(CONTENT_FOLDER.length + 1) : relativePath === CONTENT_FOLDER ? "" : relativePath;
 
             // For nested paths, verify parent path matches
             if (pathSegments.length > 1) {
@@ -278,19 +300,12 @@ export class ImportPathConverter {
         const pathSegments = modulePath.split("/").filter((s) => s);
         const moduleName = pathSegments[pathSegments.length - 1];
 
-        // Try cache lookup first for faster results
-        if (this.projectPathCache) {
-            const cachedLocations = this.projectPathCache.lookupModulePath(modulePath);
-            if (cachedLocations.length > 0) {
-                logger.debug("ImportPathConverter", `Found ${cachedLocations.length} locations from cache for '${modulePath}'`);
-                return cachedLocations;
-            }
-            logger.debug("ImportPathConverter", `No cache hit for '${modulePath}', falling back to filesystem scan`);
-        }
-
         logger.debug("ImportPathConverter", `Searching for module '${modulePath}'`);
 
-        // Phase 1: Search for folders (implicit modules) in Content folder
+        // Phase 1: Search for folders (implicit modules) in Content folder.
+        // This runs first because it is locality-aware (prefers modules near
+        // the current file) and folder modules are filesystem-only knowledge
+        // that the declaration cache cannot provide.
         if (currentFileUri) {
             try {
                 await this.searchImplicitModules(modulePath, currentFileUri, locations);
@@ -299,7 +314,27 @@ export class ImportPathConverter {
             }
         }
 
-        // Phase 2: Search for explicit module definitions in .verse files
+        // Phase 2: Explicit module definitions. The cache accelerates this
+        // phase; every candidate is validated against the filesystem before
+        // being trusted, and the full scan still runs when the cache has
+        // nothing valid (empty, stale, or disabled).
+        if (locations.length === 0 && this.projectPathCache) {
+            const candidates = this.projectPathCache.lookupModuleLocations(modulePath);
+            for (const candidate of candidates) {
+                if (locations.includes(candidate.location)) {
+                    continue;
+                }
+                if (await this.sourceFileExists(workspaceFolders[0], candidate.sourceFile)) {
+                    locations.push(candidate.location);
+                } else {
+                    logger.debug("ImportPathConverter", `Cache candidate rejected, missing file: ${candidate.sourceFile}`);
+                }
+            }
+            if (locations.length > 0) {
+                logger.debug("ImportPathConverter", `Found ${locations.length} validated location(s) from cache for '${modulePath}'`);
+            }
+        }
+
         if (locations.length === 0) {
             logger.debug("ImportPathConverter", `Phase 2: Searching explicit module definitions`);
             try {
@@ -443,7 +478,7 @@ export class ImportPathConverter {
             const location = possibleLocations[0];
             logger.debug("ImportPathConverter", `Single location found: '${location}'`);
 
-            const fullPath = location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
+            const fullPath = ImportPathConverter.buildFullVersePath(projectVersePath, location, modulePath);
             logger.debug("ImportPathConverter", `Constructed full path: ${fullPath}`);
 
             const fullPathImport = usesCurlyBraces ? `using { ${fullPath} }` : `using. ${fullPath}`;
@@ -455,9 +490,7 @@ export class ImportPathConverter {
                 isAmbiguous: false,
             };
         } else {
-            const possiblePaths = possibleLocations.map((location) => {
-                return location === "/" || location === "" ? `${projectVersePath}/${modulePath}` : `${projectVersePath}${location}/${modulePath}`;
-            });
+            const possiblePaths = possibleLocations.map((location) => ImportPathConverter.buildFullVersePath(projectVersePath, location, modulePath));
 
             return {
                 originalImport: importStatement,

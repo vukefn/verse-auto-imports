@@ -1,106 +1,83 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ProjectPathHandler } from "../project";
-import {
-    ProjectPathNode,
-    ProjectPathTree,
-    TreeBuildOptions,
-} from "../types";
+import { ProjectPathData, ProjectPathNode, ProjectScanOptions } from "../types";
+
+/** Number of .verse files parsed concurrently during a full scan. */
+const SCAN_CONCURRENCY = 8;
 
 /**
- * Builds a path tree by scanning all .verse files in the project.
- * Extracts module, class, struct, function, and variable declarations.
+ * Scans .verse files in the project and extracts module, class, struct,
+ * function, and variable declarations as a flat node list.
  */
-export class ProjectPathTreeBuilder {
-    private static readonly CACHE_VERSION = "1.0.0";
-
+export class ProjectPathScanner {
     constructor(
         private outputChannel: vscode.OutputChannel,
-        private projectPathHandler: ProjectPathHandler
+        private projectPathHandler: ProjectPathHandler,
     ) {}
 
     /**
-     * Builds a complete path tree by scanning all .verse files in the workspace.
+     * Scans all .verse files in the workspace and returns the project's
+     * declaration data, or null when no UEFN project is found.
      */
-    async buildFullTree(
-        workspaceFolder: vscode.WorkspaceFolder,
-        options: TreeBuildOptions = {}
-    ): Promise<ProjectPathTree | null> {
+    async scanProject(workspaceFolder: vscode.WorkspaceFolder, options: ProjectScanOptions = {}): Promise<ProjectPathData | null> {
         const startTime = Date.now();
-        logger.info("ProjectPathTreeBuilder", `Building path tree for ${workspaceFolder.name}...`);
+        logger.info("ProjectPathScanner", `Scanning project ${workspaceFolder.name}...`);
 
         try {
-            // Get project info
             const projectVersePath = await this.projectPathHandler.getProjectVersePath();
             const projectName = await this.projectPathHandler.getProjectName();
 
             if (!projectName) {
-                logger.warn("ProjectPathTreeBuilder", "No UEFN project found in workspace");
+                logger.warn("ProjectPathScanner", "No UEFN project found in workspace");
                 return null;
             }
 
-            // Find all .verse files
             const includePattern = options.includePatterns?.[0] || "**/*.verse";
             const excludePatterns = options.excludePatterns || ["**/node_modules/**", "**/.git/**"];
             const excludePattern = `{${excludePatterns.join(",")}}`;
 
-            const files = await vscode.workspace.findFiles(
-                new vscode.RelativePattern(workspaceFolder, includePattern),
-                excludePattern
-            );
+            const files = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceFolder, includePattern), excludePattern);
 
-            logger.debug("ProjectPathTreeBuilder", `Found ${files.length} .verse files`);
+            logger.debug("ProjectPathScanner", `Found ${files.length} .verse files`);
 
-            // Build tree
-            const root: ProjectPathNode = {
-                name: projectName,
-                fullPath: projectVersePath || `/${projectName}`,
-                type: "module",
-                isPublic: true,
-                children: [],
-            };
-
-            const fileIndex: Record<string, string[]> = {};
+            const nodes: ProjectPathNode[] = [];
             let processedCount = 0;
 
-            for (const fileUri of files) {
-                try {
-                    const nodes = await this.parseVerseFile(fileUri, workspaceFolder, options);
-                    const relativePath = vscode.workspace.asRelativePath(fileUri, false);
+            for (let i = 0; i < files.length; i += SCAN_CONCURRENCY) {
+                const batch = files.slice(i, i + SCAN_CONCURRENCY);
+                const batchResults = await Promise.all(
+                    batch.map(async (fileUri) => {
+                        try {
+                            return await this.parseVerseFile(fileUri, workspaceFolder, options);
+                        } catch (error) {
+                            logger.error("ProjectPathScanner", `Error parsing ${fileUri.fsPath}`, error);
+                            return [];
+                        }
+                    }),
+                );
 
-                    if (nodes.length > 0) {
-                        fileIndex[relativePath] = nodes.map((n) => n.name);
-                        this.mergeNodesIntoTree(root, nodes);
-                    }
-
+                for (let j = 0; j < batch.length; j++) {
+                    nodes.push(...batchResults[j]);
                     processedCount++;
                     if (options.onProgress) {
+                        const relativePath = vscode.workspace.asRelativePath(batch[j], false);
                         options.onProgress(processedCount, files.length, relativePath);
                     }
-                } catch (error) {
-                    logger.error("ProjectPathTreeBuilder", `Error parsing ${fileUri.fsPath}`, error);
                 }
             }
 
-            const tree: ProjectPathTree = {
-                version: ProjectPathTreeBuilder.CACHE_VERSION,
+            const elapsed = Date.now() - startTime;
+            logger.info("ProjectPathScanner", `Scanned ${nodes.length} declarations from ${files.length} files in ${elapsed}ms`);
+
+            return {
                 projectVersePath: projectVersePath || `/${projectName}`,
                 projectName,
                 generatedAt: Date.now(),
-                root,
-                fileIndex,
+                nodes,
             };
-
-            const elapsed = Date.now() - startTime;
-            const totalNodes = this.countNodes(root);
-            logger.info(
-                "ProjectPathTreeBuilder",
-                `Built path tree: ${totalNodes} nodes from ${files.length} files in ${elapsed}ms`
-            );
-
-            return tree;
         } catch (error) {
-            logger.error("ProjectPathTreeBuilder", "Failed to build path tree", error);
+            logger.error("ProjectPathScanner", "Failed to scan project", error);
             return null;
         }
     }
@@ -108,11 +85,7 @@ export class ProjectPathTreeBuilder {
     /**
      * Parses a single .verse file and extracts declarations.
      */
-    async parseVerseFile(
-        fileUri: vscode.Uri,
-        workspaceFolder: vscode.WorkspaceFolder,
-        options: TreeBuildOptions = {}
-    ): Promise<ProjectPathNode[]> {
+    async parseVerseFile(fileUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder, options: ProjectScanOptions = {}): Promise<ProjectPathNode[]> {
         try {
             const document = await vscode.workspace.openTextDocument(fileUri);
             const content = document.getText();
@@ -120,7 +93,7 @@ export class ProjectPathTreeBuilder {
 
             return this.extractDeclarations(content, relativePath, options);
         } catch (error) {
-            logger.error("ProjectPathTreeBuilder", `Failed to parse ${fileUri.fsPath}`, error);
+            logger.error("ProjectPathScanner", `Failed to parse ${fileUri.fsPath}`, error);
             return [];
         }
     }
@@ -128,11 +101,7 @@ export class ProjectPathTreeBuilder {
     /**
      * Extracts module, class, struct, and function declarations from Verse content.
      */
-    extractDeclarations(
-        content: string,
-        filePath: string,
-        options: TreeBuildOptions = {}
-    ): ProjectPathNode[] {
+    extractDeclarations(content: string, filePath: string, options: ProjectScanOptions = {}): ProjectPathNode[] {
         const nodes: ProjectPathNode[] = [];
         const lines = content.split("\n");
 
@@ -224,7 +193,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "module",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -249,7 +217,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "class",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -274,7 +241,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "struct",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -299,7 +265,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "interface",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -324,7 +289,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "enum",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -349,7 +313,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "function",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -374,7 +337,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "function",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -409,7 +371,6 @@ export class ProjectPathTreeBuilder {
                     fullPath,
                     type: "variable",
                     isPublic,
-                    children: [],
                     sourceFile: filePath,
                     sourceLine: i + 1,
                 });
@@ -417,27 +378,5 @@ export class ProjectPathTreeBuilder {
         }
 
         return nodes;
-    }
-
-    /**
-     * Merges nodes into the tree structure.
-     */
-    private mergeNodesIntoTree(root: ProjectPathNode, nodes: ProjectPathNode[]): void {
-        for (const node of nodes) {
-            // For now, add all nodes as children of root
-            // In a more sophisticated implementation, we'd build the hierarchy based on paths
-            root.children.push(node);
-        }
-    }
-
-    /**
-     * Counts total nodes in the tree.
-     */
-    private countNodes(node: ProjectPathNode): number {
-        let count = 1;
-        for (const child of node.children) {
-            count += this.countNodes(child);
-        }
-        return count;
     }
 }

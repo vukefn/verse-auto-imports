@@ -4,14 +4,26 @@
  */
 
 /**
- * Represents a node in the project path tree.
- * Each node corresponds to a Verse module, class, struct, function, or variable.
+ * Version of the persisted cache format. Bumping this invalidates previously
+ * stored caches (they are rebuilt on next activation). Shared by the scanner
+ * that stamps payloads and the cache that validates them.
+ */
+export const PROJECT_CACHE_VERSION = "2";
+
+/**
+ * A single declaration found in a .verse file.
  */
 export interface ProjectPathNode {
     /** The identifier name */
     name: string;
 
-    /** The full Verse path */
+    /**
+     * Dot-chain of enclosing explicit module declarations within the source
+     * file, ending in this declaration's name (e.g. "Outer.Inner" for a
+     * module Inner declared inside module Outer, or just "Inner" for a
+     * top-level declaration). This reflects nesting inside the file only;
+     * folder structure is not part of it.
+     */
     fullPath: string;
 
     /** The type of declaration */
@@ -20,85 +32,43 @@ export interface ProjectPathNode {
     /** Whether this declaration is public */
     isPublic: boolean;
 
-    /** Child nodes (for modules containing other declarations) */
-    children: ProjectPathNode[];
-
-    /** Relative path to the source .verse file (from workspace root) */
+    /** Relative path to the source .verse file (from workspace root, "/" separators) */
     sourceFile?: string;
 
     /** Line number in the source file where this declaration starts */
     sourceLine?: number;
-
-    /** Last modification timestamp of the source file when this node was created */
-    sourceFileModified?: number;
 }
 
 /**
- * Represents the complete project path tree.
- * Cached in VS Code workspace storage.
+ * The scanned project declaration data held by the cache.
+ * All lookup indexes are derived from `nodes` and are not persisted.
  */
-export interface ProjectPathTree {
-    /** Version of the cache format (for migration) */
-    version: string;
-
+export interface ProjectPathData {
     /** The project Verse path */
     projectVersePath: string;
 
     /** The project name from .uefnproject */
     projectName: string;
 
-    /** Timestamp when this tree was generated */
+    /** Timestamp when this data was generated */
     generatedAt: number;
 
-    /** Root node containing all top-level modules */
-    root: ProjectPathNode;
-
-    /** Index mapping file paths to identifiers defined in them (for incremental updates) */
-    fileIndex: Record<string, string[]>;
+    /** Every declaration found in the project, flat */
+    nodes: ProjectPathNode[];
 }
 
 /**
- * Metadata about the cache state.
- * Used to validate and manage cache freshness.
+ * Persisted shape of the cache in VS Code workspace storage.
  */
-export interface CacheMetadata {
-    /** Version of the cache format */
-    cacheVersion: string;
-
-    /** Timestamp of the last full scan */
-    lastFullScan: number;
-
-    /** Number of files scanned */
-    fileCount: number;
-
-    /** Total number of identifiers cached */
-    identifierCount: number;
-
-    /** Hash of file paths and their modification times for quick invalidation check */
-    fileHashes: Record<string, number>;
+export interface SerializedProjectPathCache extends ProjectPathData {
+    /** Format version; payloads with a different version are discarded */
+    version: string;
 }
 
 /**
- * Result of looking up an identifier in the cache.
+ * Options for scanning the project for declarations.
  */
-export interface CacheLookupResult {
-    /** The identifier that was looked up */
-    identifier: string;
-
-    /** Matching nodes found in the cache */
-    matches: ProjectPathNode[];
-
-    /** Whether the result came from cache or required a fresh scan */
-    fromCache: boolean;
-}
-
-/**
- * Options for building/rebuilding the project path tree.
- */
-export interface TreeBuildOptions {
-    /** Maximum depth to traverse */
-    maxDepth?: number;
-
+export interface ProjectScanOptions {
     /** File patterns to include */
     includePatterns?: string[];
 
@@ -110,17 +80,4 @@ export interface TreeBuildOptions {
 
     /** Progress callback for UI feedback */
     onProgress?: (current: number, total: number, file: string) => void;
-}
-
-/**
- * Serializable version of ProjectPathTree for storage.
- * Used because Maps and Sets do not serialize to JSON directly.
- */
-export interface SerializedProjectPathTree {
-    version: string;
-    projectVersePath: string;
-    projectName: string;
-    generatedAt: number;
-    root: ProjectPathNode;
-    fileIndex: Record<string, string[]>;
 }
