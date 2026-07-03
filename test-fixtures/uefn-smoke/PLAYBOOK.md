@@ -163,6 +163,41 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
        duplicate-interval evidence.
 3. [ ] Enable auto-imports mid-snooze: snooze cancels automatically.
 
+### T9 -- book-construct validation (fixtures: T9/) [gates #65 and #71]
+
+Each case checks whether live UEFN accepts a construct documented in the Book
+of Verse; the results decide the fix design for #65 (relative import
+classification) and #71 (import aliases), and give live regression coverage
+for #67/#68. For every case record the verbatim outcome (clean compile, or
+the exact diagnostic) with "Verse: Capture Diagnostics Corpus", then fold new
+message shapes into test-fixtures/corpus/<UEFN version>/diagnostics.json with
+expectations filled in (see test-fixtures/corpus/README.md).
+
+1. [ ] Case A bare same-directory import: in t9_relative_imports.verse,
+       uncomment `using { Sub }` (plus the probe line). Compiles or exact
+       error?
+2. [ ] Case B subdirectory import: re-comment A, uncomment
+       `using { Sub/Deep }`. Same question.
+3. [ ] Case C sibling import: re-comment B, uncomment `using { ../Scripts }`.
+       Same question.
+4. [ ] Case D module-body using (t9_module_body.verse): file compiles as
+       synced. Then remove the indented `/Verse.org/Simulation` pair, wait
+       for the auto-import to re-add it, and confirm the module-scoped
+       `using { /Verse.org/Random }` was not moved, deleted, or duplicated.
+       Run "Verse: Optimize Imports" and save: same expectation (#67 live).
+5. [ ] Case E indented style (same file): re-sync the fixture so the
+       `using:` pair is back, then trigger any auto-import in the file (e.g.
+       reference `button_device`). The pair must be consolidated into the
+       import block with its path intact; no orphaned indented line (#68
+       live).
+6. [ ] Case F alias (t9_alias.verse): uncomment the import(...) lines.
+       Compiles or exact error? If it compiles, add
+       `using { /Verse.org/SpatialMath }` below and confirm the extension
+       does not add duplicates or misbehave in the file (#71).
+7. [ ] Capture: with all T9 files open and their diagnostics present, run
+       "Verse: Capture Diagnostics Corpus" and curate the output into the
+       corpus folder for this UEFN version.
+
 ## Phase D: verdict
 
 | Case | Pass | Finding # |
@@ -176,6 +211,7 @@ live digest emits `<scoped {...}>` specifiers and instance declarations).
 | T6   |      |           |
 | T7   |      |           |
 | T8   |      |           |
+| T9   |      |           |
 
 Findings (number, verbatim evidence, suspected component):
 

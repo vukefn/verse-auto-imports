@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - New setting `cache.watcherDebounceMs` (default: 500) to tune how quickly file changes refresh the cache
   - New command **Verse: Rebuild Project Path Cache** to refresh the cache on demand
   - New command **Verse: Show Cache Status** to inspect the current cache state
+- **Capture Diagnostics Corpus**: new command **Verse: Capture Diagnostics Corpus** exports the verbatim compiler diagnostics of open Verse files to JSON. Used to maintain the message-format regression corpus (`test-fixtures/corpus/`) that guards import extraction against wording changes between UEFN releases
 
 ### Changed
 

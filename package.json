@@ -85,6 +85,10 @@
         "title": "Verse: Export Debug Logs"
       },
       {
+        "command": "verseAutoImports.captureDiagnosticsCorpus",
+        "title": "Verse: Capture Diagnostics Corpus"
+      },
+      {
         "command": "verseAutoImports.rebuildPathCache",
         "title": "Verse: Rebuild Project Path Cache"
       },
