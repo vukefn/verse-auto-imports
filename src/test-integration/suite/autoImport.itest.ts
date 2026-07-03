@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { DiagnosticInjector, assertNoDocumentChange, corpusMessage, countOccurrences, openFixture, sleep, waitForDocumentChange } from "./helpers";
+import { DiagnosticInjector, assertNoDocumentChange, corpusMessage, countOccurrences, docText, openFixture, sleep, waitForDocumentChange } from "./helpers";
 
 describe("auto-import pipeline (playbook T1/T2/T3)", () => {
     let injector: DiagnosticInjector;
@@ -20,7 +20,7 @@ describe("auto-import pipeline (playbook T1/T2/T3)", () => {
         await waitForDocumentChange(document, (text) => text.includes("using { /Fortnite.com/Devices }"), "auto-import of /Fortnite.com/Devices");
         await sleep(500);
 
-        assert.strictEqual(countOccurrences(document.getText(), "using { /Fortnite.com/Devices }"), 1, "import must be inserted exactly once");
+        assert.strictEqual(countOccurrences(docText(document), "using { /Fortnite.com/Devices }"), 1, "import must be inserted exactly once");
     });
 
     it("T1: several single-suggestion diagnostics in one debounce window import once each", async () => {
@@ -35,7 +35,7 @@ describe("auto-import pipeline (playbook T1/T2/T3)", () => {
         await waitForDocumentChange(document, (text) => statements.every((statement) => text.includes(statement)), "auto-import of all three suggestions");
         await sleep(500);
 
-        const text = document.getText();
+        const text = docText(document);
         for (const statement of statements) {
             assert.strictEqual(countOccurrences(text, statement), 1, `expected exactly one '${statement}'`);
         }
@@ -48,7 +48,7 @@ describe("auto-import pipeline (playbook T1/T2/T3)", () => {
         await waitForDocumentChange(document, (text) => text.includes("using { Folder1 }"), "auto-import of Folder1");
         await sleep(500);
 
-        const text = document.getText();
+        const text = docText(document);
         assert.strictEqual(countOccurrences(text, "using { Folder1 }"), 1);
         assert.ok(!text.includes("using { Folder1.image2 }"), "the import must not embed the asset name");
     });

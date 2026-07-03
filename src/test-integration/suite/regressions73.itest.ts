@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { DiagnosticInjector, WorkspaceSettings, corpusMessage, countOccurrences, openFixture, runOptimizeImports, sleep, waitForDocumentChange } from "./helpers";
+import { DiagnosticInjector, WorkspaceSettings, corpusMessage, countOccurrences, docText, openFixture, runOptimizeImports, sleep, waitForDocumentChange } from "./helpers";
 
 function assertNoOrphanedUsingLine(text: string): void {
     const lines = text.split("\n");
@@ -40,7 +40,7 @@ describe("PR #73 regressions (issues #67/#68)", () => {
         await waitForDocumentChange(document, (text) => text.includes("using { /Fortnite.com/Devices }"), "auto-import of /Fortnite.com/Devices");
         await sleep(500);
 
-        const text = document.getText();
+        const text = docText(document);
         assert.strictEqual(countOccurrences(text, "/Fortnite.com/Playspaces"), 1, "the indented import's path must survive exactly once");
         assertNoOrphanedUsingLine(text);
     });
@@ -52,7 +52,7 @@ describe("PR #73 regressions (issues #67/#68)", () => {
         await waitForDocumentChange(document, (text) => text.includes("using { /Fortnite.com/Devices }"), "auto-import of /Fortnite.com/Devices");
         await sleep(500);
 
-        assertModuleScopedUsingInPlace(document.getText(), "r73_utilities_auto");
+        assertModuleScopedUsingInPlace(docText(document), "r73_utilities_auto");
     });
 
     it("Optimize Imports leaves a module-scoped using in place", async () => {
@@ -81,7 +81,7 @@ describe("PR #73 regressions (issues #67/#68)", () => {
         assert.ok(await document.save(), "save failed");
         await sleep(500);
 
-        const text = document.getText();
+        const text = docText(document);
         assert.ok(text.includes("using { /Verse.org/Random }\n    GenerateId"), `no blank line may be inserted after the module-scoped using, got:\n${text}`);
     });
 });

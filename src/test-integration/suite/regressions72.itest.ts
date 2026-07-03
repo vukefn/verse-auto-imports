@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { DiagnosticInjector, WorkspaceSettings, assertNoDocumentChange, corpusMessage, countOccurrences, openFixture, runOptimizeImports, sleep, waitForDocumentChange } from "./helpers";
+import { DiagnosticInjector, WorkspaceSettings, assertNoDocumentChange, corpusMessage, countOccurrences, docText, openFixture, runOptimizeImports, sleep, waitForDocumentChange } from "./helpers";
 
 describe("PR #72 regressions (issues #69/#70)", () => {
     let injector: DiagnosticInjector;
@@ -26,7 +26,7 @@ describe("PR #72 regressions (issues #69/#70)", () => {
         await waitForDocumentChange(document, (text) => text.includes("using { InventoryModule }"), "auto-import of InventoryModule");
         await sleep(500);
 
-        const text = document.getText();
+        const text = docText(document);
         assert.strictEqual(countOccurrences(text, "using { InventoryModule }"), 1);
         assert.ok(!/^using \{ item \}/m.test(text), "a bare identifier option must never be imported");
     });

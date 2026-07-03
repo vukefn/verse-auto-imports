@@ -74,6 +74,20 @@ export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Normalizes CRLF to LF. Fixture checkouts on Windows CI (and real user
+ * documents) carry CRLF; assertions and predicates always see LF so they can
+ * use literal \n and $ anchors.
+ */
+export function normalizeEol(text: string): string {
+    return text.replace(/\r\n/g, "\n");
+}
+
+/** The document text with line endings normalized to LF, for assertions. */
+export function docText(document: vscode.TextDocument): string {
+    return normalizeEol(document.getText());
+}
+
 export function countOccurrences(text: string, needle: string): number {
     let count = 0;
     let index = text.indexOf(needle);
@@ -138,7 +152,7 @@ export class DiagnosticInjector {
  * final document text for diagnosis.
  */
 export function waitForDocumentChange(document: vscode.TextDocument, predicate: (text: string) => boolean, label: string, timeoutMs: number = 5000): Promise<void> {
-    if (predicate(document.getText())) {
+    if (predicate(docText(document))) {
         return Promise.resolve();
     }
     return new Promise<void>((resolve, reject) => {
@@ -151,7 +165,7 @@ export function waitForDocumentChange(document: vscode.TextDocument, predicate: 
             if (event.document.uri.toString() !== document.uri.toString()) {
                 return;
             }
-            if (predicate(event.document.getText())) {
+            if (predicate(docText(event.document))) {
                 clearTimeout(timer);
                 subscription?.dispose();
                 resolve();
@@ -207,5 +221,5 @@ export async function runOptimizeImports(document: vscode.TextDocument): Promise
     await vscode.window.showTextDocument(document, { preview: false });
     await vscode.commands.executeCommand("verseAutoImports.optimizeImports");
     await sleep(500);
-    return document.getText();
+    return docText(document);
 }

@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { DiagnosticInjector, WorkspaceSettings, corpusMessage, countOccurrences, openFixture, runOptimizeImports, sleep } from "./helpers";
+import { DiagnosticInjector, WorkspaceSettings, corpusMessage, countOccurrences, normalizeEol, openFixture, runOptimizeImports, sleep } from "./helpers";
 
 describe("Optimize Imports (playbook T5)", () => {
     it("consolidates, dedupes, and adds missing imports atomically; local-scope using untouched", async () => {
@@ -15,7 +15,7 @@ describe("Optimize Imports (playbook T5)", () => {
             const intermediateStates: string[] = [];
             const subscription = vscode.workspace.onDidChangeTextDocument((event) => {
                 if (event.document.uri.toString() === document.uri.toString()) {
-                    intermediateStates.push(event.document.getText());
+                    intermediateStates.push(normalizeEol(event.document.getText()));
                 }
             });
             const text = await runOptimizeImports(document);
