@@ -4,11 +4,13 @@ All notable changes to the "Verse Auto Imports" extension will be documented in 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked at the bottom of this file.
+
 ## [Unreleased]
 
 ### Added
 
-- **Project Path Caching**: the extension now caches your project's module structure so relative-to-absolute path conversion resolves faster, especially in large projects. Enabled by default.
+- **Project Path Caching**: the extension now caches your project's module structure so relative-to-absolute path conversion resolves faster, especially in large projects. Enabled by default. ([#41])
   - New setting `cache.enableProjectCache` (default: on) to toggle caching
   - New setting `cache.autoRebuildOnStartup` (default: off) to rebuild the cache when VS Code starts
   - New setting `cache.watcherDebounceMs` (default: 500) to tune how quickly file changes refresh the cache
@@ -18,25 +20,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- **Faster Cache Rebuilds**: project files are scanned concurrently when rebuilding the path cache. The cache storage format changed; existing caches are rebuilt automatically on first use after updating.
+- **Faster Cache Rebuilds**: project files are scanned concurrently when rebuilding the path cache. The cache storage format changed; existing caches are rebuilt automatically on first use after updating. ([#41])
 
 ### Fixed
 
-- **Optimize Imports Diagnostic Parsing**: "Optimize Imports" no longer inserts a malformed import when the compiler suggests an assignment fix (for example `using { to write 'set Foo }`), and no longer adds every candidate module of an ambiguous "one of" error at once; ambiguous cases are left to the quick-fix menu
-- **Quick Fix Menu Noise**: "Did you mean any of" compiler suggestions no longer produce import options for bare identifiers (such as local definitions echoed in the option list), which generated invalid `using` statements when applied
-- **Path Conversion with Project Cache**: "Use Absolute Path" and related commands produced malformed import paths or wrong module suggestions when the project path cache was enabled (the default)
+- **Optimize Imports Diagnostic Parsing**: "Optimize Imports" no longer inserts a malformed import when the compiler suggests an assignment fix (for example `using { to write 'set Foo }`), and no longer adds every candidate module of an ambiguous "one of" error at once; ambiguous cases are left to the quick-fix menu ([#69])
+- **Quick Fix Menu Noise**: "Did you mean any of" compiler suggestions no longer produce import options for bare identifiers (such as local definitions echoed in the option list), which generated invalid `using` statements when applied ([#70])
+- **Path Conversion with Project Cache**: "Use Absolute Path" and related commands produced malformed import paths or wrong module suggestions when the project path cache was enabled (the default) ([#41])
   - Cache results now use the same location format as the filesystem scan instead of raw declaration paths
   - Module names are matched exactly: unrelated identifiers like `MyUtils` no longer match `Utils`, and class or struct names are never offered as module locations
   - Cached results are validated against the filesystem before use, with automatic fallback to a full scan when the cache is stale
   - The search near the current file runs first again, so the nearest module is preferred over project-wide matches
-- **Optimize Imports Reliability**: with auto-import enabled (the default), "Optimize Imports" could momentarily strip every import, report success, and leave the file unorganized while the imports reappeared a moment later. The command now organizes imports in a single step and never leaves the file without them; behavior no longer depends on the auto-import debounce delay
-- **Auto-Import Asset Class Names**: automatic imports now exclude asset class names from the import path, matching the quick-fix behavior. Previously the automatic path could import `using { A.B.ClassName }` where the quick fix correctly used `using { A.B }`
-- **Indented Imports No Longer Corrupted**: adding an import to a file that uses the indented style (`using:` with the path on the next line) no longer deletes the `using:` line while leaving the path line orphaned, which lost the existing import and broke compilation
-- **Module-Scoped Imports Left in Place**: a `using` statement inside a module body is no longer moved to the top of the file by auto-import or "Optimize Imports", and saving no longer inserts blank lines after it in the middle of the module
-- **Asset Changes Detected Promptly**: adding or renaming assets in UEFN is now picked up as soon as the assets digest regenerates, instead of after a delay. The file watcher for the out-of-workspace assets digest was not firing
-- **Ambiguous Module Detection**: when a module is defined in several files, path conversion no longer drops valid locations depending on the order files are scanned
-- **Snooze Timer**: repeatedly starting snooze from the command palette no longer leaves extra countdown timers running, and an active snooze is cleaned up when the extension is disabled or reloaded
-- **Diagnostics Noise in UEFN Workspaces**: the auto-import listener no longer tries to open VS Code internal documents (which logged an error on every edit preview) and no longer reprocesses Epic's read-only `*.digest.verse` files, which carry permanent compiler errors in the standard UEFN workspace, on every diagnostics update
+- **Optimize Imports Reliability**: with auto-import enabled (the default), "Optimize Imports" could momentarily strip every import, report success, and leave the file unorganized while the imports reappeared a moment later. The command now organizes imports in a single step and never leaves the file without them; behavior no longer depends on the auto-import debounce delay ([#42])
+- **Auto-Import Asset Class Names**: automatic imports now exclude asset class names from the import path, matching the quick-fix behavior. Previously the automatic path could import `using { A.B.ClassName }` where the quick fix correctly used `using { A.B }` ([#43])
+- **Indented Imports No Longer Corrupted**: adding an import to a file that uses the indented style (`using:` with the path on the next line) no longer deletes the `using:` line while leaving the path line orphaned, which lost the existing import and broke compilation ([#68])
+- **Module-Scoped Imports Left in Place**: a `using` statement inside a module body is no longer moved to the top of the file by auto-import or "Optimize Imports", and saving no longer inserts blank lines after it in the middle of the module ([#67])
+- **Asset Changes Detected Promptly**: adding or renaming assets in UEFN is now picked up as soon as the assets digest regenerates, instead of after a delay. The file watcher for the out-of-workspace assets digest was not firing ([#43])
+- **Ambiguous Module Detection**: when a module is defined in several files, path conversion no longer drops valid locations depending on the order files are scanned ([#43])
+- **Snooze Timer**: repeatedly starting snooze from the command palette no longer leaves extra countdown timers running, and an active snooze is cleaned up when the extension is disabled or reloaded ([#43])
+- **Diagnostics Noise in UEFN Workspaces**: the auto-import listener no longer tries to open VS Code internal documents (which logged an error on every edit preview) and no longer reprocesses Epic's read-only `*.digest.verse` files, which carry permanent compiler errors in the standard UEFN workspace, on every diagnostics update ([#46])
 - **Path Conversion Scan Scope**: the fallback scan for explicit module declarations no longer reads Epic's digest files on every lookup in the standard UEFN multi-root workspace; it is now scoped to the project folder
 
 ## [0.6.4] - 2026-02-14
@@ -49,7 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- **Local-Scope Using Conflicts**: Local-scope `using` statements (e.g., `using{Variable}`) inside function bodies were incorrectly treated as module imports, causing them to be grouped with actual imports, deleted during import optimization, or shown in CodeLens path conversion (#23)
+- **Local-Scope Using Conflicts**: Local-scope `using` statements (e.g., `using{Variable}`) inside function bodies were incorrectly treated as module imports, causing them to be grouped with actual imports, deleted during import optimization, or shown in CodeLens path conversion ([#23])
 
 ## [0.6.2] - 2026-02-05
 
@@ -257,3 +259,15 @@ Settings have been reorganized with new names (old settings will need to be upda
 ## Earlier Versions
 
 See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for complete changelog of earlier versions.
+
+<!-- Issue references -->
+
+[#23]: https://github.com/VukeFN/verse-auto-imports/issues/23
+[#41]: https://github.com/VukeFN/verse-auto-imports/issues/41
+[#42]: https://github.com/VukeFN/verse-auto-imports/issues/42
+[#43]: https://github.com/VukeFN/verse-auto-imports/issues/43
+[#46]: https://github.com/VukeFN/verse-auto-imports/issues/46
+[#67]: https://github.com/VukeFN/verse-auto-imports/issues/67
+[#68]: https://github.com/VukeFN/verse-auto-imports/issues/68
+[#69]: https://github.com/VukeFN/verse-auto-imports/issues/69
+[#70]: https://github.com/VukeFN/verse-auto-imports/issues/70
