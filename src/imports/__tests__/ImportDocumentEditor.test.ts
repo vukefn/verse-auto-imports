@@ -89,4 +89,122 @@ describe("ImportDocumentEditor.buildOrganizedContent", () => {
         const input = "using { /A }\ncode()";
         expect(editor.buildOrganizedContent(input, ["", "   "], curlyNoSort)).toBe("using { /A }\n\ncode()");
     });
+
+    it("leaves a module-scoped using inside its module body", () => {
+        const input = ["using { /Top }", "", "Utilities := module:", "    using { /Verse.org/Random }", "", "    GenerateId<public>():int = 1"].join("\n");
+        expect(editor.buildOrganizedContent(input, [], curlySorted)).toBe(
+            ["using { /Top }", "", "Utilities := module:", "    using { /Verse.org/Random }", "", "    GenerateId<public>():int = 1"].join("\n"),
+        );
+    });
+});
+
+interface RecordedOperation {
+    kind: "insert" | "delete" | "replace";
+    position?: { line: number; character: number };
+    range?: { start: { line: number; character: number }; end: { line: number; character: number } };
+    text?: string;
+}
+
+function fakeDocument(text: string): vscode.TextDocument {
+    const lines = text.split("\n");
+    return {
+        uri: { toString: () => "file:///test.verse" },
+        getText: () => text,
+        lineCount: lines.length,
+        lineAt: (index: number) => ({ range: { end: new vscode.Position(index, lines[index].length) } }),
+    } as unknown as vscode.TextDocument;
+}
+
+function appliedOperations(call: number): RecordedOperation[] {
+    const applyEditMock = vscode.workspace.applyEdit as unknown as jest.Mock;
+    const edit = applyEditMock.mock.calls[call][0] as { operations: RecordedOperation[] };
+    return edit.operations;
+}
+
+describe("ImportDocumentEditor.addImportsToDocument", () => {
+    let editor: ImportDocumentEditor;
+    const applyEditMock = () => vscode.workspace.applyEdit as unknown as jest.Mock;
+
+    beforeEach(() => {
+        const outputChannel = vscode.window.createOutputChannel("test");
+        editor = new ImportDocumentEditor(outputChannel, new ImportFormatter());
+        applyEditMock().mockClear();
+    });
+
+    it("consolidates an indented-style pair without losing its path or orphaning its line", async () => {
+        const input = ["using:", "    /Verse.org/Simulation", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Devices }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const insert = operations.find((op) => op.kind === "insert");
+        expect(insert).toBeDefined();
+        expect(insert!.text).toContain("/Verse.org/Simulation");
+        expect(insert!.text).toContain("/Fortnite.com/Devices");
+
+        const deletes = operations.filter((op) => op.kind === "delete");
+        expect(deletes).toHaveLength(1);
+        expect(deletes[0].range!.start.line).toBe(0);
+        expect(deletes[0].range!.end.line).toBe(2);
+    });
+
+    it("recognizes an import that already exists as an indented pair and makes no edit", async () => {
+        const input = ["using:", "    /Verse.org/Simulation", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Verse.org/Simulation }"]);
+
+        expect(success).toBe(true);
+        expect(applyEditMock()).not.toHaveBeenCalled();
+    });
+
+    it("leaves a module-scoped using inside its module body during consolidation", async () => {
+        const input = ["using { /Top }", "", "Utilities := module:", "    using { /Verse.org/Random }", "", "    GenerateId<public>():int = 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Devices }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const insert = operations.find((op) => op.kind === "insert");
+        expect(insert!.text).not.toContain("/Verse.org/Random");
+
+        const deletes = operations.filter((op) => op.kind === "delete");
+        expect(deletes).toHaveLength(1);
+        expect(deletes[0].range!.start.line).toBe(0);
+        expect(deletes[0].range!.end.line).toBe(1);
+    });
+});
+
+describe("ImportDocumentEditor.ensureEmptyLinesAfterImports", () => {
+    let editor: ImportDocumentEditor;
+    const applyEditMock = () => vscode.workspace.applyEdit as unknown as jest.Mock;
+
+    beforeEach(() => {
+        const outputChannel = vscode.window.createOutputChannel("test");
+        editor = new ImportDocumentEditor(outputChannel, new ImportFormatter());
+        applyEditMock().mockClear();
+    });
+
+    it("does not enforce spacing after a module-scoped using", async () => {
+        const input = ["using { /Top }", "", "M := module:", "    using { /Verse.org/Random }", "    F():void = {}", ""].join("\n");
+
+        const success = await editor.ensureEmptyLinesAfterImports(fakeDocument(input));
+
+        expect(success).toBe(true);
+        expect(applyEditMock()).not.toHaveBeenCalled();
+    });
+
+    it("still enforces spacing after the file-level import block", async () => {
+        const input = ["using { /Top }", "code()"].join("\n");
+
+        const success = await editor.ensureEmptyLinesAfterImports(fakeDocument(input));
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+        expect(operations).toHaveLength(1);
+        expect(operations[0].kind).toBe("insert");
+        expect(operations[0].position!.line).toBe(1);
+    });
 });

@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportFormatter } from "./ImportFormatter";
+import { scanModuleImports, ScannedImport } from "./ImportScanner";
 
 /** Represents a contiguous block of import statements in the document. */
 interface ImportBlock {
     start: number;
     end: number;
-    imports: string[];
+    imports: ScannedImport[];
 }
 
 /**
@@ -27,7 +28,7 @@ export class ImportDocumentEditor {
      */
     private createBlockReplacementEdit(edit: vscode.WorkspaceEdit, document: vscode.TextDocument, block: ImportBlock, newPaths: string[], preferDotSyntax: boolean, sortAlphabetically: boolean): void {
         // Get existing paths in this block for combined sorting
-        const existingBlockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p): p is string => p !== null);
+        const existingBlockPaths = block.imports.map((imp) => imp.path);
 
         const combinedPaths = [...existingBlockPaths, ...newPaths];
         if (sortAlphabetically) {
@@ -42,21 +43,21 @@ export class ImportDocumentEditor {
     }
 
     /**
-     * Extracts existing import statements from a document.
+     * Extracts existing import statements from a document. Indented pairs
+     * (`using:` plus the path line) are returned joined as a single statement.
      */
     extractExistingImports(document: vscode.TextDocument): string[] {
         logger.debug("ImportDocumentEditor", "Extracting existing imports from document");
-        const text = document.getText();
-        const lines = text.split("\n");
+        const lines = document.getText().split("\n");
         const imports = new Set<string>();
 
-        for (let i = 0; i < lines.length; i++) {
-            const trimmed = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(trimmed, nextLine)) {
-                logger.trace("ImportDocumentEditor", `Found import: ${trimmed}`);
-                imports.add(trimmed);
-            }
+        for (const imp of scanModuleImports(lines)) {
+            const statement = lines
+                .slice(imp.startLine, imp.endLine + 1)
+                .map((line) => line.trim())
+                .join(" ");
+            logger.trace("ImportDocumentEditor", `Found import: ${statement}`);
+            imports.add(statement);
         }
 
         logger.debug("ImportDocumentEditor", `Extracted ${imports.size} existing imports`);
@@ -82,46 +83,26 @@ export class ImportDocumentEditor {
 
         const text = document.getText();
         const lines = text.split("\n");
-        const existingImports = new Set<string>();
+        const scannedImports = scanModuleImports(lines);
 
         const importBlocks: ImportBlock[] = [];
-        let currentBlock: ImportBlock | null = null;
+        for (const imp of scannedImports) {
+            logger.debug("ImportDocumentEditor", `Found existing import at line ${imp.startLine}: ${imp.path}`);
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(line, nextLine)) {
-                logger.debug("ImportDocumentEditor", `Found existing import at line ${i}: ${line}`);
-
-                existingImports.add(line);
-
-                if (!currentBlock) {
-                    currentBlock = { start: i, end: i, imports: [line] };
-                } else if (i === currentBlock.end + 1) {
-                    // Only extend block if import immediately follows (no gap)
-                    currentBlock.end = i;
-                    currentBlock.imports.push(line);
-                } else {
-                    // Any gap creates a new block
-                    importBlocks.push(currentBlock);
-                    currentBlock = { start: i, end: i, imports: [line] };
-                }
+            const lastBlock = importBlocks[importBlocks.length - 1];
+            if (lastBlock && imp.startLine === lastBlock.end + 1) {
+                // Only extend block if import immediately follows (no gap)
+                lastBlock.end = imp.endLine;
+                lastBlock.imports.push(imp);
+            } else {
+                // Any gap creates a new block
+                importBlocks.push({ start: imp.startLine, end: imp.endLine, imports: [imp] });
             }
         }
 
-        if (currentBlock) {
-            importBlocks.push(currentBlock);
-        }
+        logger.debug("ImportDocumentEditor", `Found ${scannedImports.length} existing imports in ${importBlocks.length} blocks`);
 
-        logger.debug("ImportDocumentEditor", `Found ${existingImports.size} existing imports in ${importBlocks.length} blocks`);
-
-        const existingPaths = new Set<string>();
-        existingImports.forEach((imp) => {
-            const path = this.formatter.extractPathFromImport(imp);
-            if (path) {
-                existingPaths.add(path);
-            }
-        });
+        const existingPaths = new Set<string>(scannedImports.map((imp) => imp.path));
 
         const newImportPaths = new Set<string>();
         importStatements.forEach((imp) => {
@@ -156,9 +137,9 @@ export class ImportDocumentEditor {
                 let localBlockIndex = -1;
 
                 importBlocks.forEach((block, index) => {
-                    const blockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p);
-                    const hasDigest = blockPaths.some((path) => this.formatter.isDigestImport(path!));
-                    const hasLocal = blockPaths.some((path) => !this.formatter.isDigestImport(path!));
+                    const blockPaths = block.imports.map((imp) => imp.path);
+                    const hasDigest = blockPaths.some((path) => this.formatter.isDigestImport(path));
+                    const hasLocal = blockPaths.some((path) => !this.formatter.isDigestImport(path));
 
                     // Determine block type based on majority
                     if (hasDigest && !hasLocal) {
@@ -290,38 +271,16 @@ export class ImportDocumentEditor {
         },
     ): string | null {
         const lines = text.split("\n");
-        const paths: string[] = [];
-        const body: string[] = [];
-        let i = 0;
+        const scannedImports = scanModuleImports(lines);
 
-        while (i < lines.length) {
-            const line = lines[i];
-            const trimmed = line.trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-
-            if (ImportFormatter.isModuleImport(trimmed, nextLine)) {
-                // Indented style: the path lives on the next line; consume both.
-                if (/^using\s*:\s*$/.test(trimmed)) {
-                    if (nextLine !== undefined && /^\s+\S/.test(nextLine)) {
-                        paths.push(nextLine.trim());
-                        i += 2;
-                        continue;
-                    }
-                    i += 1;
-                    continue;
-                }
-
-                const path = this.formatter.extractPathFromImport(trimmed);
-                if (path) {
-                    paths.push(path);
-                }
-                i += 1;
-                continue;
+        const paths = scannedImports.map((imp) => imp.path);
+        const importLines = new Set<number>();
+        for (const imp of scannedImports) {
+            for (let line = imp.startLine; line <= imp.endLine; line++) {
+                importLines.add(line);
             }
-
-            body.push(line);
-            i += 1;
         }
+        const body = lines.filter((_, index) => !importLines.has(index));
 
         const extraPaths = additionalPaths.map((p) => p.trim()).filter((p) => p.length > 0);
         if (paths.length === 0 && extraPaths.length === 0) {
@@ -402,23 +361,10 @@ export class ImportDocumentEditor {
         const text = document.getText();
         const lines = text.split("\n");
 
-        // Find the last import line (only module imports, not local-scope using)
-        let lastImportLine = -1;
-        for (let i = 0; i < lines.length; i++) {
-            const trimmed = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(trimmed, nextLine)) {
-                lastImportLine = i;
-
-                // Handle multi-line imports (using: format)
-                if (trimmed.match(/^using\s*:\s*$/)) {
-                    // Check if next line is indented (part of multi-line import)
-                    if (i + 1 < lines.length && lines[i + 1].match(/^\s+.+/)) {
-                        lastImportLine = i + 1;
-                    }
-                }
-            }
-        }
+        // Find the last file-level import (module imports only: not local-scope
+        // using, and not module-scoped imports inside module bodies)
+        const scannedImports = scanModuleImports(lines);
+        const lastImportLine = scannedImports.length > 0 ? scannedImports[scannedImports.length - 1].endLine : -1;
 
         // If no imports found or file only has imports, nothing to do
         if (lastImportLine === -1 || lastImportLine === lines.length - 1) {
