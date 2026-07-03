@@ -2,6 +2,14 @@ name: Feature request
 description: Suggest an improvement or new capability
 labels: [enhancement]
 body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the open and closed issues and did not find a duplicate.
+          required: true
+
   - type: textarea
     id: problem
     attributes:
