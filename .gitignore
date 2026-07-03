@@ -42,3 +42,4 @@ Thumbs.db
 
 # Patch files
 *.patch
+out-integration/

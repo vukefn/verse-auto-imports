@@ -10,6 +10,7 @@ src/**
 .claude/**
 CLAUDE.md
 tsconfig.json
+tsconfig.integration.json
 
 # Git
 .git/**
@@ -26,6 +27,8 @@ test-fixtures/**
 **/*.spec.js
 vitest.config.*
 jest.config.js
+out-integration/**
+.vscode-test/**
 
 # Development artifacts
 *.vsix
