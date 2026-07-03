@@ -1,16 +1,7 @@
 import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
-
-const EXTENSION_ID = "vukefn.verse-auto-imports";
-
-function contentRoot(): string {
-    const folder = vscode.workspace.workspaceFolders?.find((f) => f.name === "Content");
-    if (!folder) {
-        throw new Error("Fixture workspace is missing its Content folder; was the .code-workspace opened?");
-    }
-    return folder.uri.fsPath;
-}
+import { EXTENSION_ID, contentRoot } from "./helpers";
 
 async function waitFor(predicate: () => boolean, timeoutMs: number, label: string): Promise<void> {
     const deadline = Date.now() + timeoutMs;
