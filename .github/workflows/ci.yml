@@ -56,3 +56,9 @@ jobs:
 
       - name: Run integration tests
         run: npm run test:integration
+
+      - name: Package VSIX
+        run: npx --yes @vscode/vsce package --out itest.vsix
+
+      - name: Run packaged VSIX activation test
+        run: npm run test:integration:vsix -- itest.vsix

@@ -283,6 +283,7 @@
     "parse-digest": "ts-node src/scripts/parseDigestFiles.ts",
     "test": "jest --verbose",
     "test:integration": "npm run compile && tsc -p tsconfig.integration.json && node out-integration/test-integration/runTests.js",
+    "test:integration:vsix": "npm run compile && tsc -p tsconfig.integration.json && node out-integration/test-integration/runVsixTest.js",
     "format": "prettier --write \"**/*.ts\"",
     "format:check": "prettier --check \"**/*.ts\""
   },
