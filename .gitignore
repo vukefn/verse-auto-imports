@@ -39,3 +39,7 @@ Thumbs.db
 .claude
 .codex
 .gemini
+
+# Patch files
+*.patch
+out-integration/
