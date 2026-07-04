@@ -107,7 +107,7 @@ describe("ImportSuggestionExtractor", () => {
         it("should prefer a configured ambiguous mapping over the inferred 'Did you mean' path", async () => {
             (vscode.workspace.getConfiguration as jest.Mock).mockReturnValueOnce({
                 get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
-                    if (key === "ambiguousImports") {
+                    if (key === "behavior.ambiguousImports") {
                         return { player: "/Verse.org/Simulation" };
                     }
                     return defaultValue;

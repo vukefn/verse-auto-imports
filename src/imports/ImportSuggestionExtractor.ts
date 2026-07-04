@@ -331,7 +331,7 @@ export class ImportSuggestionExtractor {
 
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
-        const ambiguousImportMappings = config.get<Record<string, string>>("ambiguousImports", {});
+        const ambiguousImportMappings = config.get<Record<string, string>>("behavior.ambiguousImports", {});
 
         const classification = this.classifyMessage(errorMessage);
 

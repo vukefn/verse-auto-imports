@@ -17,13 +17,10 @@
     ],
     "settings": {
         // Keep the auto-import debounce short so tests wait milliseconds, not
-        // seconds. Both keys are set on purpose: getConfiguredDebounceDelay()
-        // reads the deprecated general.diagnosticDelay with config.get(key,
-        // undefined), and in a real host that returns the registered default
-        // (1000) rather than undefined, so the legacy key always wins over
-        // autoImportDebounceDelay. Setting both makes the fixture correct
-        // regardless of which key the extension ends up honoring.
-        "verseAutoImports.general.diagnosticDelay": 100,
+        // seconds. Only the current key is set: the deprecated
+        // general.diagnosticDelay must stay unset here so the suite exercises
+        // the intended resolution order (issue #76 regression coverage relies
+        // on autoImportDebounceDelay governing the debounce on its own).
         "verseAutoImports.general.autoImportDebounceDelay": 100,
         "files.autoSave": "off",
     },
