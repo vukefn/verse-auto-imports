@@ -102,6 +102,16 @@
                 "suggestions": ["using { /Verse.org/SpatialMath }", "using { /UnrealEngine.com/Temporary/SpatialMath }"],
                 "optimizePaths": []
             }
+        },
+        {
+            "id": "unknown-identifier-bare-ambiguous",
+            "source": "synthetic",
+            "context": "bare unknown identifier with no inline suggestion; pure extraction yields nothing (expected below), but in a real host the registered behavior.ambiguousImports default maps vector3 to /UnrealEngine.com/Temporary/SpatialMath - the integration suite asserts that mapped import (issue #77 regression)",
+            "message": "Unknown identifier `vector3`.\nUsed inside module /vukefn@fortnite.com/VerseAutoImports/Scripts.",
+            "expected": {
+                "suggestions": [],
+                "optimizePaths": []
+            }
         }
     ]
 }

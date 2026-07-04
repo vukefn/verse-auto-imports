@@ -8,13 +8,34 @@ import { ProjectPathHandler } from "./project";
 import { AssetsDigestParser, ProjectPathCache } from "./services";
 
 /**
- * Gets the configured debounce delay, handling backward compatibility
- * with the deprecated diagnosticDelay setting.
+ * Reads the explicit user-set value of a setting, ignoring its registered
+ * default. config.get cannot distinguish the two: for a registered setting it
+ * returns the package.json default instead of the passed fallback.
+ * Language-scoped values ("[verse]" blocks) are intentionally not consulted;
+ * the config is fetched without a scope, so they have never applied here.
+ */
+function getExplicitSetting(config: vscode.WorkspaceConfiguration, key: string): number | undefined {
+    const info = config.inspect<number>(key);
+    return info?.workspaceFolderValue ?? info?.workspaceValue ?? info?.globalValue;
+}
+
+/**
+ * Gets the configured debounce delay, handling backward compatibility with
+ * the deprecated diagnosticDelay setting. Only explicit overrides are
+ * considered so diagnosticDelay's registered default (1000) cannot shadow
+ * autoImportDebounceDelay; an explicit autoImportDebounceDelay wins over an
+ * explicit legacy value.
  */
 function getConfiguredDebounceDelay(config: vscode.WorkspaceConfiguration): number {
-    const legacyDelay = config.get<number | undefined>("general.diagnosticDelay", undefined);
-    const newDelay = config.get<number>("general.autoImportDebounceDelay", 3000);
-    return legacyDelay !== undefined ? legacyDelay : newDelay;
+    const explicitDelay = getExplicitSetting(config, "general.autoImportDebounceDelay");
+    if (explicitDelay !== undefined) {
+        return explicitDelay;
+    }
+    const explicitLegacyDelay = getExplicitSetting(config, "general.diagnosticDelay");
+    if (explicitLegacyDelay !== undefined) {
+        return explicitLegacyDelay;
+    }
+    return config.get<number>("general.autoImportDebounceDelay", 3000);
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -26,20 +47,6 @@ export function activate(context: vscode.ExtensionContext) {
     const outputChannel = logger.getUserChannel();
 
     const config = vscode.workspace.getConfiguration("verseAutoImports");
-    const existingMappings = config.get<Record<string, string>>("ambiguousImports", {});
-
-    if (Object.keys(existingMappings).length === 0) {
-        logger.info("Extension", "Setting default ambiguous import mappings");
-        config.update(
-            "ambiguousImports",
-            {
-                vector3: "/UnrealEngine.com/Temporary/SpatialMath",
-                vector2: "/UnrealEngine.com/Temporary/SpatialMath",
-                rotation: "/UnrealEngine.com/Temporary/SpatialMath",
-            },
-            vscode.ConfigurationTarget.Global,
-        );
-    }
 
     // Create core services
     logger.debug("Extension", "Creating handlers");
