@@ -46,6 +46,7 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 - **Status Bar Menu Error Feedback**: when a status bar menu action fails (for example, a settings update is rejected), the error is now shown as a notification and written to the extension log instead of failing silently
 - **Digest Suggestions Survive Broken Bundled Data**: when none of the extension's bundled pre-compiled digest files can be loaded (for example after a corrupted install), import suggestions now fall back to parsing digest files at runtime instead of silently operating with an empty digest index, which previously left digest-based suggestions returning no results
 - **Ambiguous Import Mappings Reconnected**: the `behavior.ambiguousImports` setting (and its shipped `vector3`/`vector2`/`rotation` defaults) is applied again. The code read a stale pre-0.6.0 configuration key, so configured mappings never took effect and every activation logged a settings write error. Mappings stored under the pre-0.6.0 `verseAutoImports.ambiguousImports` key must be moved to `verseAutoImports.behavior.ambiguousImports` ([#77])
+- **Asset Class Names Parsed on UEFN 41.10**: asset class detection recognizes the 41.10 `Assets.digest.verse` format again. The parser only matched `Name<public|internal|private> := class`, so the 41.10 shapes (specifiers carrying `{...}` arguments such as `<scoped {...}>`, stacked specifiers including on the `class` keyword like `class<final><scoped {...}>`, `protected`, and `name<...>:type = external {}` instance declarations) parsed to zero names and silently disabled the asset-class-boundary feature. All of these shapes are now recognized, while the older formats still parse and indented class members are no longer mistaken for asset names ([#63])
 
 ## [0.6.4] - 2026-02-14
 
@@ -273,6 +274,7 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#42]: https://github.com/VukeFN/verse-auto-imports/issues/42
 [#43]: https://github.com/VukeFN/verse-auto-imports/issues/43
 [#46]: https://github.com/VukeFN/verse-auto-imports/issues/46
+[#63]: https://github.com/VukeFN/verse-auto-imports/issues/63
 [#67]: https://github.com/VukeFN/verse-auto-imports/issues/67
 [#68]: https://github.com/VukeFN/verse-auto-imports/issues/68
 [#69]: https://github.com/VukeFN/verse-auto-imports/issues/69
