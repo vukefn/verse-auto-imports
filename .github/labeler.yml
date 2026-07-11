@@ -1,0 +1,69 @@
+# Path-based module/area labels for pull requests (actions/labeler).
+# Keep in sync with the label mapping in claude-issue-triage.yml.
+
+"module: imports":
+  - changed-files:
+      - all-globs-to-any-file:
+          - "src/imports/**"
+          - "!src/imports/ImportPathConverter.ts"
+          - "!src/imports/ImportCodeLensProvider.ts"
+          - "!src/imports/__tests__/ImportPathConverter*"
+          - "!src/imports/__tests__/ImportCodeLensProvider*"
+
+"module: path-conversion":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/imports/ImportPathConverter.ts"
+          - "src/imports/ImportCodeLensProvider.ts"
+          - "src/imports/__tests__/ImportPathConverter*"
+          - "src/imports/__tests__/ImportCodeLensProvider*"
+
+"module: diagnostics":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/diagnostics/**"
+
+"module: digest":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/services/DigestParser.ts"
+          - "src/services/AssetsDigestParser.ts"
+          - "src/services/PrecompiledDigestLoader.ts"
+          - "src/services/moduleLocationLookup.ts"
+          - "src/services/__tests__/DigestParser*"
+          - "src/services/__tests__/AssetsDigestParser*"
+          - "src/services/__tests__/PrecompiledDigestLoader*"
+          - "src/services/__tests__/moduleLocationLookup*"
+          - "src/data/**"
+          - "src/scripts/**"
+          - "src/utils/*.digest.verse"
+
+"module: project-detection":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/project/**"
+          - "src/services/ProjectPath*.ts"
+          - "src/services/__tests__/ProjectPath*"
+          - "src/types/projectCache.ts"
+
+"module: config":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/types/configuration.ts"
+
+"module: ui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/ui/**"
+          - "src/commands/**"
+
+"area: ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+"area: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**"

@@ -28,30 +28,106 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Triage GitHub issue #${{ github.event.issue.number }} in ${{ github.repository }}.
+            You are the issue triage agent for ${{ github.repository }}, a VS Code
+            extension that auto-manages Verse `using` imports for UEFN. Your triage
+            comment is the first thing the maintainer reads on a new issue, and it
+            must look identical in structure across issues so the maintainer can
+            scan and compare them quickly.
 
-            Steps:
+            Triage issue #${{ github.event.issue.number }}.
+
+            <instructions>
             1. Read the issue with `gh issue view ${{ github.event.issue.number }}`.
             2. Check for duplicates among open and recently closed issues
                (`gh issue list --state all --limit 30`). If it is a duplicate,
-               comment with a link to the original and apply the "duplicate" label.
+               apply the "duplicate" label.
             3. Classify the issue and apply exactly one type label: "bug",
                "enhancement", "question", or "documentation". Check available
-               labels first with `gh label list` and use the closest match;
-               do not create new labels.
-            4. For bugs: check whether the report includes the extension version,
+               labels first with `gh label list` and use the closest existing
+               match; do not create new labels.
+            4. Apply exactly one module/area label identifying the part of the
+               extension involved:
+               - "module: imports" - wrong/missing/duplicated using statement,
+                 quick fix content, import formatting or placement
+               - "module: diagnostics" - when auto-import triggers (e.g. fires
+                 mid-typing), debounce, compiler error processing
+               - "module: digest" - digest lookup, Assets.digest.verse parsing,
+                 unknown identifier resolution from API data
+               - "module: project-detection" - .uefnproject not found, wrong
+                 project name or Verse path
+               - "module: path-conversion" - the path conversion CodeLens
+               - "module: config" - settings behavior, defaults, migration
+               - "module: ui" - status bar, commands, quick fix menu appearance
+               - "area: ci" - workflows, releases, repo automation
+               - "area: docs" - README, wiki, changelog
+               If the area is genuinely unclear from the report, skip this label
+               rather than guessing.
+            5. For bugs: check whether the report includes the extension version,
                VS Code version, and a sample Verse snippet or compiler error text.
-               If any of these are missing, post one polite comment asking for the
-               specific missing items.
-            5. If the report includes a Verse compiler error message, inspect
-               src/imports/ImportSuggestionExtractor.ts and note in a comment which
-               extraction pattern is involved (or that none matches), to speed up
-               the eventual fix.
+            6. If the report includes a Verse compiler error message, read
+               src/imports/ImportSuggestionExtractor.ts and determine which
+               extraction pattern matches it (or that none does). This points the
+               eventual fix at the right code, so be precise about the pattern.
+            7. Post exactly one comment following <comment_template>. Keep the
+               headings, order, and bold field labels exactly as written; omit a
+               section only when it does not apply.
+            </instructions>
 
-            Rules:
-            - Follow the conventions in CLAUDE.md (no emojis, short factual comments).
-            - Post at most two comments total; prefer one.
+            <comment_template>
+            ### Triage
+
+            **Type:** <the label you applied>
+            **Duplicate:** <"none found", or "possible duplicate of #N" as a link>
+            **Area:** <the module/area label you applied, or "unclear">
+
+            **Summary:** <one or two sentences restating the issue in maintainer terms>
+
+            **Missing info:** <bugs only; omit this section when the report is complete>
+            - <each missing item: extension version, VS Code version, Verse
+              snippet or compiler error text>
+
+            **Pattern analysis:** <only when a compiler error is included>
+            <which extraction pattern in ImportSuggestionExtractor.ts is involved,
+            or that none matches>
+            </comment_template>
+
+            <examples>
+            <example>
+            ### Triage
+
+            **Type:** bug
+            **Duplicate:** none found
+            **Area:** module: imports
+
+            **Summary:** Accepting the quick fix inserts `using { /Verse.org }`
+            instead of `/Verse.org/Simulation` when the compiler offers several
+            candidate modules for `fort_character`.
+
+            **Missing info:**
+            - Extension version
+            - VS Code version
+
+            **Pattern analysis:** The quoted error is a multi-option suggestion,
+            handled by the multi-option pattern that runs before the
+            single-option patterns in ImportSuggestionExtractor.ts.
+            </example>
+            <example>
+            ### Triage
+
+            **Type:** enhancement
+            **Duplicate:** possible duplicate of [#12](https://github.com/${{ github.repository }}/issues/12)
+            **Area:** module: imports
+
+            **Summary:** Requests a setting to sort `using` statements
+            alphabetically instead of preserving insertion order.
+            </example>
+            </examples>
+
+            <rules>
+            - Follow the conventions in CLAUDE.md: no emojis, short factual comments.
+            - Post exactly one comment, formatted per <comment_template>.
             - Never close the issue. Never assign anyone.
+            </rules>
           claude_args: |
             --allowedTools "Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh search:*),Read,Grep,Glob"
             --max-turns 15
