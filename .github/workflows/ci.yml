@@ -47,7 +47,7 @@ jobs:
         run: npm ci
 
       - name: Cache VS Code test install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .vscode-test
           key: vscode-test-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
