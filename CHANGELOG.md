@@ -8,6 +8,8 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-11
+
 ### Added
 
 - **Project Path Caching**: the extension now caches your project's module structure so relative-to-absolute path conversion resolves faster, especially in large projects. Enabled by default. ([#41])
