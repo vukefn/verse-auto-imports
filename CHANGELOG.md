@@ -21,6 +21,8 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 ### Changed
 
 - **Faster Cache Rebuilds**: project files are scanned concurrently when rebuilding the path cache. The cache storage format changed; existing caches are rebuilt automatically on first use after updating. ([#41])
+- **Quick Fix Titles Are Plain Text**: quick-fix menu entries no longer prefix titles with a checkmark symbol, and the confidence markers on multi-option import suggestions now read `[medium confidence]` / `[low confidence]` instead of emoji indicators
+- **Assets Digest Cache Duration**: the cached list of project asset class names now refreshes every 5 minutes instead of every 30 seconds, matching the API digest cache. Asset changes are normally picked up immediately by the file watcher; the longer interval only applies as a fallback when a digest change is not observed by the watcher
 
 ### Fixed
 
@@ -41,7 +43,10 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 - **Diagnostics Noise in UEFN Workspaces**: the auto-import listener no longer tries to open VS Code internal documents (which logged an error on every edit preview) and no longer reprocesses Epic's read-only `*.digest.verse` files, which carry permanent compiler errors in the standard UEFN workspace, on every diagnostics update ([#46])
 - **Path Conversion Scan Scope**: the fallback scan for explicit module declarations no longer reads Epic's digest files on every lookup in the standard UEFN multi-root workspace; it is now scoped to the project folder
 - **Debounce Delay Setting Restored**: `general.autoImportDebounceDelay` now actually controls the auto-import debounce. The deprecated `general.diagnosticDelay` setting's registered default (1000ms) silently overrode it, so the intended 3000ms default never applied and changing the new setting had no effect. An explicitly set `diagnosticDelay` is still honored when the new setting is left unset ([#76])
+- **Status Bar Menu Error Feedback**: when a status bar menu action fails (for example, a settings update is rejected), the error is now shown as a notification and written to the extension log instead of failing silently
+- **Digest Suggestions Survive Broken Bundled Data**: when none of the extension's bundled pre-compiled digest files can be loaded (for example after a corrupted install), import suggestions now fall back to parsing digest files at runtime instead of silently operating with an empty digest index, which previously left digest-based suggestions returning no results
 - **Ambiguous Import Mappings Reconnected**: the `behavior.ambiguousImports` setting (and its shipped `vector3`/`vector2`/`rotation` defaults) is applied again. The code read a stale pre-0.6.0 configuration key, so configured mappings never took effect and every activation logged a settings write error. Mappings stored under the pre-0.6.0 `verseAutoImports.ambiguousImports` key must be moved to `verseAutoImports.behavior.ambiguousImports` ([#77])
+- **Asset Class Names Parsed on UEFN 41.10**: asset class detection recognizes the 41.10 `Assets.digest.verse` format again. The parser only matched `Name<public|internal|private> := class`, so the 41.10 shapes (specifiers carrying `{...}` arguments such as `<scoped {...}>`, stacked specifiers including on the `class` keyword like `class<final><scoped {...}>`, `protected`, and `name<...>:type = external {}` instance declarations) parsed to zero names and silently disabled the asset-class-boundary feature. All of these shapes are now recognized, while the older formats still parse and indented class members are no longer mistaken for asset names ([#63])
 
 ## [0.6.4] - 2026-02-14
 
@@ -269,6 +274,7 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#42]: https://github.com/VukeFN/verse-auto-imports/issues/42
 [#43]: https://github.com/VukeFN/verse-auto-imports/issues/43
 [#46]: https://github.com/VukeFN/verse-auto-imports/issues/46
+[#63]: https://github.com/VukeFN/verse-auto-imports/issues/63
 [#67]: https://github.com/VukeFN/verse-auto-imports/issues/67
 [#68]: https://github.com/VukeFN/verse-auto-imports/issues/68
 [#69]: https://github.com/VukeFN/verse-auto-imports/issues/69

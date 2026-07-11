@@ -6,6 +6,25 @@ import { logger } from "../utils";
 import { ProjectPathHandler } from "../project";
 
 /**
+ * Matches a class or struct declaration in Assets.digest.verse, e.g.
+ * `TestMaterial<scoped {...}> := class<final><scoped {...}>(mesh_component):`.
+ * Specifiers may be absent, single, or stacked, and may carry `{...}` arguments,
+ * on both the declared name and the `class`/`struct` keyword. Captures the type
+ * name. Any specifier keyword is accepted (`public`, `protected`, `private`,
+ * `internal`, `scoped`, `final`, ...), matching how ProjectPathScanner reads the
+ * same grammar rather than the pre-41.10 `public|internal|private` allowlist.
+ */
+const CLASS_OR_STRUCT_DECL = /^(\w+)(?:<[^>]*>)*\s*:=\s*(?:class|struct)\b/;
+
+/**
+ * Matches an asset instance declaration at module scope, e.g.
+ * `image1<scoped {...}>:texture = external {}`. Textures, meshes, and niagara
+ * systems are emitted as instances rather than classes in 41.10. Captures the
+ * instance name. The `external` anchor keeps ordinary constant assignments out.
+ */
+const INSTANCE_DECL = /^(\w+)(?:<[^>]*>)*\s*:\s*\w+\s*=\s*external\b/;
+
+/**
  * Parses the project's Assets.digest.verse file to extract class names.
  * This is used to determine the correct module boundary when inferring imports
  * from "Did you mean X.Y.Z.ClassName" error messages.
@@ -81,25 +100,11 @@ export class AssetsDigestParser {
         try {
             logger.debug("AssetsDigestParser", `Parsing Assets.digest.verse: ${digestPath}`);
             const content = fs.readFileSync(digestPath, "utf8");
-            const lines = content.split("\n");
 
             this.classNames.clear();
-
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-
-                // Skip comments and empty lines
-                if (trimmedLine.startsWith("#") || trimmedLine === "") {
-                    continue;
-                }
-
-                // Match class or struct declarations: Name<visibility> := class/struct
-                const typeMatch = trimmedLine.match(/^(\w+)<(?:public|internal|private)>\s*:=\s*(?:class|struct)/);
-                if (typeMatch) {
-                    const typeName = typeMatch[1];
-                    this.classNames.add(typeName);
-                    logger.trace("AssetsDigestParser", `Found asset type: ${typeName}`);
-                }
+            for (const name of AssetsDigestParser.parseDigestContent(content)) {
+                this.classNames.add(name);
+                logger.trace("AssetsDigestParser", `Found asset type: ${name}`);
             }
 
             this.lastParsed = now;
@@ -107,6 +112,67 @@ export class AssetsDigestParser {
         } catch (error) {
             logger.error("AssetsDigestParser", `Error parsing Assets.digest.verse: ${digestPath}`, error);
         }
+    }
+
+    /**
+     * Extracts asset type names from Assets.digest.verse content.
+     *
+     * Recognizes both 41.10 and pre-41.10 declaration shapes:
+     * - Class/struct declarations with single, stacked, or argument-bearing
+     *   specifiers on either side of `:=`, e.g.
+     *   `TestSphere<scoped {...}> := class<final><scoped {...}>(mesh_component):`.
+     * - Module-scope asset instances, e.g. `image1<scoped {...}>:texture = external {}`.
+     *
+     * Declarations nested inside a class or struct body are skipped so that data
+     * members (which share the instance declaration shape) are not mistaken for
+     * asset names.
+     *
+     * @param content Raw text of the Assets.digest.verse file.
+     * @returns The distinct asset type names, in first-seen order.
+     */
+    static parseDigestContent(content: string): string[] {
+        const names = new Set<string>();
+        // Indentation of each open class/struct body, whose members are fields
+        // and methods rather than top-level assets.
+        const classBodyIndents: number[] = [];
+
+        for (const rawLine of content.split("\n")) {
+            const indent = AssetsDigestParser.indentOf(rawLine);
+            const line = rawLine.trim();
+            if (line === "" || line.startsWith("#")) {
+                continue;
+            }
+
+            while (classBodyIndents.length > 0 && indent <= classBodyIndents[classBodyIndents.length - 1]) {
+                classBodyIndents.pop();
+            }
+
+            const classMatch = line.match(CLASS_OR_STRUCT_DECL);
+            if (classMatch) {
+                names.add(classMatch[1]);
+                classBodyIndents.push(indent);
+                continue;
+            }
+
+            // Instances only count at module scope, never as class/struct members.
+            if (classBodyIndents.length === 0) {
+                const instanceMatch = line.match(INSTANCE_DECL);
+                if (instanceMatch) {
+                    names.add(instanceMatch[1]);
+                }
+            }
+        }
+
+        return [...names];
+    }
+
+    /**
+     * Returns the leading indentation width of a line, counting each tab as four
+     * spaces so mixed indentation compares consistently.
+     */
+    private static indentOf(rawLine: string): number {
+        const match = rawLine.match(/^[ \t]*/);
+        return match ? match[0].replace(/\t/g, "    ").length : 0;
     }
 
     /**
