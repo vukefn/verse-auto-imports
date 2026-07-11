@@ -3,13 +3,19 @@ import { logger } from "../utils";
 import { ImportFormatter } from "./ImportFormatter";
 import { ImportPathConverter } from "./ImportPathConverter";
 
+/** Tracks hover state for a document's imports. */
+interface HoverState {
+    lineNumber: number;
+    timeout: NodeJS.Timeout | null;
+}
+
 export class ImportCodeLensProvider implements vscode.CodeLensProvider {
-    private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
+    private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>();
     public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
-    private importPathConverter: ImportPathConverter;
-    private hoverState = new Map<string, { lineNumber: number; timeout: NodeJS.Timeout | null }>();
-    private isHoveringImport = new Map<string, boolean>();
+    private readonly importPathConverter: ImportPathConverter;
+    private readonly hoverState = new Map<string, HoverState>();
+    private readonly isHoveringImport = new Map<string, boolean>();
     private refreshTimeout: NodeJS.Timeout | null = null;
 
     constructor(private outputChannel: vscode.OutputChannel) {
@@ -199,10 +205,11 @@ export class ImportCodeLensProvider implements vscode.CodeLensProvider {
                         codeLenses.push(convertSingleLens);
 
                         // Check if there are multiple relative imports in the file
-                        const hasMultipleRelativeImports = lines.filter((l, idx) => {
-                            const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
-                            return ImportFormatter.isModuleImport(l.trim(), next) && !this.importPathConverter.isFullPathImport(l.trim());
-                        }).length > 1;
+                        const hasMultipleRelativeImports =
+                            lines.filter((l, idx) => {
+                                const next = idx + 1 < lines.length ? lines[idx + 1] : undefined;
+                                return ImportFormatter.isModuleImport(l.trim(), next) && !this.importPathConverter.isFullPathImport(l.trim());
+                            }).length > 1;
 
                         // Add "Use absolute paths for all" option if there are multiple relative imports
                         if (hasMultipleRelativeImports) {

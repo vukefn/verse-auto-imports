@@ -1,0 +1,1420 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-06T00:12:07.865Z",
+  "sourceFile": "Verse.digest.verse",
+  "sourceBuild": "++Fortnite+Release-39.40-CL-50341043",
+  "entries": {
+    "SceneGraph": {
+      "identifier": "SceneGraph",
+      "modulePath": "/SceneGraph",
+      "type": "module",
+      "isPublic": true
+    },
+    "KeyframedMovement": {
+      "identifier": "KeyframedMovement",
+      "modulePath": "/Verse.org/SceneGraph/KeyframedMovement",
+      "type": "module",
+      "isPublic": true
+    },
+    "collision_channel_to_interaction": {
+      "identifier": "collision_channel_to_interaction",
+      "modulePath": "/Verse.org/SceneGraph/KeyframedMovement",
+      "type": "function",
+      "isPublic": true
+    },
+    "CollisionChannels": {
+      "identifier": "CollisionChannels",
+      "modulePath": "/Verse.org/SceneGraph/CollisionChannels",
+      "type": "module",
+      "isPublic": true
+    },
+    "CollisionProfiles": {
+      "identifier": "CollisionProfiles",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "module",
+      "isPublic": true
+    },
+    "StationaryIgnoreAll": {
+      "identifier": "StationaryIgnoreAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "StationaryOverlapAll": {
+      "identifier": "StationaryOverlapAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "StationaryBlockAll": {
+      "identifier": "StationaryBlockAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DynamicIgnoreAll": {
+      "identifier": "DynamicIgnoreAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DynamicOverlapAll": {
+      "identifier": "DynamicOverlapAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DynamicBlockAll": {
+      "identifier": "DynamicBlockAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "StationaryBlockVisible": {
+      "identifier": "StationaryBlockVisible",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "VisibilityOverlapAll": {
+      "identifier": "VisibilityOverlapAll",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Presentation": {
+      "identifier": "Presentation",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "module",
+      "isPublic": true
+    },
+    "has_description": {
+      "identifier": "has_description",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Simulation": {
+      "identifier": "Simulation",
+      "modulePath": "/Verse.org/SceneGraph/CollisionProfiles",
+      "type": "module",
+      "isPublic": true
+    },
+    "Tags": {
+      "identifier": "Tags",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "module",
+      "isPublic": true
+    },
+    "editable": {
+      "identifier": "editable",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "class",
+      "isPublic": true
+    },
+    "ToolTip": {
+      "identifier": "ToolTip",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Categories": {
+      "identifier": "Categories",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "editable_text_box": {
+      "identifier": "editable_text_box",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "class",
+      "isPublic": true
+    },
+    "MultiLine": {
+      "identifier": "MultiLine",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MaxLength": {
+      "identifier": "MaxLength",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MinValue": {
+      "identifier": "MinValue",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MaxValue": {
+      "identifier": "MaxValue",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SliderDelta": {
+      "identifier": "SliderDelta",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SliderExponent": {
+      "identifier": "SliderExponent",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MouseLinearDeltaSensitivity": {
+      "identifier": "MouseLinearDeltaSensitivity",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MouseShiftMovePixelPerDelta": {
+      "identifier": "MouseShiftMovePixelPerDelta",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SpinBoxDelta": {
+      "identifier": "SpinBoxDelta",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "ShowPreserveRatio": {
+      "identifier": "ShowPreserveRatio",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "ShowNormalize": {
+      "identifier": "ShowNormalize",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MinComponentValue": {
+      "identifier": "MinComponentValue",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MaxComponentValue": {
+      "identifier": "MaxComponentValue",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "editable_container": {
+      "identifier": "editable_container",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "class",
+      "isPublic": true
+    },
+    "AllowReordering": {
+      "identifier": "AllowReordering",
+      "modulePath": "/Verse.org/Simulation/Tags",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Assets": {
+      "identifier": "Assets",
+      "modulePath": "/Verse.org/Assets",
+      "type": "module",
+      "isPublic": true
+    },
+    "has_icon": {
+      "identifier": "has_icon",
+      "modulePath": "/Verse.org/Assets",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Verse": {
+      "identifier": "Verse",
+      "modulePath": "/Verse.org/Assets",
+      "type": "module",
+      "isPublic": true
+    },
+    "PiFloat": {
+      "identifier": "PiFloat",
+      "modulePath": "/Verse.org/Assets",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Colors": {
+      "identifier": "Colors",
+      "modulePath": "/Verse.org/Colors",
+      "type": "module",
+      "isPublic": true
+    },
+    "NamedColors": {
+      "identifier": "NamedColors",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "module",
+      "isPublic": true
+    },
+    "AliceBlue": {
+      "identifier": "AliceBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "AntiqueWhite": {
+      "identifier": "AntiqueWhite",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Aqua": {
+      "identifier": "Aqua",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Aquamarine": {
+      "identifier": "Aquamarine",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Azure": {
+      "identifier": "Azure",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Beige": {
+      "identifier": "Beige",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Bisque": {
+      "identifier": "Bisque",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Black": {
+      "identifier": "Black",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "BlanchedAlmond": {
+      "identifier": "BlanchedAlmond",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Blue": {
+      "identifier": "Blue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "BlueViolet": {
+      "identifier": "BlueViolet",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Brown": {
+      "identifier": "Brown",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Burlywood": {
+      "identifier": "Burlywood",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "CadetBlue": {
+      "identifier": "CadetBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Chartreuse": {
+      "identifier": "Chartreuse",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Chocolate": {
+      "identifier": "Chocolate",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Coral": {
+      "identifier": "Coral",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "CornflowerBlue": {
+      "identifier": "CornflowerBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Cornsilk": {
+      "identifier": "Cornsilk",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Crimson": {
+      "identifier": "Crimson",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Cyan": {
+      "identifier": "Cyan",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkBlue": {
+      "identifier": "DarkBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkCyan": {
+      "identifier": "DarkCyan",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkGoldenrod": {
+      "identifier": "DarkGoldenrod",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkGray": {
+      "identifier": "DarkGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkGreen": {
+      "identifier": "DarkGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkGrey": {
+      "identifier": "DarkGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkKhaki": {
+      "identifier": "DarkKhaki",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkMagenta": {
+      "identifier": "DarkMagenta",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkOliveGreen": {
+      "identifier": "DarkOliveGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkOrange": {
+      "identifier": "DarkOrange",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkOrchid": {
+      "identifier": "DarkOrchid",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkRed": {
+      "identifier": "DarkRed",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkSalmon": {
+      "identifier": "DarkSalmon",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkSeaGreen": {
+      "identifier": "DarkSeaGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkSlateBlue": {
+      "identifier": "DarkSlateBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkSlateGray": {
+      "identifier": "DarkSlateGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkSlateGrey": {
+      "identifier": "DarkSlateGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkTurquoise": {
+      "identifier": "DarkTurquoise",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DarkViolet": {
+      "identifier": "DarkViolet",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DeepPink": {
+      "identifier": "DeepPink",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DeepSkyBlue": {
+      "identifier": "DeepSkyBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DimGray": {
+      "identifier": "DimGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DimGrey": {
+      "identifier": "DimGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "DodgerBlue": {
+      "identifier": "DodgerBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Firebrick": {
+      "identifier": "Firebrick",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "FloralWhite": {
+      "identifier": "FloralWhite",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "ForestGreen": {
+      "identifier": "ForestGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Fuchsia": {
+      "identifier": "Fuchsia",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Gainsboro": {
+      "identifier": "Gainsboro",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "GhostWhite": {
+      "identifier": "GhostWhite",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Gold": {
+      "identifier": "Gold",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Goldenrod": {
+      "identifier": "Goldenrod",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Gray": {
+      "identifier": "Gray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Green": {
+      "identifier": "Green",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "GreenYellow": {
+      "identifier": "GreenYellow",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Grey": {
+      "identifier": "Grey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Honeydew": {
+      "identifier": "Honeydew",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Hotpink": {
+      "identifier": "Hotpink",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "IndianRed": {
+      "identifier": "IndianRed",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Indigo": {
+      "identifier": "Indigo",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Ivory": {
+      "identifier": "Ivory",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Khaki": {
+      "identifier": "Khaki",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Lavender": {
+      "identifier": "Lavender",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LavenderBlush": {
+      "identifier": "LavenderBlush",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LawnGreen": {
+      "identifier": "LawnGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LemonChiffon": {
+      "identifier": "LemonChiffon",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightBlue": {
+      "identifier": "LightBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightCoral": {
+      "identifier": "LightCoral",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightCyan": {
+      "identifier": "LightCyan",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightGoldenrodYellow": {
+      "identifier": "LightGoldenrodYellow",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightGray": {
+      "identifier": "LightGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightGreen": {
+      "identifier": "LightGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightGrey": {
+      "identifier": "LightGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightPink": {
+      "identifier": "LightPink",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSalmon": {
+      "identifier": "LightSalmon",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSeaGreen": {
+      "identifier": "LightSeaGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSkyBlue": {
+      "identifier": "LightSkyBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSlateGray": {
+      "identifier": "LightSlateGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSlateGrey": {
+      "identifier": "LightSlateGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightSteelBlue": {
+      "identifier": "LightSteelBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LightYellow": {
+      "identifier": "LightYellow",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Lime": {
+      "identifier": "Lime",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "LimeGreen": {
+      "identifier": "LimeGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Linen": {
+      "identifier": "Linen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Magenta": {
+      "identifier": "Magenta",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Maroon": {
+      "identifier": "Maroon",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumAquamarine": {
+      "identifier": "MediumAquamarine",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumBlue": {
+      "identifier": "MediumBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumOrchid": {
+      "identifier": "MediumOrchid",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumPurple": {
+      "identifier": "MediumPurple",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumSeaGreen": {
+      "identifier": "MediumSeaGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumSlateBlue": {
+      "identifier": "MediumSlateBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumSpringGreen": {
+      "identifier": "MediumSpringGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumTurquoise": {
+      "identifier": "MediumTurquoise",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MediumVioletRed": {
+      "identifier": "MediumVioletRed",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MidnightBlue": {
+      "identifier": "MidnightBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MintCream": {
+      "identifier": "MintCream",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "MistyRose": {
+      "identifier": "MistyRose",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Moccasin": {
+      "identifier": "Moccasin",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "NavajoWhite": {
+      "identifier": "NavajoWhite",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Navy": {
+      "identifier": "Navy",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "OldLace": {
+      "identifier": "OldLace",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Olive": {
+      "identifier": "Olive",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "OliveDrab": {
+      "identifier": "OliveDrab",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Orange": {
+      "identifier": "Orange",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "OrangeRed": {
+      "identifier": "OrangeRed",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Orchid": {
+      "identifier": "Orchid",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PaleGoldenrod": {
+      "identifier": "PaleGoldenrod",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PaleGreen": {
+      "identifier": "PaleGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PaleTurquoise": {
+      "identifier": "PaleTurquoise",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PaleVioletred": {
+      "identifier": "PaleVioletred",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PapayaWhip": {
+      "identifier": "PapayaWhip",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PeachPuff": {
+      "identifier": "PeachPuff",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Peru": {
+      "identifier": "Peru",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Pink": {
+      "identifier": "Pink",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Plum": {
+      "identifier": "Plum",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "PowderBlue": {
+      "identifier": "PowderBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Purple": {
+      "identifier": "Purple",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Red": {
+      "identifier": "Red",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "RosyBrown": {
+      "identifier": "RosyBrown",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "RoyalBlue": {
+      "identifier": "RoyalBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SaddleBrown": {
+      "identifier": "SaddleBrown",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Salmon": {
+      "identifier": "Salmon",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SandyBrown": {
+      "identifier": "SandyBrown",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SeaGreen": {
+      "identifier": "SeaGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SeaShell": {
+      "identifier": "SeaShell",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Sienna": {
+      "identifier": "Sienna",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Silver": {
+      "identifier": "Silver",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SkyBlue": {
+      "identifier": "SkyBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SlateBlue": {
+      "identifier": "SlateBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SlateGray": {
+      "identifier": "SlateGray",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SlateGrey": {
+      "identifier": "SlateGrey",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Snow": {
+      "identifier": "Snow",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SpringGreen": {
+      "identifier": "SpringGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SteelBlue": {
+      "identifier": "SteelBlue",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Teal": {
+      "identifier": "Teal",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Thistle": {
+      "identifier": "Thistle",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Tomato": {
+      "identifier": "Tomato",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Turquoise": {
+      "identifier": "Turquoise",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Violet": {
+      "identifier": "Violet",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Wheat": {
+      "identifier": "Wheat",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "White": {
+      "identifier": "White",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "WhiteSmoke": {
+      "identifier": "WhiteSmoke",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Yellow": {
+      "identifier": "Yellow",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "YellowGreen": {
+      "identifier": "YellowGreen",
+      "modulePath": "/Verse.org/Colors/NamedColors",
+      "type": "variable",
+      "isPublic": true
+    },
+    "SpatialMath": {
+      "identifier": "SpatialMath",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "module",
+      "isPublic": true
+    },
+    "Translation": {
+      "identifier": "Translation",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Rotation": {
+      "identifier": "Rotation",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Scale": {
+      "identifier": "Scale",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Left": {
+      "identifier": "Left",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Up": {
+      "identifier": "Up",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Forward": {
+      "identifier": "Forward",
+      "modulePath": "/Verse.org/SpatialMath",
+      "type": "variable",
+      "isPublic": true
+    },
+    "Random": {
+      "identifier": "Random",
+      "modulePath": "/Verse.org/Random",
+      "type": "module",
+      "isPublic": true
+    },
+    "Native": {
+      "identifier": "Native",
+      "modulePath": "/Verse.org/Native",
+      "type": "module",
+      "isPublic": true
+    },
+    "Concurrency": {
+      "identifier": "Concurrency",
+      "modulePath": "/Verse.org/Concurrency",
+      "type": "module",
+      "isPublic": true
+    }
+  },
+  "moduleIndex": {
+    "/SceneGraph": [
+      "SceneGraph"
+    ],
+    "/Verse.org/SceneGraph/KeyframedMovement": [
+      "KeyframedMovement",
+      "collision_channel_to_interaction"
+    ],
+    "/Verse.org/SceneGraph/CollisionChannels": [
+      "CollisionChannels"
+    ],
+    "/Verse.org/SceneGraph/CollisionProfiles": [
+      "CollisionProfiles",
+      "StationaryIgnoreAll",
+      "StationaryOverlapAll",
+      "StationaryBlockAll",
+      "DynamicIgnoreAll",
+      "DynamicOverlapAll",
+      "DynamicBlockAll",
+      "StationaryBlockVisible",
+      "VisibilityOverlapAll",
+      "Presentation",
+      "has_description",
+      "Simulation"
+    ],
+    "/Verse.org/Simulation/Tags": [
+      "Tags",
+      "editable",
+      "ToolTip",
+      "Categories",
+      "editable_text_box",
+      "MultiLine",
+      "MaxLength",
+      "MinValue",
+      "MaxValue",
+      "SliderDelta",
+      "SliderExponent",
+      "MouseLinearDeltaSensitivity",
+      "MouseShiftMovePixelPerDelta",
+      "SpinBoxDelta",
+      "ShowPreserveRatio",
+      "ShowNormalize",
+      "MinComponentValue",
+      "MaxComponentValue",
+      "editable_container",
+      "AllowReordering"
+    ],
+    "/Verse.org/Assets": [
+      "Assets",
+      "has_icon",
+      "Verse",
+      "PiFloat"
+    ],
+    "/Verse.org/Colors": [
+      "Colors"
+    ],
+    "/Verse.org/Colors/NamedColors": [
+      "NamedColors",
+      "AliceBlue",
+      "AntiqueWhite",
+      "Aqua",
+      "Aquamarine",
+      "Azure",
+      "Beige",
+      "Bisque",
+      "Black",
+      "BlanchedAlmond",
+      "Blue",
+      "BlueViolet",
+      "Brown",
+      "Burlywood",
+      "CadetBlue",
+      "Chartreuse",
+      "Chocolate",
+      "Coral",
+      "CornflowerBlue",
+      "Cornsilk",
+      "Crimson",
+      "Cyan",
+      "DarkBlue",
+      "DarkCyan",
+      "DarkGoldenrod",
+      "DarkGray",
+      "DarkGreen",
+      "DarkGrey",
+      "DarkKhaki",
+      "DarkMagenta",
+      "DarkOliveGreen",
+      "DarkOrange",
+      "DarkOrchid",
+      "DarkRed",
+      "DarkSalmon",
+      "DarkSeaGreen",
+      "DarkSlateBlue",
+      "DarkSlateGray",
+      "DarkSlateGrey",
+      "DarkTurquoise",
+      "DarkViolet",
+      "DeepPink",
+      "DeepSkyBlue",
+      "DimGray",
+      "DimGrey",
+      "DodgerBlue",
+      "Firebrick",
+      "FloralWhite",
+      "ForestGreen",
+      "Fuchsia",
+      "Gainsboro",
+      "GhostWhite",
+      "Gold",
+      "Goldenrod",
+      "Gray",
+      "Green",
+      "GreenYellow",
+      "Grey",
+      "Honeydew",
+      "Hotpink",
+      "IndianRed",
+      "Indigo",
+      "Ivory",
+      "Khaki",
+      "Lavender",
+      "LavenderBlush",
+      "LawnGreen",
+      "LemonChiffon",
+      "LightBlue",
+      "LightCoral",
+      "LightCyan",
+      "LightGoldenrodYellow",
+      "LightGray",
+      "LightGreen",
+      "LightGrey",
+      "LightPink",
+      "LightSalmon",
+      "LightSeaGreen",
+      "LightSkyBlue",
+      "LightSlateGray",
+      "LightSlateGrey",
+      "LightSteelBlue",
+      "LightYellow",
+      "Lime",
+      "LimeGreen",
+      "Linen",
+      "Magenta",
+      "Maroon",
+      "MediumAquamarine",
+      "MediumBlue",
+      "MediumOrchid",
+      "MediumPurple",
+      "MediumSeaGreen",
+      "MediumSlateBlue",
+      "MediumSpringGreen",
+      "MediumTurquoise",
+      "MediumVioletRed",
+      "MidnightBlue",
+      "MintCream",
+      "MistyRose",
+      "Moccasin",
+      "NavajoWhite",
+      "Navy",
+      "OldLace",
+      "Olive",
+      "OliveDrab",
+      "Orange",
+      "OrangeRed",
+      "Orchid",
+      "PaleGoldenrod",
+      "PaleGreen",
+      "PaleTurquoise",
+      "PaleVioletred",
+      "PapayaWhip",
+      "PeachPuff",
+      "Peru",
+      "Pink",
+      "Plum",
+      "PowderBlue",
+      "Purple",
+      "Red",
+      "RosyBrown",
+      "RoyalBlue",
+      "SaddleBrown",
+      "Salmon",
+      "SandyBrown",
+      "SeaGreen",
+      "SeaShell",
+      "Sienna",
+      "Silver",
+      "SkyBlue",
+      "SlateBlue",
+      "SlateGray",
+      "SlateGrey",
+      "Snow",
+      "SpringGreen",
+      "SteelBlue",
+      "Teal",
+      "Thistle",
+      "Tomato",
+      "Turquoise",
+      "Violet",
+      "Wheat",
+      "White",
+      "WhiteSmoke",
+      "Yellow",
+      "YellowGreen"
+    ],
+    "/Verse.org/SpatialMath": [
+      "SpatialMath",
+      "Translation",
+      "Rotation",
+      "Scale",
+      "Left",
+      "Up",
+      "Forward"
+    ],
+    "/Verse.org/Random": [
+      "Random"
+    ],
+    "/Verse.org/Native": [
+      "Native"
+    ],
+    "/Verse.org/Concurrency": [
+      "Concurrency"
+    ]
+  }
+}

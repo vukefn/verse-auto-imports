@@ -1,0 +1,27 @@
+{
+    // Mirrors the multi-root workspace UEFN generates (Verse menu > VS Code):
+    // the project's Content folder plus read-only digest roots.
+    "folders": [
+        {
+            "name": "Content",
+            "path": "Project/Content",
+        },
+        {
+            "name": "Fortnite.com",
+            "path": "FakeDigests/Fortnite.com",
+        },
+        {
+            "name": "Verse.org",
+            "path": "FakeDigests/Verse.org",
+        },
+    ],
+    "settings": {
+        // Keep the auto-import debounce short so tests wait milliseconds, not
+        // seconds. Only the current key is set: the deprecated
+        // general.diagnosticDelay must stay unset here so the suite exercises
+        // the intended resolution order (issue #76 regression coverage relies
+        // on autoImportDebounceDelay governing the debounce on its own).
+        "verseAutoImports.general.autoImportDebounceDelay": 100,
+        "files.autoSave": "off",
+    },
+}

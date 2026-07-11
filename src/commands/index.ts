@@ -1,1 +1,1 @@
-export { CommandsHandler } from "./CommandsHandler";
+export { CommandsHandler, CommandsDependencies } from "./CommandsHandler";

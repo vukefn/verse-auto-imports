@@ -14,9 +14,13 @@ export class ImportHandler {
     private suggestionExtractor: ImportSuggestionExtractor;
     private documentEditor: ImportDocumentEditor;
 
-    constructor(private outputChannel: vscode.OutputChannel, assetsDigestParser?: AssetsDigestParser) {
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        assetsDigestParser?: AssetsDigestParser,
+        extensionContext?: vscode.ExtensionContext,
+    ) {
         this.formatter = new ImportFormatter();
-        this.suggestionExtractor = new ImportSuggestionExtractor(outputChannel, this.formatter, assetsDigestParser);
+        this.suggestionExtractor = new ImportSuggestionExtractor(outputChannel, this.formatter, assetsDigestParser, extensionContext);
         this.documentEditor = new ImportDocumentEditor(outputChannel, this.formatter);
     }
 
@@ -35,14 +39,6 @@ export class ImportHandler {
     }
 
     /**
-     * Legacy method for backward compatibility.
-     * @deprecated Use extractImportSuggestions instead
-     */
-    async extractImportStatement(errorMessage: string): Promise<string | null> {
-        return this.suggestionExtractor.extractImportStatement(errorMessage);
-    }
-
-    /**
      * Adds import statements to a document.
      */
     async addImportsToDocument(document: vscode.TextDocument, importStatements: string[]): Promise<boolean> {
@@ -50,10 +46,12 @@ export class ImportHandler {
     }
 
     /**
-     * Removes all import statements from the document.
+     * Rebuilds the document's import block in one atomic edit: existing
+     * imports plus the given additional paths, deduplicated, grouped,
+     * sorted, and formatted per settings.
      */
-    async removeAllImports(document: vscode.TextDocument): Promise<boolean> {
-        return this.documentEditor.removeAllImports(document);
+    async organizeImports(document: vscode.TextDocument, additionalPaths: string[]): Promise<boolean> {
+        return this.documentEditor.organizeImports(document, additionalPaths);
     }
 
     /**
@@ -68,12 +66,5 @@ export class ImportHandler {
      */
     async ensureEmptyLinesAfterImports(document: vscode.TextDocument): Promise<boolean> {
         return this.documentEditor.ensureEmptyLinesAfterImports(document);
-    }
-
-    /**
-     * Converts all import statements in the document to the preferred syntax.
-     */
-    async convertScatteredImportsToPreferredSyntax(document: vscode.TextDocument): Promise<boolean> {
-        return this.documentEditor.convertScatteredImportsToPreferredSyntax(document);
     }
 }

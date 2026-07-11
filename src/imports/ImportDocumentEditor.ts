@@ -1,33 +1,63 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
 import { ImportFormatter } from "./ImportFormatter";
+import { scanModuleImports, ScannedImport } from "./ImportScanner";
+
+/** Represents a contiguous block of import statements in the document. */
+interface ImportBlock {
+    start: number;
+    end: number;
+    imports: ScannedImport[];
+}
 
 /**
  * Handles all document modifications for imports.
  */
 export class ImportDocumentEditor {
-    private formatter: ImportFormatter;
+    private readonly formatter: ImportFormatter;
 
-    constructor(private outputChannel: vscode.OutputChannel, formatter: ImportFormatter) {
+    constructor(
+        private outputChannel: vscode.OutputChannel,
+        formatter: ImportFormatter,
+    ) {
         this.formatter = formatter;
     }
 
     /**
-     * Extracts existing import statements from a document.
+     * Creates an edit to replace an import block with combined and formatted imports.
+     */
+    private createBlockReplacementEdit(edit: vscode.WorkspaceEdit, document: vscode.TextDocument, block: ImportBlock, newPaths: string[], preferDotSyntax: boolean, sortAlphabetically: boolean): void {
+        // Get existing paths in this block for combined sorting
+        const existingBlockPaths = block.imports.map((imp) => imp.path);
+
+        const combinedPaths = [...existingBlockPaths, ...newPaths];
+        if (sortAlphabetically) {
+            combinedPaths.sort((a, b) => a.localeCompare(b));
+        }
+
+        // Format all imports for this block
+        const formattedImports = combinedPaths.map((path) => this.formatter.formatImportStatement(path, preferDotSyntax));
+
+        // Replace the entire block
+        edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+    }
+
+    /**
+     * Extracts existing import statements from a document. Indented pairs
+     * (`using:` plus the path line) are returned joined as a single statement.
      */
     extractExistingImports(document: vscode.TextDocument): string[] {
         logger.debug("ImportDocumentEditor", "Extracting existing imports from document");
-        const text = document.getText();
-        const lines = text.split("\n");
+        const lines = document.getText().split("\n");
         const imports = new Set<string>();
 
-        for (let i = 0; i < lines.length; i++) {
-            const trimmed = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(trimmed, nextLine)) {
-                logger.trace("ImportDocumentEditor", `Found import: ${trimmed}`);
-                imports.add(trimmed);
-            }
+        for (const imp of scanModuleImports(lines)) {
+            const statement = lines
+                .slice(imp.startLine, imp.endLine + 1)
+                .map((line) => line.trim())
+                .join(" ");
+            logger.trace("ImportDocumentEditor", `Found import: ${statement}`);
+            imports.add(statement);
         }
 
         logger.debug("ImportDocumentEditor", `Extracted ${imports.size} existing imports`);
@@ -53,46 +83,26 @@ export class ImportDocumentEditor {
 
         const text = document.getText();
         const lines = text.split("\n");
-        const existingImports = new Set<string>();
+        const scannedImports = scanModuleImports(lines);
 
-        const importBlocks: { start: number; end: number; imports: string[] }[] = [];
-        let currentBlock: { start: number; end: number; imports: string[] } | null = null;
+        const importBlocks: ImportBlock[] = [];
+        for (const imp of scannedImports) {
+            logger.debug("ImportDocumentEditor", `Found existing import at line ${imp.startLine}: ${imp.path}`);
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(line, nextLine)) {
-                logger.debug("ImportDocumentEditor", `Found existing import at line ${i}: ${line}`);
-
-                existingImports.add(line);
-
-                if (!currentBlock) {
-                    currentBlock = { start: i, end: i, imports: [line] };
-                } else if (i === currentBlock.end + 1) {
-                    // Only extend block if import immediately follows (no gap)
-                    currentBlock.end = i;
-                    currentBlock.imports.push(line);
-                } else {
-                    // Any gap creates a new block
-                    importBlocks.push(currentBlock);
-                    currentBlock = { start: i, end: i, imports: [line] };
-                }
+            const lastBlock = importBlocks[importBlocks.length - 1];
+            if (lastBlock && imp.startLine === lastBlock.end + 1) {
+                // Only extend block if import immediately follows (no gap)
+                lastBlock.end = imp.endLine;
+                lastBlock.imports.push(imp);
+            } else {
+                // Any gap creates a new block
+                importBlocks.push({ start: imp.startLine, end: imp.endLine, imports: [imp] });
             }
         }
 
-        if (currentBlock) {
-            importBlocks.push(currentBlock);
-        }
+        logger.debug("ImportDocumentEditor", `Found ${scannedImports.length} existing imports in ${importBlocks.length} blocks`);
 
-        logger.debug("ImportDocumentEditor", `Found ${existingImports.size} existing imports in ${importBlocks.length} blocks`);
-
-        const existingPaths = new Set<string>();
-        existingImports.forEach((imp) => {
-            const path = this.formatter.extractPathFromImport(imp);
-            if (path) {
-                existingPaths.add(path);
-            }
-        });
+        const existingPaths = new Set<string>(scannedImports.map((imp) => imp.path));
 
         const newImportPaths = new Set<string>();
         importStatements.forEach((imp) => {
@@ -127,9 +137,9 @@ export class ImportDocumentEditor {
                 let localBlockIndex = -1;
 
                 importBlocks.forEach((block, index) => {
-                    const blockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p);
-                    const hasDigest = blockPaths.some((path) => this.formatter.isDigestImport(path!));
-                    const hasLocal = blockPaths.some((path) => !this.formatter.isDigestImport(path!));
+                    const blockPaths = block.imports.map((imp) => imp.path);
+                    const hasDigest = blockPaths.some((path) => this.formatter.isDigestImport(path));
+                    const hasLocal = blockPaths.some((path) => !this.formatter.isDigestImport(path));
 
                     // Determine block type based on majority
                     if (hasDigest && !hasLocal) {
@@ -153,38 +163,12 @@ export class ImportDocumentEditor {
 
                 // Add digest imports to digest block
                 if (newDigestPaths.length > 0 && digestBlockIndex >= 0) {
-                    const block = importBlocks[digestBlockIndex];
-                    // Get existing paths in this block for combined sorting
-                    const existingBlockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p) as string[];
-
-                    const combinedPaths = [...existingBlockPaths, ...newDigestPaths];
-                    if (sortAlphabetically) {
-                        combinedPaths.sort((a, b) => a.localeCompare(b));
-                    }
-
-                    // Format all imports for this block
-                    const formattedImports = combinedPaths.map((path) => this.formatter.formatImportStatement(path, preferDotSyntax));
-
-                    // Replace the entire block
-                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                    this.createBlockReplacementEdit(edit, document, importBlocks[digestBlockIndex], newDigestPaths, preferDotSyntax, sortAlphabetically);
                 }
 
                 // Add local imports to local block
                 if (newLocalPaths.length > 0 && localBlockIndex >= 0) {
-                    const block = importBlocks[localBlockIndex];
-                    // Get existing paths in this block for combined sorting
-                    const existingBlockPaths = block.imports.map((imp) => this.formatter.extractPathFromImport(imp)).filter((p) => p) as string[];
-
-                    const combinedPaths = [...existingBlockPaths, ...newLocalPaths];
-                    if (sortAlphabetically) {
-                        combinedPaths.sort((a, b) => a.localeCompare(b));
-                    }
-
-                    // Format all imports for this block
-                    const formattedImports = combinedPaths.map((path) => this.formatter.formatImportStatement(path, preferDotSyntax));
-
-                    // Replace the entire block
-                    edit.replace(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)), formattedImports.join("\n") + "\n");
+                    this.createBlockReplacementEdit(edit, document, importBlocks[localBlockIndex], newLocalPaths, preferDotSyntax, sortAlphabetically);
                 }
 
                 // Handle imports that don't have a matching block
@@ -269,75 +253,97 @@ export class ImportDocumentEditor {
     }
 
     /**
-     * Removes all import statements from the document.
-     * Handles all three Verse import formats:
-     * - using { /path }
-     * - using. /path
-     * - using:
-     *     /path
+     * Computes the document text with every module import consolidated into
+     * one organized block at the top: existing imports plus additional paths,
+     * deduplicated, grouped, sorted, and formatted per the given options.
+     * Handles all three Verse import styles, including the indented pair
+     * (`using:` plus the indented path on the next line). Local-scope `using`
+     * statements are left where they are. Returns null when the document has
+     * no module imports and no additional paths (nothing to organize).
      */
-    async removeAllImports(document: vscode.TextDocument): Promise<boolean> {
-        logger.info("ImportDocumentEditor", "Removing all imports from document");
-
-        const text = document.getText();
+    buildOrganizedContent(
+        text: string,
+        additionalPaths: string[],
+        options: {
+            preferDotSyntax: boolean;
+            sortAlphabetically: boolean;
+            importGrouping: string;
+        },
+    ): string | null {
         const lines = text.split("\n");
-        const resultLines: string[] = [];
-        let i = 0;
-        let removedCount = 0;
+        const scannedImports = scanModuleImports(lines);
 
-        while (i < lines.length) {
-            const line = lines[i];
-            const trimmedLine = line.trim();
-
-            // Check for single-line imports (curly or dot syntax) — skip local-scope using
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(trimmedLine, nextLine) && (trimmedLine.match(/^using\s*\{[^}]+\}/) || trimmedLine.match(/^using\.\s+.+/))) {
-                logger.trace("ImportDocumentEditor", `Removing single-line import at line ${i + 1}: ${trimmedLine}`);
-                removedCount++;
-                i++;
-                continue;
+        const paths = scannedImports.map((imp) => imp.path);
+        const importLines = new Set<number>();
+        for (const imp of scannedImports) {
+            for (let line = imp.startLine; line <= imp.endLine; line++) {
+                importLines.add(line);
             }
+        }
+        const body = lines.filter((_, index) => !importLines.has(index));
 
-            // Check for multi-line import start (indented style)
-            if (ImportFormatter.isModuleImport(trimmedLine, nextLine) && trimmedLine.match(/^using\s*:\s*$/)) {
-                logger.trace("ImportDocumentEditor", `Found multi-line import start at line ${i + 1}`);
-                removedCount++;
-                i++;
-
-                // Skip the next indented path line
-                if (i < lines.length) {
-                    const nextLine = lines[i];
-                    // Check if next line is indented (has leading whitespace)
-                    if (nextLine.match(/^\s+.+/)) {
-                        logger.trace("ImportDocumentEditor", `Removing indented path at line ${i + 1}: ${nextLine.trim()}`);
-                        i++;
-                    }
-                }
-                continue;
-            }
-
-            // Keep non-import lines
-            resultLines.push(line);
-            i++;
+        const extraPaths = additionalPaths.map((p) => p.trim()).filter((p) => p.length > 0);
+        if (paths.length === 0 && extraPaths.length === 0) {
+            return null;
         }
 
-        if (removedCount === 0) {
-            logger.debug("ImportDocumentEditor", "No imports found to remove");
+        const uniquePaths = Array.from(new Set([...paths, ...extraPaths]));
+        const formatted = this.formatter.groupAndFormatImports(uniquePaths, options.preferDotSyntax, options.sortAlphabetically, options.importGrouping);
+
+        // Drop blank lines the removed imports left at the top; the gap after
+        // the block is normalized by ensureEmptyLinesAfterImports afterwards.
+        let firstContent = 0;
+        while (firstContent < body.length && body[firstContent].trim() === "") {
+            firstContent++;
+        }
+        const remainingBody = body.slice(firstContent);
+
+        if (remainingBody.length === 0) {
+            return formatted.join("\n") + "\n";
+        }
+
+        return [...formatted, "", ...remainingBody].join("\n");
+    }
+
+    /**
+     * Rebuilds the document's import block in a single atomic edit: existing
+     * imports plus the given additional paths, deduplicated, grouped, sorted,
+     * and written in the preferred syntax at the top of the file. Unlike
+     * addImportsToDocument this reorganizes even when nothing new is added.
+     */
+    async organizeImports(document: vscode.TextDocument, additionalPaths: string[]): Promise<boolean> {
+        const config = vscode.workspace.getConfiguration("verseAutoImports");
+        const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
+        const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
+        const importGrouping = config.get<string>("behavior.importGrouping", "none");
+
+        const text = document.getText();
+        const organized = this.buildOrganizedContent(text, additionalPaths, {
+            preferDotSyntax,
+            sortAlphabetically,
+            importGrouping,
+        });
+
+        if (organized === null || organized === text) {
+            logger.debug("ImportDocumentEditor", "No import changes needed by organize");
             return true;
         }
 
-        // Apply the edit to replace entire document
         const edit = new vscode.WorkspaceEdit();
         const fullRange = new vscode.Range(new vscode.Position(0, 0), document.lineAt(document.lineCount - 1).range.end);
-
-        edit.replace(document.uri, fullRange, resultLines.join("\n"));
+        edit.replace(document.uri, fullRange, organized);
 
         try {
             const success = await vscode.workspace.applyEdit(edit);
-            logger.debug("ImportDocumentEditor", `Removed ${removedCount} import statements. Success: ${success}`);
+            logger.info("ImportDocumentEditor", success ? "Organized imports in document" : "Failed to organize imports");
+
+            if (success) {
+                await this.ensureEmptyLinesAfterImports(document);
+            }
+
             return success;
         } catch (error) {
-            logger.error("ImportDocumentEditor", `Error removing imports: ${error}`, error);
+            logger.error("ImportDocumentEditor", `Error organizing imports: ${error}`, error);
             return false;
         }
     }
@@ -355,23 +361,10 @@ export class ImportDocumentEditor {
         const text = document.getText();
         const lines = text.split("\n");
 
-        // Find the last import line (only module imports, not local-scope using)
-        let lastImportLine = -1;
-        for (let i = 0; i < lines.length; i++) {
-            const trimmed = lines[i].trim();
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (ImportFormatter.isModuleImport(trimmed, nextLine)) {
-                lastImportLine = i;
-
-                // Handle multi-line imports (using: format)
-                if (trimmed.match(/^using\s*:\s*$/)) {
-                    // Check if next line is indented (part of multi-line import)
-                    if (i + 1 < lines.length && lines[i + 1].match(/^\s+.+/)) {
-                        lastImportLine = i + 1;
-                    }
-                }
-            }
-        }
+        // Find the last file-level import (module imports only: not local-scope
+        // using, and not module-scoped imports inside module bodies)
+        const scannedImports = scanModuleImports(lines);
+        const lastImportLine = scannedImports.length > 0 ? scannedImports[scannedImports.length - 1].endLine : -1;
 
         // If no imports found or file only has imports, nothing to do
         if (lastImportLine === -1 || lastImportLine === lines.length - 1) {
@@ -436,124 +429,6 @@ export class ImportDocumentEditor {
             return success;
         } catch (error) {
             logger.error("ImportDocumentEditor", `Error adjusting spacing: ${error}`, error);
-            return false;
-        }
-    }
-
-    /**
-     * Converts all import statements in the document to the preferred syntax.
-     * This includes imports that are not at the top of the file (e.g., inside namespaces).
-     */
-    async convertScatteredImportsToPreferredSyntax(document: vscode.TextDocument): Promise<boolean> {
-        const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const preferredSyntax = config.get<string>("behavior.importSyntax", "curly");
-        const preferDotSyntax = preferredSyntax === "dot";
-
-        logger.info("ImportDocumentEditor", `Converting all imports to ${preferredSyntax} syntax`);
-
-        const text = document.getText();
-        const lines = text.split("\n");
-        const edits: { line: number; oldText: string; newText: string }[] = [];
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const trimmedLine = line.trim();
-
-            // Skip local-scope using statements (e.g., using{Variable})
-            const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
-            if (trimmedLine.startsWith("using") && !ImportFormatter.isModuleImport(trimmedLine, nextLine)) {
-                continue;
-            }
-
-            // Check for single-line curly syntax
-            const curlyMatch = trimmedLine.match(/^(using\s*\{\s*)([^}]+)(\s*\})/);
-            if (curlyMatch) {
-                const path = curlyMatch[2].trim();
-                const currentIsDot = false;
-
-                if (currentIsDot !== preferDotSyntax) {
-                    const newStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
-                    // Preserve indentation
-                    const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
-                    edits.push({
-                        line: i,
-                        oldText: line,
-                        newText: leadingWhitespace + newStatement,
-                    });
-                    logger.trace("ImportDocumentEditor", `Converting line ${i + 1} from curly to ${preferredSyntax}`);
-                }
-                continue;
-            }
-
-            // Check for single-line dot syntax
-            const dotMatch = trimmedLine.match(/^(using\.\s*)(.+)/);
-            if (dotMatch) {
-                const path = dotMatch[2].trim();
-                const currentIsDot = true;
-
-                if (currentIsDot !== preferDotSyntax) {
-                    const newStatement = this.formatter.formatImportStatement(path, preferDotSyntax);
-                    // Preserve indentation
-                    const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
-                    edits.push({
-                        line: i,
-                        oldText: line,
-                        newText: leadingWhitespace + newStatement,
-                    });
-                    logger.trace("ImportDocumentEditor", `Converting line ${i + 1} from dot to ${preferredSyntax}`);
-                }
-                continue;
-            }
-
-            // Check for multi-line import (always convert to preferred single-line format)
-            if (trimmedLine.match(/^using\s*:\s*$/)) {
-                // Look for the next indented path line
-                if (i + 1 < lines.length) {
-                    const nextLine = lines[i + 1];
-                    const pathMatch = nextLine.match(/^\s+(.+)/);
-                    if (pathMatch) {
-                        const importPath = pathMatch[1].trim();
-                        const newStatement = this.formatter.formatImportStatement(importPath, preferDotSyntax);
-                        // Preserve indentation of the original 'using:' line
-                        const leadingWhitespace = line.match(/^\s*/)?.[0] || "";
-
-                        // Replace the 'using:' line with the converted single-line import
-                        edits.push({
-                            line: i,
-                            oldText: line,
-                            newText: leadingWhitespace + newStatement,
-                        });
-                        // Mark the indented path line for removal (replace with empty)
-                        edits.push({
-                            line: i + 1,
-                            oldText: nextLine,
-                            newText: "",
-                        });
-                        logger.trace("ImportDocumentEditor", `Converting multi-line import at lines ${i + 1}-${i + 2} to ${preferredSyntax}`);
-                        i++; // Skip the next line since we've handled it
-                    }
-                }
-            }
-        }
-
-        if (edits.length === 0) {
-            logger.debug("ImportDocumentEditor", "No imports need syntax conversion");
-            return true;
-        }
-
-        // Apply all edits
-        const edit = new vscode.WorkspaceEdit();
-        for (const e of edits) {
-            const range = new vscode.Range(new vscode.Position(e.line, 0), new vscode.Position(e.line, lines[e.line].length));
-            edit.replace(document.uri, range, e.newText);
-        }
-
-        try {
-            const success = await vscode.workspace.applyEdit(edit);
-            logger.debug("ImportDocumentEditor", `Converted ${edits.length} import statements. Success: ${success}`);
-            return success;
-        } catch (error) {
-            logger.error("ImportDocumentEditor", `Error converting imports: ${error}`, error);
             return false;
         }
     }

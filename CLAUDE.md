@@ -22,9 +22,10 @@ Read the code for structure. These are the things reading one file won't tell yo
 
 ## Code style
 
+- Prettier formats all TypeScript (config in `.prettierrc.json`, 4-space). Run `npm run format` before committing; CI runs `npm run format:check` and fails on unformatted code.
 - TypeScript with relative imports (no path aliases).
 - No emojis anywhere — code, comments, docs, commits, release notes.
-- Every user-facing change gets a `CHANGELOG.md` entry under `[Unreleased]` (Keep a Changelog format).
+- Every user-facing change gets a `CHANGELOG.md` entry under `[Unreleased]` (Keep a Changelog format). When the change resolves a tracked issue, end the entry with a reference-style `[#N]` tag and add a matching `[#N]: <issue-url>` line to the link-definition block at the bottom of the file.
 - Use conventional commits.
 
 ## Testing

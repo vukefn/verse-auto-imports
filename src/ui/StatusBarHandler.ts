@@ -1,9 +1,16 @@
 import * as vscode from "vscode";
 import { logger } from "../utils";
-import { ImportHandler } from "../imports";
 
 interface QuickPickItemWithAction extends vscode.QuickPickItem {
     action?: () => void | Promise<void>;
+}
+
+const STATUS_BAR_PRIORITY = 100;
+const SNOOZE_INTERVAL_MS = 1000;
+const MS_PER_MINUTE = 60000;
+
+function toggleIcon(enabled: boolean, label: string): string {
+    return enabled ? `$(check) ${label}` : `$(blank) ${label}`;
 }
 
 export class StatusBarHandler {
@@ -11,12 +18,12 @@ export class StatusBarHandler {
     private snoozeEndTime: number | null = null;
     private snoozeInterval: NodeJS.Timeout | null = null;
 
-    constructor(private outputChannel: vscode.OutputChannel, private importHandler: ImportHandler) {
-        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    constructor(private outputChannel: vscode.OutputChannel) {
+        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, STATUS_BAR_PRIORITY);
         this.statusBarItem.command = "verseAutoImports.showStatusMenu";
         this.statusBarItem.name = "Verse Auto Imports";
 
-        this.updateStatusBarDisplay();
+        this.updateDisplay();
         this.statusBarItem.show();
 
         // Listen for configuration changes to update status bar
@@ -32,16 +39,12 @@ export class StatusBarHandler {
                         this.cancelSnoozeSilently();
                     }
                 }
-                this.updateStatusBarDisplay();
+                this.updateDisplay();
             }
         });
     }
 
-    getStatusBarItem(): vscode.StatusBarItem {
-        return this.statusBarItem;
-    }
-
-    private updateStatusBarDisplay(): void {
+    updateDisplay(): void {
         if (this.snoozeEndTime !== null) {
             // Snooze is active - show text with countdown
             const remaining = this.getRemainingTime();
@@ -50,157 +53,6 @@ export class StatusBarHandler {
             // Normal state - just show text
             this.statusBarItem.text = "Verse Auto Imports";
         }
-
-        // Update tooltip with rich markdown
-        // this.updateTooltip();
-    }
-
-    private updateTooltip(): void {
-        const config = vscode.workspace.getConfiguration("verseAutoImports");
-        const autoImportEnabled = config.get<boolean>("general.autoImport", true);
-        const preserveLocations = config.get<boolean>("behavior.preserveImportLocations", false);
-        const importSyntax = config.get<string>("behavior.importSyntax", "curly");
-        const useDigestFiles = config.get<boolean>("experimental.useDigestFiles", false);
-
-        const md = new vscode.MarkdownString();
-        md.isTrusted = true;
-        md.supportThemeIcons = true;
-        md.supportHtml = true;
-
-        // Status indicators with theme colors
-        const enabledBadge = '<span style="background-color:var(--vscode-button-background);color:var(--vscode-button-foreground);">&nbsp;ON&nbsp;</span>';
-        const disabledBadge = '<span style="background-color:var(--vscode-errorForeground);color:var(--vscode-button-foreground);">&nbsp;OFF&nbsp;</span>';
-
-        // Header
-        md.appendMarkdown('<div style="padding:4px 0;">');
-        md.appendMarkdown('<h3 style="margin:0 0 8px 0;">Verse Auto Imports</h3>');
-
-        // Quick Actions Section
-        md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown("<strong>Quick Actions:</strong><br>");
-        md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;">');
-
-        // Optimize Imports
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.optimizeImports">$(file-code) Optimize Imports</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown("</tr>");
-
-        // Snooze controls
-        if (this.snoozeEndTime !== null) {
-            const remaining = this.getRemainingTime();
-            md.appendMarkdown("<tr>");
-            md.appendMarkdown('<td style="padding:6px 8px 6px 0;">$(clock) Snoozed</td>');
-            md.appendMarkdown(
-                `<td style="padding:6px 0;"><span style="background-color:var(--vscode-editorWarning-background);color:var(--vscode-editorWarning-foreground);">&nbsp;&nbsp;${remaining}&nbsp;&nbsp;</span></td>`
-            );
-            md.appendMarkdown("</tr>");
-
-            md.appendMarkdown("<tr>");
-            md.appendMarkdown('<td colspan="2" style="padding:4px 0 2px 12px;">');
-            md.appendMarkdown('<a href="command:verseAutoImports.snoozeAutoImport">$(add) Add 5 Minutes</a>');
-            md.appendMarkdown("</td>");
-            md.appendMarkdown("</tr>");
-
-            md.appendMarkdown("<tr>");
-            md.appendMarkdown('<td colspan="2" style="padding:2px 0 4px 12px;">');
-            md.appendMarkdown('<a href="command:verseAutoImports.cancelSnooze">$(close) Cancel Snooze</a>');
-            md.appendMarkdown("</td>");
-            md.appendMarkdown("</tr>");
-        } else {
-            md.appendMarkdown("<tr>");
-            md.appendMarkdown('<td style="padding:8px 0;">');
-            md.appendMarkdown('<a href="command:verseAutoImports.snoozeAutoImport">$(clock) Snooze</a>');
-            md.appendMarkdown("</td>");
-            md.appendMarkdown("</tr>");
-        }
-
-        md.appendMarkdown("</table>");
-        md.appendMarkdown("</div>");
-
-        md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
-
-        // Settings Section
-        md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown("<strong>Settings:</strong><br>");
-        md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;width:100%;">');
-
-        // Auto Import
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.toggleAutoImport">Toggle</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Auto Import</td>');
-        md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${autoImportEnabled ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown("</tr>");
-
-        // Preserve Locations
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.togglePreserveLocations">Toggle</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Preserve Locations</td>');
-        md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${preserveLocations ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown("</tr>");
-
-        // Import Syntax
-        const syntaxDisplay = importSyntax === "curly" ? "using { }" : "using.";
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.toggleImportSyntax">Switch</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown(`<td style="padding:2px 8px;width:100%;">Import Syntax: <code>${syntaxDisplay}</code></td>`);
-        md.appendMarkdown('<td style="padding:2px 0;"></td>');
-        md.appendMarkdown("</tr>");
-
-        // Path Conversion Helper
-        const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.toggleFullPathCodeLens">Toggle</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Path Conversion Helper</td>');
-        md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${showCodeLens ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown("</tr>");
-
-        md.appendMarkdown("</table>");
-        md.appendMarkdown("</div>");
-
-        md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
-
-        // Experimental Section
-        md.appendMarkdown('<div style="margin-bottom:8px;">');
-        md.appendMarkdown("<strong>Experimental:</strong><br>");
-        md.appendMarkdown('<table style="border-collapse:collapse;margin-top:4px;width:100%;">');
-
-        // Use Digest Files
-        md.appendMarkdown("<tr>");
-        md.appendMarkdown('<td style="padding:2px 8px 2px 0;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.toggleDigestFiles">Toggle</a>');
-        md.appendMarkdown("</td>");
-        md.appendMarkdown('<td style="padding:2px 8px;width:100%;">Use Digest Files</td>');
-        md.appendMarkdown(`<td style="padding:2px 0;text-align:right;white-space:nowrap;">${useDigestFiles ? enabledBadge : disabledBadge}</td>`);
-        md.appendMarkdown("</tr>");
-
-        md.appendMarkdown("</table>");
-        md.appendMarkdown("</div>");
-
-        md.appendMarkdown('<hr style="margin:8px 0;border:none;border-top:1px solid #444;">');
-
-        // Footer
-        md.appendMarkdown('<div style="margin-top:8px;">');
-        md.appendMarkdown('<a href="command:verseAutoImports.showStatusMenu">$(settings-gear) Open Full Menu</a> | ');
-        md.appendMarkdown('<a href="command:workbench.action.output.toggleOutput">$(output) View Logs</a>');
-        md.appendMarkdown("</div>");
-
-        md.appendMarkdown("</div>");
-
-        this.statusBarItem.tooltip = md;
-    }
-
-    updateDisplay(): void {
-        this.updateStatusBarDisplay();
     }
 
     private getRemainingTime(): string {
@@ -208,8 +60,8 @@ export class StatusBarHandler {
 
         const now = Date.now();
         const remaining = Math.max(0, this.snoozeEndTime - now);
-        const minutes = Math.floor(remaining / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
+        const minutes = Math.floor(remaining / MS_PER_MINUTE);
+        const seconds = Math.floor((remaining % MS_PER_MINUTE) / 1000);
 
         return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
@@ -248,7 +100,7 @@ export class StatusBarHandler {
         });
 
         items.push({
-            label: autoImportEnabled ? "$(check) Auto Import" : "$(blank) Auto Import",
+            label: toggleIcon(autoImportEnabled, "Auto Import"),
             description: autoImportEnabled ? "Enabled" : "Disabled",
             action: async () => {
                 await config.update("general.autoImport", !autoImportEnabled, vscode.ConfigurationTarget.Global);
@@ -292,7 +144,7 @@ export class StatusBarHandler {
         });
 
         items.push({
-            label: preserveLocations ? "$(check) Preserve Import Locations" : "$(blank) Preserve Import Locations",
+            label: toggleIcon(preserveLocations, "Preserve Import Locations"),
             description: preserveLocations ? "Keep imports in place" : "Consolidate at top",
             action: async () => {
                 await config.update("behavior.preserveImportLocations", !preserveLocations, vscode.ConfigurationTarget.Global);
@@ -301,7 +153,7 @@ export class StatusBarHandler {
         });
 
         items.push({
-            label: sortImports ? "$(check) Sort Imports Alphabetically" : "$(blank) Sort Imports Alphabetically",
+            label: toggleIcon(sortImports, "Sort Imports Alphabetically"),
             description: sortImports ? "Sorted A-Z" : "Original order preserved",
             action: async () => {
                 await config.update("behavior.sortImportsAlphabetically", !sortImports, vscode.ConfigurationTarget.Global);
@@ -339,7 +191,7 @@ export class StatusBarHandler {
         // Import Syntax checkbox
         const isDotSyntax = importSyntax === "dot";
         items.push({
-            label: isDotSyntax ? "$(check) Dot Syntax (using.)" : "$(blank) Dot Syntax (using.)",
+            label: toggleIcon(isDotSyntax, "Dot Syntax (using.)"),
             description: isDotSyntax ? "using. /Path" : "using { /Path }",
             action: async () => {
                 const newSyntax = isDotSyntax ? "curly" : "dot";
@@ -355,7 +207,7 @@ export class StatusBarHandler {
         });
 
         items.push({
-            label: showCodeLens ? "$(check) Path Conversion Helper" : "$(blank) Path Conversion Helper",
+            label: toggleIcon(showCodeLens, "Path Conversion Helper"),
             description: showCodeLens ? "Enabled" : "Disabled",
             action: async () => {
                 await config.update("pathConversion.enableCodeLens", !showCodeLens, vscode.ConfigurationTarget.Global);
@@ -380,7 +232,7 @@ export class StatusBarHandler {
         });
 
         items.push({
-            label: useDigestFiles ? "$(check) Use Digest Files" : "$(blank) Use Digest Files",
+            label: toggleIcon(useDigestFiles, "Use Digest Files"),
             description: useDigestFiles ? "Enabled" : "Disabled",
             action: async () => {
                 await config.update("experimental.useDigestFiles", !useDigestFiles, vscode.ConfigurationTarget.Global);
@@ -426,7 +278,12 @@ export class StatusBarHandler {
 
         // Execute the action if an item was selected
         if (selected?.action) {
-            await selected.action();
+            try {
+                await selected.action();
+            } catch (error) {
+                logger.error("StatusBarHandler", `Menu action failed: ${error}`);
+                vscode.window.showErrorMessage(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
     }
 
@@ -453,7 +310,7 @@ export class StatusBarHandler {
 
         // None option
         items.push({
-            label: `${currentGrouping === "none" ? "$(check) " : "$(blank) "}No Grouping`,
+            label: toggleIcon(currentGrouping === "none", "No Grouping"),
             description: "All imports mixed together (default)",
             action: async () => {
                 await config.update("behavior.importGrouping", "none", vscode.ConfigurationTarget.Global);
@@ -464,7 +321,7 @@ export class StatusBarHandler {
 
         // Digest First option
         items.push({
-            label: `${currentGrouping === "digestFirst" ? "$(check) " : "$(blank) "}Digest First`,
+            label: toggleIcon(currentGrouping === "digestFirst", "Digest First"),
             description: "Digest imports (/Verse.org, /Fortnite.com, /UnrealEngine.com), then local imports",
             action: async () => {
                 await config.update("behavior.importGrouping", "digestFirst", vscode.ConfigurationTarget.Global);
@@ -475,7 +332,7 @@ export class StatusBarHandler {
 
         // Local First option
         items.push({
-            label: `${currentGrouping === "localFirst" ? "$(check) " : "$(blank) "}Local First`,
+            label: toggleIcon(currentGrouping === "localFirst", "Local First"),
             description: "Local imports, then digest imports",
             action: async () => {
                 await config.update("behavior.importGrouping", "localFirst", vscode.ConfigurationTarget.Global);
@@ -492,7 +349,12 @@ export class StatusBarHandler {
 
         // Execute the action if an item was selected
         if (selected?.action) {
-            await selected.action();
+            try {
+                await selected.action();
+            } catch (error) {
+                logger.error("StatusBarHandler", `Menu action failed: ${error}`);
+                vscode.window.showErrorMessage(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
     }
 
@@ -519,7 +381,7 @@ export class StatusBarHandler {
 
         // Hover Only option
         items.push({
-            label: `${currentVisibility === "hover" ? "$(check) " : "$(blank) "}Hover Only`,
+            label: toggleIcon(currentVisibility === "hover", "Hover Only"),
             description: "Show only when hovering over imports (default)",
             action: async () => {
                 await config.update("pathConversion.codeLensVisibility", "hover", vscode.ConfigurationTarget.Global);
@@ -530,7 +392,7 @@ export class StatusBarHandler {
 
         // Always Visible option
         items.push({
-            label: `${currentVisibility === "always" ? "$(check) " : "$(blank) "}Always Visible`,
+            label: toggleIcon(currentVisibility === "always", "Always Visible"),
             description: "Always show above import statements",
             action: async () => {
                 await config.update("pathConversion.codeLensVisibility", "always", vscode.ConfigurationTarget.Global);
@@ -547,31 +409,40 @@ export class StatusBarHandler {
 
         // Execute the action if an item was selected
         if (selected?.action) {
-            await selected.action();
+            try {
+                await selected.action();
+            } catch (error) {
+                logger.error("StatusBarHandler", `Menu action failed: ${error}`);
+                vscode.window.showErrorMessage(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
     }
 
     startSnooze(minutes: number): void {
         logger.debug("StatusBarHandler", `Starting snooze for ${minutes} minutes`);
 
+        // Clear any existing snooze first so re-invoking (e.g. the command
+        // palette while already snoozed) cannot orphan a running interval.
+        this.clearSnoozeState();
+
         // Set snooze end time
-        this.snoozeEndTime = Date.now() + minutes * 60 * 1000;
+        this.snoozeEndTime = Date.now() + minutes * MS_PER_MINUTE;
 
         // Disable auto imports
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         config.update("general.autoImport", false, vscode.ConfigurationTarget.Global);
 
-        // Start countdown interval (update every second)
+        // Start countdown interval
         this.snoozeInterval = setInterval(() => {
             if (this.snoozeEndTime && Date.now() >= this.snoozeEndTime) {
                 this.endSnooze();
             } else {
-                this.updateStatusBarDisplay();
+                this.updateDisplay();
             }
-        }, 1000); // Update every second
+        }, SNOOZE_INTERVAL_MS);
 
         // Update immediately
-        this.updateStatusBarDisplay();
+        this.updateDisplay();
 
         vscode.window.showInformationMessage(`Auto imports snoozed for ${minutes} minutes`);
     }
@@ -580,28 +451,28 @@ export class StatusBarHandler {
         if (this.snoozeEndTime === null) return;
 
         logger.debug("StatusBarHandler", `Extending snooze by ${minutes} minutes`);
-        this.snoozeEndTime += minutes * 60 * 1000;
-        this.updateStatusBarDisplay();
+        this.snoozeEndTime += minutes * MS_PER_MINUTE;
+        this.updateDisplay();
 
         vscode.window.showInformationMessage(`Snooze extended by ${minutes} minutes`);
     }
 
-    cancelSnooze(): void {
-        logger.debug("StatusBarHandler", "Cancelling snooze");
-
-        // Clear snooze state
+    private clearSnoozeState(): void {
         this.snoozeEndTime = null;
         if (this.snoozeInterval) {
             clearInterval(this.snoozeInterval);
             this.snoozeInterval = null;
         }
+    }
 
-        // Re-enable auto imports
+    cancelSnooze(): void {
+        logger.debug("StatusBarHandler", "Cancelling snooze");
+        this.clearSnoozeState();
+
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         config.update("general.autoImport", true, vscode.ConfigurationTarget.Global);
 
-        this.updateStatusBarDisplay();
-
+        this.updateDisplay();
         vscode.window.showInformationMessage("Auto imports resumed");
     }
 
@@ -610,32 +481,18 @@ export class StatusBarHandler {
             return;
         }
 
-        this.snoozeEndTime = null;
-
-        if (this.snoozeInterval) {
-            clearInterval(this.snoozeInterval);
-            this.snoozeInterval = null;
-        }
-
+        this.clearSnoozeState();
         logger.debug("StatusBarHandler", "Snooze cancelled due to manual auto import enable");
     }
 
     private endSnooze(): void {
         logger.debug("StatusBarHandler", "Snooze timer expired");
+        this.clearSnoozeState();
 
-        // Clear snooze state
-        this.snoozeEndTime = null;
-        if (this.snoozeInterval) {
-            clearInterval(this.snoozeInterval);
-            this.snoozeInterval = null;
-        }
-
-        // Re-enable auto imports
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         config.update("general.autoImport", true, vscode.ConfigurationTarget.Global);
 
-        this.updateStatusBarDisplay();
-
+        this.updateDisplay();
         vscode.window.showInformationMessage("Auto imports resumed automatically");
     }
 

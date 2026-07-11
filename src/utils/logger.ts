@@ -16,7 +16,7 @@ export enum LogLevel {
  * Interface for structured log data
  */
 interface LogData {
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 /**
@@ -84,20 +84,23 @@ export class Logger {
     }
 
     /**
+     * Extract structured data from an error object
+     */
+    private extractErrorData(error: Error | unknown): LogData {
+        if (error instanceof Error) {
+            return {
+                errorMessage: error.message,
+                errorStack: error.stack,
+            };
+        }
+        return { error: String(error) };
+    }
+
+    /**
      * Log an ERROR level message with optional error object
      */
     public error(module: string, message: string, error?: Error | unknown, data?: LogData): void {
-        const logData = { ...data };
-
-        if (error) {
-            if (error instanceof Error) {
-                logData.errorMessage = error.message;
-                logData.errorStack = error.stack;
-            } else {
-                logData.error = String(error);
-            }
-        }
-
+        const logData = error ? { ...data, ...this.extractErrorData(error) } : { ...data };
         this.log(LogLevel.ERROR, module, message, logData);
     }
 
@@ -105,17 +108,7 @@ export class Logger {
      * Log a FATAL level message with optional error object
      */
     public fatal(module: string, message: string, error?: Error | unknown, data?: LogData): void {
-        const logData = { ...data };
-
-        if (error) {
-            if (error instanceof Error) {
-                logData.errorMessage = error.message;
-                logData.errorStack = error.stack;
-            } else {
-                logData.error = String(error);
-            }
-        }
-
+        const logData = error ? { ...data, ...this.extractErrorData(error) } : { ...data };
         this.log(LogLevel.FATAL, module, message, logData);
     }
 
@@ -186,7 +179,7 @@ export class Logger {
      */
     public getDebugLogsAsString(): string {
         const header = ["Verse Auto Imports - Debug Log Export", `Exported: ${new Date().toISOString()}`, `Entries: ${this.logBuffer.length}`, "-------------------------------------------", ""].join(
-            "\n"
+            "\n",
         );
 
         return header + this.logBuffer.join("\n");
@@ -306,7 +299,7 @@ export class Logger {
         const parts: string[] = [];
 
         for (const [key, value] of Object.entries(data)) {
-            if (key === "errorStack" && value) {
+            if (key === "errorStack" && typeof value === "string") {
                 // Handle stack traces specially
                 parts.push(`\n  Stack trace:\n    ${value.replace(/\n/g, "\n    ")}`);
             } else if (value !== undefined && value !== null) {
@@ -329,19 +322,7 @@ export class Logger {
 
         return parts.length > 0 ? `{ ${parts.join(", ")} }` : "";
     }
-
-    /**
-     * Legacy support: Simple log function for backward compatibility
-     */
-    public logSimple(message: string): void {
-        this.info("Legacy", message);
-    }
 }
 
 // Export singleton instance for convenience
 export const logger = Logger.getInstance();
-
-// Legacy support function for backward compatibility
-export function log(channel: vscode.OutputChannel, message: string): void {
-    logger.logSimple(message);
-}
