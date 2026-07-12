@@ -8,6 +8,10 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 
 ## [Unreleased]
 
+### Added
+
+- **Clear Project Path Cache**: new command **Verse: Clear Project Path Cache** wipes both the in-memory cache and its persisted copy in workspace storage without rebuilding it, so the next lookup starts cold. Useful for recovering from a corrupt cache or testing cold-start behavior; ordinary rebuilds remain available via **Verse: Rebuild Project Path Cache** ([#93])
+
 ### Fixed
 
 - **Preserve Import Locations With Grouping**: with `behavior.preserveImportLocations` enabled (the default) and `behavior.importGrouping` set to `digestFirst` or `localFirst`, applying a quick fix to a file whose single import block sits below a header comment no longer deletes that block and rewrites the imports at the top of the file. The block is now regrouped in place at its original location ([#90])
@@ -292,3 +296,4 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#77]: https://github.com/VukeFN/verse-auto-imports/issues/77
 [#90]: https://github.com/VukeFN/verse-auto-imports/issues/90
 [#91]: https://github.com/VukeFN/verse-auto-imports/issues/91
+[#93]: https://github.com/VukeFN/verse-auto-imports/issues/93
