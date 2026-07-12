@@ -132,6 +132,15 @@ describe("ImportDocumentEditor.addImportsToDocument", () => {
     });
 
     it("consolidates an indented-style pair without losing its path or orphaning its line", async () => {
+        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValueOnce({
+            get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
+                if (key === "behavior.preserveImportLocations") {
+                    return false;
+                }
+                return defaultValue;
+            }),
+            update: jest.fn().mockResolvedValue(undefined),
+        });
         const input = ["using:", "    /Verse.org/Simulation", "", "hello := 1"].join("\n");
 
         const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Devices }"]);
@@ -160,6 +169,15 @@ describe("ImportDocumentEditor.addImportsToDocument", () => {
     });
 
     it("leaves a module-scoped using inside its module body during consolidation", async () => {
+        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValueOnce({
+            get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
+                if (key === "behavior.preserveImportLocations") {
+                    return false;
+                }
+                return defaultValue;
+            }),
+            update: jest.fn().mockResolvedValue(undefined),
+        });
         const input = ["using { /Top }", "", "Utilities := module:", "    using { /Verse.org/Random }", "", "    GenerateId<public>():int = 1"].join("\n");
 
         const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Devices }"]);
@@ -174,6 +192,87 @@ describe("ImportDocumentEditor.addImportsToDocument", () => {
         expect(deletes).toHaveLength(1);
         expect(deletes[0].range!.start.line).toBe(0);
         expect(deletes[0].range!.end.line).toBe(1);
+    });
+
+    function mockConfig(overrides: Record<string, unknown>): void {
+        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValueOnce({
+            get: jest.fn().mockImplementation((key: string, defaultValue?: unknown) => {
+                if (key in overrides) {
+                    return overrides[key];
+                }
+                return defaultValue;
+            }),
+            update: jest.fn().mockResolvedValue(undefined),
+        });
+    }
+
+    it("preserve + digestFirst: replaces a single import block below a header in place, not at the top", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "digestFirst",
+        });
+        const header = ["# Header comment line 1", "# Header comment line 2", ""];
+        const input = [...header, "using { /Verse.org/Simulation }", "using { /Fortnite.com/Devices }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Random }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const replace = operations.find((op) => op.kind === "replace");
+        expect(replace).toBeDefined();
+        expect(replace!.range!.start.line).toBe(3);
+        expect(replace!.text).toContain("/Fortnite.com/Random");
+        expect(replace!.text).toContain("/Verse.org/Simulation");
+        expect(replace!.text).toContain("/Fortnite.com/Devices");
+
+        // Nothing is inserted above the header comment.
+        const insertsAtTop = operations.filter((op) => op.kind === "insert" && op.position!.line === 0);
+        expect(insertsAtTop).toHaveLength(0);
+    });
+
+    it("preserve + localFirst: replaces a single import block below a header in place, not at the top", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "localFirst",
+        });
+        const header = ["# Header comment line 1", "# Header comment line 2", ""];
+        const input = [...header, "using { /Verse.org/Simulation }", "using { /Fortnite.com/Devices }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Random }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const replace = operations.find((op) => op.kind === "replace");
+        expect(replace).toBeDefined();
+        expect(replace!.range!.start.line).toBe(3);
+        expect(replace!.text).toContain("/Fortnite.com/Random");
+        expect(replace!.text).toContain("/Verse.org/Simulation");
+
+        const insertsAtTop = operations.filter((op) => op.kind === "insert" && op.position!.line === 0);
+        expect(insertsAtTop).toHaveLength(0);
+    });
+
+    it("preserve + digestFirst: inserts at the top when the file has no existing imports", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "digestFirst",
+        });
+        const input = ["hello := 1", "world := 2"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Fortnite.com/Random }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const insert = operations.find((op) => op.kind === "insert");
+        expect(insert).toBeDefined();
+        expect(insert!.position!.line).toBe(0);
+        expect(insert!.text).toContain("/Fortnite.com/Random");
+
+        expect(operations.some((op) => op.kind === "replace")).toBe(false);
+        expect(operations.some((op) => op.kind === "delete")).toBe(false);
     });
 });
 

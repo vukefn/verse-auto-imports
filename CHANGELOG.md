@@ -8,6 +8,10 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Preserve Import Locations With Grouping**: with `behavior.preserveImportLocations` enabled (the default) and `behavior.importGrouping` set to `digestFirst` or `localFirst`, applying a quick fix to a file whose single import block sits below a header comment no longer deletes that block and rewrites the imports at the top of the file. The block is now regrouped in place at its original location ([#90])
+
 ## [0.7.0] - 2026-07-11
 
 ### Added
@@ -283,3 +287,4 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#70]: https://github.com/VukeFN/verse-auto-imports/issues/70
 [#76]: https://github.com/VukeFN/verse-auto-imports/issues/76
 [#77]: https://github.com/VukeFN/verse-auto-imports/issues/77
+[#90]: https://github.com/VukeFN/verse-auto-imports/issues/90

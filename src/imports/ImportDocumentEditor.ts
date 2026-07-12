@@ -72,7 +72,7 @@ export class ImportDocumentEditor {
 
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const preferDotSyntax = config.get<string>("behavior.importSyntax", "curly") === "dot";
-        const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", false);
+        const preserveImportLocations = config.get<boolean>("behavior.preserveImportLocations", true);
         const sortAlphabetically = config.get<boolean>("behavior.sortImportsAlphabetically", true);
         const importGrouping = config.get<string>("behavior.importGrouping", "none");
 
@@ -194,17 +194,23 @@ export class ImportDocumentEditor {
                     const allImportsArray = Array.from(allPaths);
                     const groupedImports = this.formatter.groupAndFormatImports(allImportsArray, preferDotSyntax, sortAlphabetically, importGrouping);
 
-                    // Replace all existing imports with grouped version
                     if (importBlocks.length > 0) {
-                        // Delete all existing import blocks
-                        for (let i = importBlocks.length - 1; i >= 0; i--) {
+                        // Replace the first existing block in place so it stays at its
+                        // original location rather than relocating to the top of the file.
+                        // Delete any additional blocks defensively (by construction this
+                        // branch only sees one block when grouping != "none", since 2+
+                        // gapped blocks are handled by the hasGrouping branch above).
+                        const firstBlock = importBlocks[0];
+                        edit.replace(document.uri, new vscode.Range(new vscode.Position(firstBlock.start, 0), new vscode.Position(firstBlock.end + 1, 0)), groupedImports.join("\n") + "\n");
+
+                        for (let i = importBlocks.length - 1; i >= 1; i--) {
                             const block = importBlocks[i];
                             edit.delete(document.uri, new vscode.Range(new vscode.Position(block.start, 0), new vscode.Position(block.end + 1, 0)));
                         }
+                    } else {
+                        // No existing imports - insert grouped imports at the top
+                        edit.insert(document.uri, new vscode.Position(0, 0), groupedImports.join("\n") + "\n\n");
                     }
-
-                    // Insert grouped imports at the top
-                    edit.insert(document.uri, new vscode.Position(0, 0), groupedImports.join("\n") + "\n\n");
                 } else {
                     // No grouping or no existing imports - use original behavior
                     const newImportPathsArray = Array.from(newImportPaths);
