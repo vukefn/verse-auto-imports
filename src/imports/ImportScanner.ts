@@ -22,7 +22,12 @@ export interface ScannedImport {
  *   consumed as one two-line entry so editing operations never orphan the
  *   path line or lose its path.
  * - Content classification (module import vs local-scope using) is delegated
- *   to ImportFormatter.isModuleImport and unchanged here.
+ *   to ImportFormatter.isModuleImport, passing `{ atFileScope: true }` since
+ *   every candidate here already sits at column 0. This means a bare
+ *   identifier at file level, e.g. `using { Features }`, is now collected as
+ *   a module import (a same-directory folder-module import): module `using`
+ *   is only legal at file level or module-definition body level, so a bare
+ *   `using` at column 0 can never be a legal local-scope using.
  */
 export function scanModuleImports(lines: string[]): ScannedImport[] {
     const formatter = new ImportFormatter();
@@ -42,7 +47,7 @@ export function scanModuleImports(lines: string[]): ScannedImport[] {
         const trimmed = line.trim();
         const nextLine = i + 1 < lines.length ? lines[i + 1] : undefined;
 
-        if (!ImportFormatter.isModuleImport(trimmed, nextLine)) {
+        if (!ImportFormatter.isModuleImport(trimmed, nextLine, { atFileScope: true })) {
             i += 1;
             continue;
         }

@@ -1,5 +1,47 @@
 import { ImportFormatter } from "../ImportFormatter";
 
+describe("ImportFormatter.isModuleImport", () => {
+    it("default mode: a bare identifier is not a module import", () => {
+        expect(ImportFormatter.isModuleImport("using { Features }")).toBe(false);
+    });
+
+    it("atFileScope: a bare identifier is a module import", () => {
+        expect(ImportFormatter.isModuleImport("using { Features }", undefined, { atFileScope: true })).toBe(true);
+    });
+
+    it("a slash-form relative path is never a module import, in either mode", () => {
+        expect(ImportFormatter.isModuleImport("using { Sub/Deep }")).toBe(false);
+        expect(ImportFormatter.isModuleImport("using { Sub/Deep }", undefined, { atFileScope: true })).toBe(false);
+    });
+
+    it("a parent-relative path keeps its pre-existing dot-rule classification (out of scope to change)", () => {
+        // `../UI/MainMenu` contains a dot (from `..`), so the pre-existing
+        // content rule classifies it as a module import. The atFileScope flag
+        // only adds bare-identifier recognition and never removes anything, so
+        // the classification is identical in both modes. Special handling of
+        // `../` forms is explicitly out of scope, and the default mode must stay
+        // byte-for-byte unchanged, so this behavior is left as-is.
+        expect(ImportFormatter.isModuleImport("using { ../UI/MainMenu }")).toBe(true);
+        expect(ImportFormatter.isModuleImport("using { ../UI/MainMenu }", undefined, { atFileScope: true })).toBe(true);
+    });
+
+    it("an absolute path is a module import in both modes", () => {
+        expect(ImportFormatter.isModuleImport("using { /Verse.org/Simulation }")).toBe(true);
+        expect(ImportFormatter.isModuleImport("using { /Verse.org/Simulation }", undefined, { atFileScope: true })).toBe(true);
+    });
+
+    it("a dotted reference is a module import in both modes", () => {
+        expect(ImportFormatter.isModuleImport("using { Economy.Shop }")).toBe(true);
+        expect(ImportFormatter.isModuleImport("using { Economy.Shop }", undefined, { atFileScope: true })).toBe(true);
+    });
+
+    it("atFileScope: recognizes a bare identifier uniformly across all three syntactic styles", () => {
+        expect(ImportFormatter.isModuleImport("using { Features }", undefined, { atFileScope: true })).toBe(true);
+        expect(ImportFormatter.isModuleImport("using. Features", undefined, { atFileScope: true })).toBe(true);
+        expect(ImportFormatter.isModuleImport("using:", "    Features", { atFileScope: true })).toBe(true);
+    });
+});
+
 describe("ImportFormatter.sortImportsByRank", () => {
     let formatter: ImportFormatter;
 

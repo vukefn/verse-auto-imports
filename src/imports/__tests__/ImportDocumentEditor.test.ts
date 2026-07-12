@@ -70,9 +70,17 @@ describe("ImportDocumentEditor.buildOrganizedContent", () => {
         expect(editor.buildOrganizedContent("code()", ["/New"], curlyNoSort)).toBe("using { /New }\n\ncode()");
     });
 
-    it("leaves local-scope using statements in the body", () => {
-        const input = "using { /A }\nusing { LocalVar }\ncode()";
-        expect(editor.buildOrganizedContent(input, [], curlyNoSort)).toBe("using { /A }\n\nusing { LocalVar }\ncode()");
+    it("hoists a bare column-0 using into the block as a module import", () => {
+        // A bare `using { X }` at column 0 can only be a module import (see
+        // ImportScanner's header comment), so it is collected like any other
+        // import rather than left in the body.
+        const input = "using { /A }\nusing { Features }\ncode()";
+        expect(editor.buildOrganizedContent(input, [], curlyNoSort)).toBe("using { /A }\nusing { Features }\n\ncode()");
+    });
+
+    it("leaves a function-body local-scope using statement in the body", () => {
+        const input = ["using { /A }", "F():void =", "    using { LocalVar }", "    code()"].join("\n");
+        expect(editor.buildOrganizedContent(input, [], curlyNoSort)).toBe(["using { /A }", "", "F():void =", "    using { LocalVar }", "    code()"].join("\n"));
     });
 
     it("collapses extra blank lines left by removed top imports", () => {
@@ -88,6 +96,11 @@ describe("ImportDocumentEditor.buildOrganizedContent", () => {
     it("ignores blank additional paths", () => {
         const input = "using { /A }\ncode()";
         expect(editor.buildOrganizedContent(input, ["", "   "], curlyNoSort)).toBe("using { /A }\n\ncode()");
+    });
+
+    it("orders bare folder imports in input order before dotted references, never alphabetized", () => {
+        const input = ["using { Economy.Shop }", "using { Zeta }", "using { Alpha }", "code()"].join("\n");
+        expect(editor.buildOrganizedContent(input, [], curlySorted)).toBe(["using { Zeta }", "using { Alpha }", "using { Economy.Shop }", "", "code()"].join("\n"));
     });
 
     it("leaves a module-scoped using inside its module body", () => {
@@ -163,6 +176,15 @@ describe("ImportDocumentEditor.addImportsToDocument", () => {
         const input = ["using:", "    /Verse.org/Simulation", "", "hello := 1"].join("\n");
 
         const success = await editor.addImportsToDocument(fakeDocument(input), ["using { /Verse.org/Simulation }"]);
+
+        expect(success).toBe(true);
+        expect(applyEditMock()).not.toHaveBeenCalled();
+    });
+
+    it("dedupes a bare folder import that already exists at column 0 and makes no edit", async () => {
+        const input = ["using { Features }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { Features }"]);
 
         expect(success).toBe(true);
         expect(applyEditMock()).not.toHaveBeenCalled();

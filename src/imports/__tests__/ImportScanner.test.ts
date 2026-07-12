@@ -22,8 +22,17 @@ describe("scanModuleImports", () => {
         expect(scanModuleImports(lines)).toEqual([]);
     });
 
-    it("skips local-scope using at column 0", () => {
-        expect(scanModuleImports(["using { LocalVar }"])).toEqual([]);
+    it("collects a bare identifier at column 0 as a module import (folder-relative)", () => {
+        // A module `using` is only legal at file level or module-definition
+        // body level; local-scope `using{instance}` is only legal inside a
+        // function body. So a bare `using { X }` at column 0 can only be a
+        // same-directory folder-module import, never a local-scope using.
+        expect(scanModuleImports(["using { Features }"])).toEqual([{ path: "Features", startLine: 0, endLine: 0 }]);
+    });
+
+    it("skips local-scope using inside a function body", () => {
+        const lines = ["F():void =", "    using { LocalVar }", "    code()"];
+        expect(scanModuleImports(lines)).toEqual([]);
     });
 
     it("skips a using: line whose next line is not an indented path", () => {

@@ -1,5 +1,17 @@
 import * as vscode from "vscode";
 
+/** Options controlling `ImportFormatter.isModuleImport`'s classification. */
+export interface IsModuleImportOptions {
+    /**
+     * Whether the line being checked sits at file scope (column 0 of a
+     * `.verse` file, or directly inside a module-definition body) rather than
+     * inside a function body. The static method only sees a trimmed line, so
+     * it cannot determine this itself — the caller must attest to the
+     * position.
+     */
+    atFileScope?: boolean;
+}
+
 /**
  * Handles import formatting, syntax preferences, grouping, and path utilities.
  */
@@ -17,34 +29,55 @@ export class ImportFormatter {
      * - Indented: `using:` followed by an indented path on the next line
      *
      * All three styles can express either a module import or a local-scope using.
-     * Detection is content-based: paths (starting with `/`) and dot-notation module
-     * references (containing `.`) indicate module imports. Bare identifiers indicate
-     * local-scope using.
+     * Detection has two modes:
+     *
+     * - Default (`options.atFileScope` absent or `false`): content-based only.
+     *   Paths (starting with `/`) and dot-notation module references
+     *   (containing `.`) indicate module imports. Bare identifiers indicate
+     *   local-scope using. This mode is used by call sites that lack
+     *   positional context (they see a matched line in isolation and cannot
+     *   attest to where it sits in the file).
+     * - `options.atFileScope: true`: additionally treats a bare identifier as
+     *   a module import (a same-directory folder-module import, e.g.
+     *   `using { Features }`). This is legal per the Book of Verse only
+     *   because module `using` is valid at file level or module-definition
+     *   body level, while local-scope `using{instance}` is legal only inside
+     *   function bodies — so a bare `using { X }` at file scope can only be a
+     *   module import, never a legal local-scope using. Callers must only
+     *   pass this when they know the line is not inside a function body.
      *
      * @param line The line to check
      * @param nextLine The following line in the document (needed for indented style
      *   where the content is on the next line). When not provided and the line is
      *   `using:`, conservatively returns `true`.
+     * @param options Classification options; see above.
      */
-    static isModuleImport(line: string, nextLine?: string): boolean {
+    static isModuleImport(line: string, nextLine?: string, options?: IsModuleImportOptions): boolean {
         const trimmed = line.trim();
         if (!trimmed.startsWith("using")) {
             return false;
         }
+
+        const atFileScope = options?.atFileScope ?? false;
+        const isModuleImportContent = (content: string): boolean => {
+            if (content.startsWith("/")) {
+                return true;
+            }
+            if (content.includes(".")) {
+                return true;
+            }
+            if (atFileScope && /^[A-Za-z_][A-Za-z0-9_]*$/.test(content)) {
+                return true;
+            }
+            return false;
+        };
 
         // Indented style: using:
         //     /Verse.org/Simulation
         // Content is on the next line — use nextLine for content-based detection.
         if (/^using\s*:\s*$/.test(trimmed)) {
             if (nextLine !== undefined) {
-                const content = nextLine.trim();
-                if (content.startsWith("/")) {
-                    return true;
-                }
-                if (content.includes(".")) {
-                    return true;
-                }
-                return false;
+                return isModuleImportContent(nextLine.trim());
             }
             // Without next line context, conservatively assume module import
             return true;
@@ -53,27 +86,13 @@ export class ImportFormatter {
         // Dotted style: using. <content>
         const dotMatch = trimmed.match(/^using\.\s+(.+)/);
         if (dotMatch) {
-            const content = dotMatch[1].trim();
-            if (content.startsWith("/")) {
-                return true;
-            }
-            if (content.includes(".")) {
-                return true;
-            }
-            return false;
+            return isModuleImportContent(dotMatch[1].trim());
         }
 
         // Braced style: using { /path } or using{Variable}
         const curlyMatch = trimmed.match(/^using\s*\{\s*([^}]+)\s*\}/);
         if (curlyMatch) {
-            const content = curlyMatch[1].trim();
-            if (content.startsWith("/")) {
-                return true;
-            }
-            if (content.includes(".")) {
-                return true;
-            }
-            return false;
+            return isModuleImportContent(curlyMatch[1].trim());
         }
 
         return false;
