@@ -69,7 +69,7 @@ export class StatusBarHandler {
     async showMenu(): Promise<void> {
         const config = vscode.workspace.getConfiguration("verseAutoImports");
         const autoImportEnabled = config.get<boolean>("general.autoImport", true);
-        const preserveLocations = config.get<boolean>("behavior.preserveImportLocations", false);
+        const preserveLocations = config.get<boolean>("behavior.preserveImportLocations", true);
         const useDigestFiles = config.get<boolean>("experimental.useDigestFiles", false);
         const importSyntax = config.get<string>("behavior.importSyntax", "curly");
         const showCodeLens = config.get<boolean>("pathConversion.enableCodeLens", true);

@@ -8,6 +8,12 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Preserve Import Locations With Grouping**: with `behavior.preserveImportLocations` enabled (the default) and `behavior.importGrouping` set to `digestFirst` or `localFirst`, applying a quick fix to a file whose single import block sits below a header comment no longer deletes that block and rewrites the imports at the top of the file. The block is now regrouped in place at its original location ([#90])
+- **Import Sorting Respects Verse Resolution Order**: with `behavior.sortImportsAlphabetically` enabled (the default), sorting no longer reorders a `using` block in a way that breaks compilation. Because Verse resolves `using` statements top-down, a dotted local import such as `using { Economy.Shop }` needs its first segment (`Economy`) already in scope, which a bare local import like `using { Features }` provides. Plain alphabetical sorting placed `Economy.Shop` before `Features` and reintroduced the original "Unknown identifier" error. Sorting now uses rank-based ordering: absolute paths first (alphabetical), then bare local imports, then dotted local imports (alphabetical). Bare local imports now precede dotted ones and keep their original relative order, because import order is semantic in Verse — a nested child must follow the parent that provides it. When sorting is enabled (the default config included), the quick fix now merges new imports into the existing import block in this rank order rather than appending them below it, so a new provider import can no longer land beneath a consumer that depends on it. When sorting is disabled, order is left untouched as before ([#91])
+- **Same-Directory Folder Imports Recognized**: a file-level bare `using { X }` (a same-directory folder-module import) is now recognized as a module import. Previously every bare `using { X }` was treated as a local-scope using, so such imports were invisible to deduplication and "Optimize Imports", and the extension did not recognize an import it had itself inserted. A bare `using` at the top of a `.verse` file can only be a module import, since local-scope `using` is legal only inside a function body. These imports keep their original relative order among themselves, because import order is semantic in Verse — a nested child must follow the parent that provides it ([#65])
+
 ## [0.7.0] - 2026-07-11
 
 ### Added
@@ -277,9 +283,12 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#43]: https://github.com/VukeFN/verse-auto-imports/issues/43
 [#46]: https://github.com/VukeFN/verse-auto-imports/issues/46
 [#63]: https://github.com/VukeFN/verse-auto-imports/issues/63
+[#65]: https://github.com/VukeFN/verse-auto-imports/issues/65
 [#67]: https://github.com/VukeFN/verse-auto-imports/issues/67
 [#68]: https://github.com/VukeFN/verse-auto-imports/issues/68
 [#69]: https://github.com/VukeFN/verse-auto-imports/issues/69
 [#70]: https://github.com/VukeFN/verse-auto-imports/issues/70
 [#76]: https://github.com/VukeFN/verse-auto-imports/issues/76
 [#77]: https://github.com/VukeFN/verse-auto-imports/issues/77
+[#90]: https://github.com/VukeFN/verse-auto-imports/issues/90
+[#91]: https://github.com/VukeFN/verse-auto-imports/issues/91
