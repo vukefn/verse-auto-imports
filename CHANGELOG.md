@@ -11,6 +11,7 @@ Where an entry resolves a tracked issue, it ends with a `[#N]` reference linked 
 ### Fixed
 
 - **Preserve Import Locations With Grouping**: with `behavior.preserveImportLocations` enabled (the default) and `behavior.importGrouping` set to `digestFirst` or `localFirst`, applying a quick fix to a file whose single import block sits below a header comment no longer deletes that block and rewrites the imports at the top of the file. The block is now regrouped in place at its original location ([#90])
+- **Import Sorting Respects Verse Resolution Order**: with `behavior.sortImportsAlphabetically` enabled (the default), sorting no longer reorders a `using` block in a way that breaks compilation. Because Verse resolves `using` statements top-down, a dotted local import such as `using { Economy.Shop }` needs its first segment (`Economy`) already in scope, which a bare local import like `using { Features }` provides. Plain alphabetical sorting placed `Economy.Shop` before `Features` and reintroduced the original "Unknown identifier" error. Sorting now uses rank-based ordering: absolute paths first (alphabetical), then bare local imports, then dotted local imports (alphabetical). Bare local imports now precede dotted ones and keep their original relative order, because import order is semantic in Verse — a nested child must follow the parent that provides it. When sorting is enabled (the default config included), the quick fix now merges new imports into the existing import block in this rank order rather than appending them below it, so a new provider import can no longer land beneath a consumer that depends on it. When sorting is disabled, order is left untouched as before ([#91])
 
 ## [0.7.0] - 2026-07-11
 
@@ -288,3 +289,4 @@ See [GitHub Releases](https://github.com/VukeFN/verse-auto-imports/releases) for
 [#76]: https://github.com/VukeFN/verse-auto-imports/issues/76
 [#77]: https://github.com/VukeFN/verse-auto-imports/issues/77
 [#90]: https://github.com/VukeFN/verse-auto-imports/issues/90
+[#91]: https://github.com/VukeFN/verse-auto-imports/issues/91

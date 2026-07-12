@@ -30,9 +30,9 @@ export class ImportDocumentEditor {
         // Get existing paths in this block for combined sorting
         const existingBlockPaths = block.imports.map((imp) => imp.path);
 
-        const combinedPaths = [...existingBlockPaths, ...newPaths];
+        let combinedPaths = [...existingBlockPaths, ...newPaths];
         if (sortAlphabetically) {
-            combinedPaths.sort((a, b) => a.localeCompare(b));
+            combinedPaths = this.formatter.sortImportsByRank(combinedPaths);
         }
 
         // Format all imports for this block
@@ -214,12 +214,28 @@ export class ImportDocumentEditor {
                 } else {
                     // No grouping or no existing imports - use original behavior
                     const newImportPathsArray = Array.from(newImportPaths);
-                    const newImports = this.formatter.groupAndFormatImports(newImportPathsArray, preferDotSyntax, sortAlphabetically, importGrouping);
 
-                    if (importBlocks.length > 0 && importBlocks[0].start === 0) {
-                        edit.insert(document.uri, new vscode.Position(importBlocks[0].end + 1, 0), newImports.join("\n") + "\n");
+                    if (sortAlphabetically && importBlocks.length > 0) {
+                        // Merge the new imports into the first existing block in
+                        // place so the combined block is rank-ordered (bare
+                        // module providers before the dotted consumers that
+                        // depend on them). Appending the new imports after the
+                        // block instead could place a provider such as
+                        // `using { Features }` below a consumer such as
+                        // `using { Economy.Shop }`, which breaks Verse's
+                        // top-down using resolution.
+                        this.createBlockReplacementEdit(edit, document, importBlocks[0], newImportPathsArray, preferDotSyntax, true);
                     } else {
-                        edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                        // Sorting off or no existing block: keep the original
+                        // append-in-place behavior and leave existing lines
+                        // untouched.
+                        const newImports = this.formatter.groupAndFormatImports(newImportPathsArray, preferDotSyntax, sortAlphabetically, importGrouping);
+
+                        if (importBlocks.length > 0 && importBlocks[0].start === 0) {
+                            edit.insert(document.uri, new vscode.Position(importBlocks[0].end + 1, 0), newImports.join("\n") + "\n");
+                        } else {
+                            edit.insert(document.uri, new vscode.Position(0, 0), newImports.join("\n") + "\n\n");
+                        }
                     }
                 }
             }

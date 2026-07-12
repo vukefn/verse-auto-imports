@@ -129,6 +129,63 @@ export class ImportFormatter {
     }
 
     /**
+     * Sorts import paths for a `using` block using rank-based ordering rather
+     * than plain alphabetical order.
+     *
+     * Verse resolves `using` statements top-down: a statement can only see
+     * identifiers brought into scope by statements above it. This matters
+     * because `using` has two meanings — a module import (`using { /Path }`,
+     * `using { Foo.Bar }`) and a local-scope using (`using { Variable }`) —
+     * and a dotted module import's first segment is itself only in scope if
+     * some other import (a bare module reference) already provided it. For
+     * example `using { Economy.Shop }` needs `Economy` in scope, which
+     * `using { Features }` provides if `Features` declares the `Economy`
+     * submodule. Plain alphabetical sorting can reorder `Economy.Shop` before
+     * `Features` (E < F) and break compilation even though both imports are
+     * individually valid.
+     *
+     * Paths are grouped into three ranks, and only alphabetized within a rank:
+     * - Rank 0 — absolute paths (start with `/`): self-contained, sorted alphabetically.
+     * - Rank 1 — bare identifiers (no `/`, no `.`): kept in their original
+     *   input order, never alphabetized, since the relative order between
+     *   bare module imports is semantic — a nested child must follow the
+     *   parent that provides it.
+     * - Rank 2 — everything else (dotted references such as `Economy.Shop`,
+     *   and any other non-absolute form): sorted alphabetically.
+     *
+     * A lower rank always precedes a higher rank, so bare imports precede
+     * dotted ones, guaranteeing a provider precedes anything that might
+     * depend on it. The sort is stable, so rank 1 entries keep their input
+     * order (the comparator returns 0 for two rank-1 paths).
+     *
+     * @param paths Import paths to sort
+     * @returns A new array with paths ordered by rank, then alphabetically within rank 0 and rank 2
+     */
+    sortImportsByRank(paths: string[]): string[] {
+        const rankOf = (path: string): number => {
+            if (path.startsWith("/")) {
+                return 0;
+            }
+            if (!path.includes(".") && !path.includes("/")) {
+                return 1;
+            }
+            return 2;
+        };
+
+        return [...paths].sort((a, b) => {
+            const rankDifference = rankOf(a) - rankOf(b);
+            if (rankDifference !== 0) {
+                return rankDifference;
+            }
+            if (rankOf(a) === 1) {
+                // Bare identifiers keep their input order; relative order is semantic.
+                return 0;
+            }
+            return a.localeCompare(b);
+        });
+    }
+
+    /**
      * Groups and formats imports based on the configuration settings.
      * @param importPaths Array of import paths to group and format
      * @param preferDotSyntax Whether to use dot syntax for imports
@@ -138,14 +195,15 @@ export class ImportFormatter {
      */
     groupAndFormatImports(importPaths: string[], preferDotSyntax: boolean, sortAlphabetically: boolean, importGrouping: string): string[] {
         if (importGrouping === "none") {
-            // Legacy behavior: simple alphabetical sort if enabled
-            const sortedPaths = sortAlphabetically ? [...importPaths].sort((a, b) => a.localeCompare(b)) : importPaths;
+            // Rank-based sort if enabled (see sortImportsByRank for why plain
+            // alphabetical order is unsafe for local imports)
+            const sortedPaths = sortAlphabetically ? this.sortImportsByRank(importPaths) : importPaths;
             return sortedPaths.map((path) => this.formatImportStatement(path, preferDotSyntax));
         }
 
         // New grouping behavior: separate digest and local imports
-        const digestImports: string[] = [];
-        const localImports: string[] = [];
+        let digestImports: string[] = [];
+        let localImports: string[] = [];
 
         for (const path of importPaths) {
             if (this.isDigestImport(path)) {
@@ -155,10 +213,12 @@ export class ImportFormatter {
             }
         }
 
-        // Sort within groups if enabled
+        // Sort within groups if enabled. digestImports are always absolute
+        // paths, so rank sort and plain alphabetical sort are equivalent
+        // there; the same helper is used for both groups for consistency.
         if (sortAlphabetically) {
-            digestImports.sort((a, b) => a.localeCompare(b));
-            localImports.sort((a, b) => a.localeCompare(b));
+            digestImports = this.sortImportsByRank(digestImports);
+            localImports = this.sortImportsByRank(localImports);
         }
 
         // Format the imports

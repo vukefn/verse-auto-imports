@@ -137,7 +137,7 @@
         "verseAutoImports.behavior.sortImportsAlphabetically": {
           "type": "boolean",
           "default": true,
-          "description": "When true, sorts imports alphabetically. When false, preserves the original order.",
+          "description": "When true, sorts imports: absolute paths and dotted references alphabetically, while bare local imports keep their relative order and precede dotted ones to preserve Verse's top-down using resolution. When false, preserves the original order.",
           "order": 12
         },
         "verseAutoImports.behavior.importGrouping": {

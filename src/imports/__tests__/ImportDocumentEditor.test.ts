@@ -254,6 +254,69 @@ describe("ImportDocumentEditor.addImportsToDocument", () => {
         expect(insertsAtTop).toHaveLength(0);
     });
 
+    it("preserve + digestFirst: a new bare local import is ordered before an existing dotted local import in its block (rank sort, not alphabetical)", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "digestFirst",
+        });
+        const header = ["# Header comment line 1", "# Header comment line 2", ""];
+        const input = [...header, "using { /Verse.org/Simulation }", "", "using { Economy.Shop }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { Features }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const replace = operations.find((op) => op.kind === "replace");
+        expect(replace).toBeDefined();
+        expect(replace!.text).toBe("using { Features }\nusing { Economy.Shop }\n");
+    });
+
+    it("preserve + grouping none + sort on (default config): merges a new bare provider into the existing block in rank order", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "none",
+            "behavior.sortImportsAlphabetically": true,
+        });
+        const input = ["using { Economy.Shop }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { Features }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        const replace = operations.find((op) => op.kind === "replace");
+        expect(replace).toBeDefined();
+        expect(replace!.range!.start.line).toBe(0);
+        expect(replace!.text).toBe("using { Features }\nusing { Economy.Shop }\n");
+
+        // The new import is not appended after the block.
+        const insertsAfterBlock = operations.filter((op) => op.kind === "insert" && op.position!.line === 1);
+        expect(insertsAfterBlock).toHaveLength(0);
+    });
+
+    it("preserve + grouping none + sort OFF: keeps the original append-after-block behavior and leaves existing lines untouched", async () => {
+        mockConfig({
+            "behavior.preserveImportLocations": true,
+            "behavior.importGrouping": "none",
+            "behavior.sortImportsAlphabetically": false,
+        });
+        const input = ["using { Economy.Shop }", "", "hello := 1"].join("\n");
+
+        const success = await editor.addImportsToDocument(fakeDocument(input), ["using { Features }"]);
+
+        expect(success).toBe(true);
+        const operations = appliedOperations(0);
+
+        // No block is rewritten; the existing import line stays as-is.
+        expect(operations.some((op) => op.kind === "replace")).toBe(false);
+
+        const insert = operations.find((op) => op.kind === "insert");
+        expect(insert).toBeDefined();
+        expect(insert!.position!.line).toBe(1);
+        expect(insert!.text).toBe("using { Features }\n");
+    });
+
     it("preserve + digestFirst: inserts at the top when the file has no existing imports", async () => {
         mockConfig({
             "behavior.preserveImportLocations": true,
